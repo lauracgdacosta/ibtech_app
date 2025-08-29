@@ -40,13 +40,14 @@ form {
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 20px;
+    border: 1px solid #f0f4f7;
 }
 
 label {
     display: block;
-    margin-bottom: 8px;
-    color: #555;
+    margin-bottom: 5px;
     font-weight: 500;
+    color: #555;
 }
 
 input[type="text"],
@@ -54,15 +55,15 @@ input[type="email"],
 input[type="tel"],
 input[type="date"],
 input[type="number"],
-textarea,
-select {
+select,
+textarea {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 20px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
     box-sizing: border-box;
-    font-size: 16px;
+    font-size: 14px;
     transition: border-color 0.3s;
 }
 
@@ -71,22 +72,20 @@ input[type="email"]:focus,
 input[type="tel"]:focus,
 input[type="date"]:focus,
 input[type="number"]:focus,
-textarea:focus,
-select:focus {
+select:focus,
+textarea:focus {
     border-color: #3498db;
     outline: none;
 }
 
 button[type="submit"] {
-    display: block;
-    width: 100%;
-    padding: 15px;
     background-color: #3498db;
     color: white;
+    padding: 12px 20px;
     border: none;
-    border-radius: 6px;
-    font-size: 18px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 16px;
     transition: background-color 0.3s;
 }
 
@@ -94,47 +93,46 @@ button[type="submit"]:hover {
     background-color: #2980b9;
 }
 
+hr {
+    border: 0;
+    height: 1px;
+    background: #ecf0f1;
+    margin: 20px 0;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    background: #fff;
-}
-
-table, th, td {
-    border: 1px solid #e0e6e9;
+    table-layout: fixed; /* Adicionado para fixar o layout da tabela */
 }
 
 th, td {
     padding: 12px;
+    border: 1px solid #f0f4f7;
     text-align: left;
+    vertical-align: top;
+    word-wrap: break-word; /* Adicionado para quebrar palavras longas */
 }
 
-thead tr {
-    background-color: #f5f8fa;
-    color: #34495e;
+th {
+    background-color: #f7f9fb;
+    font-weight: 600;
+    color: #555;
 }
 
-tbody tr:nth-child(even) {
-    background-color: #fafbfd;
+tr:nth-child(even) {
+    background-color: #fbfcfd;
 }
 
-tbody tr:hover {
-    background-color: #f1f5f8;
-}
-
-.actions {
-    display: flex;
-    gap: 10px;
-}
-
-.actions a,
-.actions button {
+.actions a, .actions button {
+    display: inline-block;
     padding: 8px 12px;
-    border-radius: 4px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 5px;
     text-decoration: none;
     color: white;
-    border: none;
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.3s;
@@ -183,20 +181,20 @@ a.button:hover {
     justify-content: center;
     align-items: center;
     height: 100px;
-    background-color: #3498db;
-    color: white;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     text-decoration: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s, background-color 0.3s;
-    font-size: 1.2em;
+    color: #34495e;
+    font-weight: 600;
+    font-size: 1.1em;
     text-align: center;
-    padding: 10px;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .module-button:hover {
-    background-color: #2980b9;
     transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .header-actions {
@@ -206,29 +204,9 @@ a.button:hover {
     margin-bottom: 20px;
 }
 
-.header-actions h2 {
-    margin: 0;
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
 .controls {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
-}
-
-.controls input[type="text"],
-.controls select {
-    flex: 1;
-}
-
-select[multiple] {
-    width: 100%;
-    height: 150px;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 16px;
 }
