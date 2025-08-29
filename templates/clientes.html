@@ -43,21 +43,21 @@
                     <th>Município</th>
                     <th>Órgão</th>
                     <th>Contrato</th>
-                    <th>Sistemas</th>
+                    <th>Sistemas Utilizados</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for cliente in clientes %}
                 <tr>
-                    <td>{{ cliente[1] }}</td>
-                    <td>{{ cliente[2] }}</td>
-                    <td>{{ cliente[3] }}</td>
-                    <td>{{ cliente[4] }}</td>
-                    <td class="actions">
-                        <a href="{{ url_for('edit_cliente', id=cliente[0]) }}">Editar</a>
-                        <form action="{{ url_for('delete_cliente', id=cliente[0]) }}" method="post" style="display:inline;">
-                            <button type="submit" onclick="return confirm('Tem certeza que deseja excluir este cliente?');">Excluir</button>
+                    <td>{{ cliente['municipio'] }}</td>
+                    <td>{{ cliente['orgao'] }}</td>
+                    <td>{{ cliente['contrato'] }}</td>
+                    <td>{{ cliente['sistemas'] }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_cliente', id=cliente['id']) }}">Editar</a>
+                        <form action="{{ url_for('delete_cliente', id=cliente['id']) }}" method="post" onsubmit="return confirm('Tem certeza que deseja deletar este cliente?');" style="display:inline;">
+                            <button type="submit">Deletar</button>
                         </form>
                     </td>
                 </tr>
@@ -65,15 +65,15 @@
             </tbody>
         </table>
     </div>
+
     <script>
-        function setupTable(tableId, filterInputId, sortSelectId) {
+        function setupTable(tableId, filterId, sortId) {
             const table = document.getElementById(tableId);
-            if (!table) return;
-            const filterInput = document.getElementById(filterInputId);
-            const sortSelect = document.getElementById(sortSelectId);
             const tbody = table.querySelector('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
-            
+            const filterInput = document.getElementById(filterId);
+            const sortSelect = document.getElementById(sortId);
+
             function filterAndSort() {
                 const filterText = filterInput.value.toLowerCase();
                 const [sortCol, sortDir] = sortSelect.value.split('_');

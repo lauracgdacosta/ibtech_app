@@ -38,13 +38,10 @@
                     <option value="{{ tecnico }}">{{ tecnico }}</option>
                 {% endfor %}
             </select>
-
-            <label for="status_1a_rodada">Status 1ª Rodada:</label>
-            <select id="status_1a_rodada" name="status_1a_rodada">
-                <option value="Planejada">Planejada</option>
-                <option value="Realizada">Realizada</option>
-                <option value="Cancelada">Cancelada</option>
-            </select>
+            
+            <h3>2ª Rodada de Visitas</h3>
+            <label for="data_2a_rodada">Data:</label>
+            <input type="date" id="data_2a_rodada" name="data_2a_rodada">
             
             <label for="equipe_2">Equipe 2:</label>
             <select id="equipe_2" name="equipe_2">
@@ -62,9 +59,16 @@
                 {% endfor %}
             </select>
             
-            <h3>2ª Rodada de Visitas</h3>
-            <label for="data_2a_rodada">Data:</label>
-            <input type="date" id="data_2a_rodada" name="data_2a_rodada">
+            <label for="status_2a_rodada">Status 2ª Rodada:</label>
+            <select id="status_2a_rodada" name="status_2a_rodada">
+                <option value="Planejada">Planejada</option>
+                <option value="Realizada">Realizada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+
+            <h3>3ª Rodada de Visitas (Opcional)</h3>
+            <label for="data_3a_rodada">Data:</label>
+            <input type="date" id="data_3a_rodada" name="data_3a_rodada">
             
             <label for="equipe_3">Equipe 3:</label>
             <select id="equipe_3" name="equipe_3">
@@ -82,12 +86,16 @@
                 {% endfor %}
             </select>
             
-            <label for="status_2a_rodada">Status 2ª Rodada:</label>
-            <select id="status_2a_rodada" name="status_2a_rodada">
+            <label for="status_3a_rodada">Status 3ª Rodada:</label>
+            <select id="status_3a_rodada" name="status_3a_rodada">
                 <option value="Planejada">Planejada</option>
                 <option value="Realizada">Realizada</option>
                 <option value="Cancelada">Cancelada</option>
             </select>
+
+            <h3>4ª Rodada de Visitas (Opcional)</h3>
+            <label for="data_4a_rodada">Data:</label>
+            <input type="date" id="data_4a_rodada" name="data_4a_rodada">
             
             <label for="equipe_4">Equipe 4:</label>
             <select id="equipe_4" name="equipe_4">
@@ -104,7 +112,17 @@
                     <option value="{{ tecnico }}">{{ tecnico }}</option>
                 {% endfor %}
             </select>
-
+            
+            <label for="status_4a_rodada">Status 4ª Rodada:</label>
+            <select id="status_4a_rodada" name="status_4a_rodada">
+                <option value="Planejada">Planejada</option>
+                <option value="Realizada">Realizada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+            
+            <label for="obs">Observações:</label>
+            <textarea id="obs" name="obs"></textarea>
+            
             <button type="submit">Salvar Visita</button>
         </form>
     </div>

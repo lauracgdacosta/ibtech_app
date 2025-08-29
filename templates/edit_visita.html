@@ -41,12 +41,9 @@
                 {% endfor %}
             </select>
 
-            <label for="status_1a_rodada">Status 1ª Rodada:</label>
-            <select id="status_1a_rodada" name="status_1a_rodada">
-                <option value="Planejada" {% if visita['status_1a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
-                <option value="Realizada" {% if visita['status_1a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
-                <option value="Cancelada" {% if visita['status_1a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
-            </select>
+            <h3>2ª Rodada de Visitas</h3>
+            <label for="data_2a_rodada">Data:</label>
+            <input type="date" id="data_2a_rodada" name="data_2a_rodada" value="{{ visita['data_2a_rodada'] }}">
             
             <label for="equipe_2">Equipe 2:</label>
             <select id="equipe_2" name="equipe_2">
@@ -63,10 +60,17 @@
                     <option value="{{ tecnico }}" {% if tecnico == visita['tecnico_2'] %}selected{% endif %}>{{ tecnico }}</option>
                 {% endfor %}
             </select>
+            
+            <label for="status_2a_rodada">Status 2ª Rodada:</label>
+            <select id="status_2a_rodada" name="status_2a_rodada">
+                <option value="Planejada" {% if visita['status_2a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
+                <option value="Realizada" {% if visita['status_2a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
+                <option value="Cancelada" {% if visita['status_2a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+            </select>
 
-            <h3>2ª Rodada de Visitas</h3>
-            <label for="data_2a_rodada">Data:</label>
-            <input type="date" id="data_2a_rodada" name="data_2a_rodada" value="{{ visita['data_2a_rodada'] }}">
+            <h3>3ª Rodada de Visitas (Opcional)</h3>
+            <label for="data_3a_rodada">Data:</label>
+            <input type="date" id="data_3a_rodada" name="data_3a_rodada" value="{{ visita['data_3a_rodada'] }}">
             
             <label for="equipe_3">Equipe 3:</label>
             <select id="equipe_3" name="equipe_3">
@@ -84,13 +88,17 @@
                 {% endfor %}
             </select>
             
-            <label for="status_2a_rodada">Status 2ª Rodada:</label>
-            <select id="status_2a_rodada" name="status_2a_rodada">
-                <option value="Planejada" {% if visita['status_2a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
-                <option value="Realizada" {% if visita['status_2a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
-                <option value="Cancelada" {% if visita['status_2a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+            <label for="status_3a_rodada">Status 3ª Rodada:</label>
+            <select id="status_3a_rodada" name="status_3a_rodada">
+                <option value="Planejada" {% if visita['status_3a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
+                <option value="Realizada" {% if visita['status_3a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
+                <option value="Cancelada" {% if visita['status_3a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
             </select>
 
+            <h3>4ª Rodada de Visitas (Opcional)</h3>
+            <label for="data_4a_rodada">Data:</label>
+            <input type="date" id="data_4a_rodada" name="data_4a_rodada" value="{{ visita['data_4a_rodada'] }}">
+            
             <label for="equipe_4">Equipe 4:</label>
             <select id="equipe_4" name="equipe_4">
                 <option value="">Selecione uma Equipe</option>
@@ -106,7 +114,17 @@
                     <option value="{{ tecnico }}" {% if tecnico == visita['tecnico_4'] %}selected{% endif %}>{{ tecnico }}</option>
                 {% endfor %}
             </select>
-
+            
+            <label for="status_4a_rodada">Status 4ª Rodada:</label>
+            <select id="status_4a_rodada" name="status_4a_rodada">
+                <option value="Planejada" {% if visita['status_4a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
+                <option value="Realizada" {% if visita['status_4a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
+                <option value="Cancelada" {% if visita['status_4a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+            </select>
+            
+            <label for="obs">Observações:</label>
+            <textarea id="obs" name="obs">{{ visita['obs'] }}</textarea>
+            
             <button type="submit">Salvar Alterações</button>
         </form>
     </div>

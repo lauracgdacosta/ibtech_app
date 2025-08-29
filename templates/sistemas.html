@@ -36,12 +36,12 @@
             <tbody>
                 {% for sistema in sistemas %}
                 <tr>
-                    <td>{{ sistema[1] }}</td>
-                    <td>{{ sistema[2] }}</td>
-                    <td class="actions">
-                        <a href="{{ url_for('edit_sistema', id=sistema[0]) }}">Editar</a>
-                        <form action="{{ url_for('delete_sistema', id=sistema[0]) }}" method="post" style="display:inline;">
-                            <button type="submit" onclick="return confirm('Tem certeza que deseja excluir este sistema?');">Excluir</button>
+                    <td>{{ sistema['nome'] }}</td>
+                    <td>{{ sistema['sigla'] }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_sistema', id=sistema['id']) }}">Editar</a>
+                        <form action="{{ url_for('delete_sistema', id=sistema['id']) }}" method="post" onsubmit="return confirm('Tem certeza que deseja deletar este sistema?');" style="display:inline;">
+                            <button type="submit">Deletar</button>
                         </form>
                     </td>
                 </tr>
@@ -49,15 +49,15 @@
             </tbody>
         </table>
     </div>
+
     <script>
-        function setupTable(tableId, filterInputId, sortSelectId) {
+        function setupTable(tableId, filterId, sortId) {
             const table = document.getElementById(tableId);
-            if (!table) return;
-            const filterInput = document.getElementById(filterInputId);
-            const sortSelect = document.getElementById(sortSelectId);
             const tbody = table.querySelector('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr'));
-            
+            const filterInput = document.getElementById(filterId);
+            const sortSelect = document.getElementById(sortId);
+
             function filterAndSort() {
                 const filterText = filterInput.value.toLowerCase();
                 const [sortCol, sortDir] = sortSelect.value.split('_');

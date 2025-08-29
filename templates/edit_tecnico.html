@@ -29,7 +29,7 @@
             <select id="equipe" name="equipe">
                 <option value="">Selecione uma Equipe</option>
                 {% for equipe in equipes %}
-                <option value="{{ equipe[1] }}" {% if equipe[1] == tecnico['equipe'] %}selected{% endif %}>{{ equipe[1] }}</option>
+                <option value="{{ equipe[0] }}" {% if equipe[0] == tecnico['equipe'] %}selected{% endif %}>{{ equipe[0] }}</option>
                 {% endfor %}
             </select>
             

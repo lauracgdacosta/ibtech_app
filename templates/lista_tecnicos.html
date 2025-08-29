@@ -28,13 +28,13 @@
             <tbody>
                 {% for tecnico in tecnicos %}
                 <tr>
-                    <td>{{ tecnico[0] }}</td>
-                    <td>{{ tecnico[1] }}</td>
-                    <td>{{ tecnico[2] }}</td>
-                    <td>{{ tecnico[3] }}</td>
-                    <td>{{ tecnico[4] }}</td>
-                    <td>{{ tecnico[5] }}</td>
-                    <td>{{ tecnico[6] }}</td>
+                    <td>{{ tecnico['id'] }}</td>
+                    <td>{{ tecnico['nome'] }}</td>
+                    <td>{{ tecnico['email'] }}</td>
+                    <td>{{ tecnico['telefone'] }}</td>
+                    <td>{{ tecnico['funcao'] }}</td>
+                    <td>{{ tecnico['equipe'] }}</td>
+                    <td>{{ tecnico['contrato'] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
