@@ -170,7 +170,7 @@ def tecnicos():
 @app.route('/new_tecnico', methods=['GET', 'POST'])
 def new_tecnico():
     conn = get_db_connection()
-    equipes_data = conn.execute('SELECT nome FROM equipes').fetchall()
+    equipes_data = [row['nome'] for row in conn.execute('SELECT nome FROM equipes').fetchall()]
     conn.close()
     if request.method == 'POST':
         conn = get_db_connection()
@@ -191,7 +191,7 @@ def new_tecnico():
 def edit_tecnico(id):
     conn = get_db_connection()
     tecnico = conn.execute('SELECT * FROM tecnicos WHERE id = ?', (id,)).fetchone()
-    equipes_data = conn.execute('SELECT nome FROM equipes').fetchall()
+    equipes_data = [row['nome'] for row in conn.execute('SELECT nome FROM equipes').fetchall()]
     if request.method == 'POST':
         nome = request.form['nome']
         email = request.form['email']
