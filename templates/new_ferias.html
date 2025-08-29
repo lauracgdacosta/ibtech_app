@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Novo Plano de Férias</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Novo Plano de Férias</h1>
+        <a href="{{ url_for('ferias') }}" class="button">Voltar para a Lista</a>
+        
+        <form action="{{ url_for('new_ferias') }}" method="post">
+            <label for="funcionario">Funcionário:</label>
+            <select id="funcionario" name="funcionario" required>
+                <option value="">Selecione o Funcionário</option>
+                {% for nome, contrato in tecnicos %}
+                <option value="{{ nome }}" data-contrato="{{ contrato }}">{{ nome }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="admissao">Admissão:</label>
+            <input type="date" id="admissao" name="admissao">
+
+            <label for="contrato">Contrato:</label>
+            <input type="text" id="contrato" name="contrato" readonly>
+            
+            <label for="ano">Ano:</label>
+            <input type="number" id="ano" name="ano" value="{{ 2024 }}" required>
+
+            <label for="data_inicio">Data de Início:</label>
+            <input type="date" id="data_inicio" name="data_inicio">
+            
+            <label for="data_termino">Data de Término:</label>
+            <input type="date" id="data_termino" name="data_termino">
+
+            <label for="obs">Observações:</label>
+            <textarea id="obs" name="obs"></textarea>
+            
+            <button type="submit">Salvar Plano</button>
+        </form>
+    </div>
+    
+    <script>
+        document.getElementById('funcionario').addEventListener('change', function() {
+            var selectedOption = this.options[this.selectedIndex];
+            var contratoInput = document.getElementById('contrato');
+            var contratoSelecionado = selectedOption.getAttribute('data-contrato');
+            contratoInput.value = contratoSelecionado || '';
+        });
+    </script>
+</body>
+</html>

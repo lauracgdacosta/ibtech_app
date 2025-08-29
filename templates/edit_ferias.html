@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Planejamento de Férias</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Planejamento de Férias</h1>
+        <a href="{{ url_for('ferias') }}" class="button">Voltar para a Lista</a>
+        
+        <form action="{{ url_for('edit_ferias', id=ferias_item['id']) }}" method="post">
+            <input type="hidden" name="id" value="{{ ferias_item['id'] }}">
+            
+            <label for="funcionario">Funcionário:</label>
+            <select id="funcionario" name="funcionario" required>
+                <option value="">Selecione o Funcionário</option>
+                {% for nome, contrato in tecnicos %}
+                <option value="{{ nome }}" data-contrato="{{ contrato }}" {% if nome == ferias_item['funcionario'] %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="admissao">Admissão:</label>
+            <input type="date" id="admissao" name="admissao" value="{{ ferias_item['admissao'] }}">
+
+            <label for="contrato">Contrato:</label>
+            <input type="text" id="contrato" name="contrato" value="{{ ferias_item['contrato'] }}" readonly>
+            
+            <label for="ano">Ano:</label>
+            <input type="number" id="ano" name="ano" value="{{ ferias_item['ano'] }}" required>
+
+            <label for="data_inicio">Data de Início:</label>
+            <input type="date" id="data_inicio" name="data_inicio" value="{{ ferias_item['data_inicio'] }}">
+
+            <label for="data_termino">Data de Término:</label>
+            <input type="date" id="data_termino" name="data_termino" value="{{ ferias_item['data_termino'] }}">
+            
+            <label for="obs">Obs:</label>
+            <input type="text" id="obs" name="obs" value="{{ ferias_item['obs'] }}">
+            
+            <button type="submit">Salvar Alterações</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('funcionario').addEventListener('change', function() {
+            var selectedOption = this.options[this.selectedIndex];
+            var contratoInput = document.getElementById('contrato');
+            var contratoSelecionado = selectedOption.getAttribute('data-contrato');
+            contratoInput.value = contratoSelecionado || '';
+        });
+    </script>
+</body>
+</html>

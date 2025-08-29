@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Módulo de Visitas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Módulo de Visitas</h1>
+        <a href="{{ url_for('index') }}" class="button">Voltar para o Início</a>
+        
+        <div class="header-actions">
+            <h2>Visitas Agendadas</h2>
+            <a href="{{ url_for('new_visita') }}" class="button">Novo Cadastro</a>
+        </div>
+        
+        <div class="controls">
+            <input type="text" id="filterInput" placeholder="Filtrar por nome...">
+            <select id="sortSelect">
+                <option value="0">Ordenar por Localidade/Órgão (A-Z)</option>
+                <option value="0_desc">Ordenar por Localidade/Órgão (Z-A)</option>
+                <option value="2">Ordenar por Data 1ª Rodada</option>
+                <option value="2_desc">Ordenar por Data 1ª Rodada (Decrescente)</option>
+            </select>
+        </div>
+        <button onclick="abrirTelaCheia('tabela-visitas')">Abrir Tabela em Tela Cheia</button>
+        <table id="tabela-visitas" border="1">
+            <thead>
+                <tr>
+                    <th>Localidade / Órgão</th>
+                    <th>Data 1ª Rodada</th>
+                    <th>Equipe 1</th>
+                    <th>Técnico 1</th>
+                    <th>Equipe 2</th>
+                    <th>Técnico 2</th>
+                    <th>Status 1ª Rodada</th>
+                    <th>Data 2ª Rodada</th>
+                    <th>Equipe 3</th>
+                    <th>Técnico 3</th>
+                    <th>Equipe 4</th>
+                    <th>Técnico 4</th>
+                    <th>Status 2ª Rodada</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visita in visitas %}
+                <tr>
+                    <td>{{ visita.localidade_orgao }}</td>
+                    <td>{{ visita.data_1a_rodada }}</td>
+                    <td>{{ visita.equipe_1 }}</td>
+                    <td>{{ visita.tecnico_1 }}</td>
+                    <td>{{ visita.equipe_2 }}</td>
+                    <td>{{ visita.tecnico_2 }}</td>
+                    <td>{{ visita.status_1a_rodada }}</td>
+                    <td>{{ visita.data_2a_rodada }}</td>
+                    <td>{{ visita.equipe_3 }}</td>
+                    <td>{{ visita.tecnico_3 }}</td>
+                    <td>{{ visita.equipe_4 }}</td>
+                    <td>{{ visita.tecnico_4 }}</td>
+                    <td>{{ visita.status_2a_rodada }}</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_visita', id=visita.id) }}">Editar</a>
+                        <form action="{{ url_for('delete_visita', id=visita.id) }}" method="post" style="display:inline;">
+                            <button type="submit" onclick="return confirm('Tem certeza que deseja excluir esta visita?');">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        function setupTable(tableId, filterInputId, sortSelectId) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const filterInput = document.getElementById(filterInputId);
+            const sortSelect = document.getElementById(sortSelectId);
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            function filterAndSort() {
+                const filterText = filterInput.value.toLowerCase();
+                const [sortCol, sortDir] = sortSelect.value.split('_');
+
+                const visibleRows = rows.filter(row => {
+                    const textContent = row.textContent.toLowerCase();
+                    return textContent.includes(filterText);
+                });
+
+                visibleRows.sort((a, b) => {
+                    const aText = a.children[sortCol].textContent.toLowerCase();
+                    const bText = b.children[sortCol].textContent.toLowerCase();
+                    if (sortCol === '2' || sortCol === '7') { // Ordenar por data
+                        const dateA = new Date(a.children[sortCol].textContent);
+                        const dateB = new Date(b.children[sortCol].textContent);
+                        if (dateA < dateB) return sortDir === 'desc' ? 1 : -1;
+                        if (dateA > dateB) return sortDir === 'desc' ? -1 : 1;
+                        return 0;
+                    } else { // Ordenar por texto
+                        if (aText < bText) return sortDir === 'desc' ? 1 : -1;
+                        if (aText > bText) return sortDir === 'desc' ? -1 : 1;
+                        return 0;
+                    }
+                });
+
+                tbody.innerHTML = '';
+                visibleRows.forEach(row => tbody.appendChild(row));
+            }
+
+            filterInput.addEventListener('input', filterAndSort);
+            sortSelect.addEventListener('change', filterAndSort);
+            filterAndSort();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupTable('tabela-visitas', 'filterInput', 'sortSelect');
+        });
+
+        function abrirTelaCheia(idTabela) {
+            var tabela = document.getElementById(idTabela);
+            if (tabela.requestFullscreen) {
+                tabela.requestFullscreen();
+            } else if (tabela.webkitRequestFullscreen) {
+                tabela.webkitRequestFullscreen();
+            } else if (tabela.msRequestFullscreen) {
+                tabela.msRequestFullscreen();
+            }
+        }
+    </script>
+</body>
+</html>

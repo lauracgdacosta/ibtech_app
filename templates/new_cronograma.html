@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Novo Cronograma</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Novo Cronograma</h1>
+        <a href="{{ url_for('cronograma') }}" class="button">Voltar para a Lista</a>
+
+        <form action="{{ url_for('new_cronograma') }}" method="post">
+            <label for="equipe">Equipe:</label>
+            <input type="text" id="equipe" name="equipe">
+
+            <label for="tecnico_nome">Nome do Técnico:</label>
+            <input type="text" id="tecnico_nome" name="tecnico_nome">
+            
+            <label for="tecnico_funcao">Função do Técnico:</label>
+            <input type="text" id="tecnico_funcao" name="tecnico_funcao">
+
+            <label for="atividade_domingo">Domingo:</label>
+            <textarea id="atividade_domingo" name="atividade_domingo"></textarea>
+            
+            <label for="atividade_segunda">Segunda:</label>
+            <textarea id="atividade_segunda" name="atividade_segunda"></textarea>
+
+            <label for="atividade_terca">Terça:</label>
+            <textarea id="atividade_terca" name="atividade_terca"></textarea>
+            
+            <label for="atividade_quarta">Quarta:</label>
+            <textarea id="atividade_quarta" name="atividade_quarta"></textarea>
+            
+            <label for="atividade_quinta">Quinta:</label>
+            <textarea id="atividade_quinta" name="atividade_quinta"></textarea>
+            
+            <label for="atividade_sexta">Sexta:</label>
+            <textarea id="atividade_sexta" name="atividade_sexta"></textarea>
+            
+            <label for="atividade_sabado">Sábado:</label>
+            <textarea id="atividade_sabado" name="atividade_sabado"></textarea>
+
+            <button type="submit">Salvar Cronograma</button>
+        </form>
+    </div>
+</body>
+</html>

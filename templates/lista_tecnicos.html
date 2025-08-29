@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Técnicos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Lista de Técnicos</h1>
+        <a href="{{ url_for('index') }}">Voltar para o Início</a>
+        
+        <hr>
+        
+        <h2>Técnicos Cadastrados</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Função</th>
+                    <th>Equipe</th>
+                    <th>Contrato</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tecnico in tecnicos %}
+                <tr>
+                    <td>{{ tecnico[0] }}</td>
+                    <td>{{ tecnico[1] }}</td>
+                    <td>{{ tecnico[2] }}</td>
+                    <td>{{ tecnico[3] }}</td>
+                    <td>{{ tecnico[4] }}</td>
+                    <td>{{ tecnico[5] }}</td>
+                    <td>{{ tecnico[6] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

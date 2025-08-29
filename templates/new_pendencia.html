@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nova Pendência em Ficha</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Nova Pendência em Ficha</h1>
+        <a href="{{ url_for('pendencias') }}" class="button">Voltar para a Lista</a>
+        
+        <form action="{{ url_for('new_pendencia') }}" method="post">
+            <label for="processo">Processo:</label>
+            <input type="text" id="processo" name="processo" required>
+            
+            <label for="cliente">Cliente:</label>
+            <select id="cliente" name="cliente">
+                <option value="">Selecione um Cliente</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}">{{ cliente }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="sistema">Sistema:</label>
+            <select id="sistema" name="sistema">
+                <option value="">Selecione um Sistema</option>
+                {% for sistema in sistemas_para_selecao %}
+                    <option value="{{ sistema }}">{{ sistema }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="data_prioridade">Data da Prioridade:</label>
+            <input type="date" id="data_prioridade" name="data_prioridade">
+
+            <label for="prazo_entrega">Prazo de Entrega:</label>
+            <input type="date" id="prazo_entrega" name="prazo_entrega">
+
+            <label for="status">Status:</label>
+            <select id="status" name="status">
+                <option value="Aberto">Aberto</option>
+                <option value="Concluído">Concluído</option>
+            </select>
+            
+            <button type="submit">Salvar Pendência</button>
+        </form>
+    </div>
+</body>
+</html>

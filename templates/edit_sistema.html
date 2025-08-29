@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Sistema</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Sistema</h1>
+        <a href="{{ url_for('sistemas') }}" class="button">Voltar para a Lista</a>
+        
+        <form action="{{ url_for('edit_sistema', id=sistema['id']) }}" method="post">
+            <input type="hidden" name="id" value="{{ sistema['id'] }}">
+            
+            <label for="nome">Nome do Sistema:</label>
+            <input type="text" id="nome" name="nome" value="{{ sistema['nome'] }}" required>
+            
+            <label for="sigla">Sigla:</label>
+            <input type="text" id="sigla" name="sigla" value="{{ sistema['sigla'] }}" required>
+            
+            <button type="submit">Salvar Alterações</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Gestão de Equipes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="main-title">Sistema de Gestão de Equipes</h1>
+        <p class="subtitle">Bem-vindo ao sistema de gestão. Selecione um dos módulos abaixo:</p>
+        
+        <div class="module-grid">
+            <a href="{{ url_for('tecnicos') }}" class="module-button">Módulo de Técnicos</a>
+            <a href="{{ url_for('clientes') }}" class="module-button">Módulo de Clientes</a>
+            <a href="{{ url_for('equipes') }}" class="module-button">Módulo de Equipes</a>
+            <a href="{{ url_for('cronograma') }}" class="module-button">Módulo de Cronograma</a>
+            <a href="{{ url_for('visitas') }}" class="module-button">Módulo de Visitas</a>
+            <a href="{{ url_for('pendencias') }}" class="module-button">Módulo de Pendências</a>
+            <a href="{{ url_for('ferias') }}" class="module-button">Módulo de Férias</a>
+            <a href="{{ url_for('sistemas') }}" class="module-button">Módulo de Sistemas</a>
+        </div>
+    </div>
+</body>
+</html>

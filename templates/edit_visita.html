@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Visita</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Visita</h1>
+        <a href="{{ url_for('visitas') }}" class="button">Voltar para a Lista</a>
+        
+        <form action="{{ url_for('edit_visita', id=visita['id']) }}" method="post">
+            <input type="hidden" name="id" value="{{ visita['id'] }}">
+            
+            <label for="localidade_orgao">Localidade/Órgão:</label>
+            <select id="localidade_orgao" name="localidade_orgao">
+                <option value="">Selecione um Cliente</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}" {% if cliente == visita['localidade_orgao'] %}selected{% endif %}>{{ cliente }}</option>
+                {% endfor %}
+            </select>
+            
+            <h3>1ª Rodada de Visitas</h3>
+            <label for="data_1a_rodada">Data:</label>
+            <input type="date" id="data_1a_rodada" name="data_1a_rodada" value="{{ visita['data_1a_rodada'] }}">
+            
+            <label for="equipe_1">Equipe 1:</label>
+            <select id="equipe_1" name="equipe_1">
+                <option value="">Selecione uma Equipe</option>
+                {% for equipe in equipes %}
+                    <option value="{{ equipe }}" {% if equipe == visita['equipe_1'] %}selected{% endif %}>{{ equipe }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="tecnico_1">Técnico 1:</label>
+            <select id="tecnico_1" name="tecnico_1">
+                <option value="">Selecione um Técnico</option>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}" {% if tecnico == visita['tecnico_1'] %}selected{% endif %}>{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="status_1a_rodada">Status 1ª Rodada:</label>
+            <select id="status_1a_rodada" name="status_1a_rodada">
+                <option value="Planejada" {% if visita['status_1a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
+                <option value="Realizada" {% if visita['status_1a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
+                <option value="Cancelada" {% if visita['status_1a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+            </select>
+            
+            <label for="equipe_2">Equipe 2:</label>
+            <select id="equipe_2" name="equipe_2">
+                <option value="">Selecione uma Equipe</option>
+                {% for equipe in equipes %}
+                    <option value="{{ equipe }}" {% if equipe == visita['equipe_2'] %}selected{% endif %}>{{ equipe }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="tecnico_2">Técnico 2:</label>
+            <select id="tecnico_2" name="tecnico_2">
+                <option value="">Selecione um Técnico</option>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}" {% if tecnico == visita['tecnico_2'] %}selected{% endif %}>{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+
+            <h3>2ª Rodada de Visitas</h3>
+            <label for="data_2a_rodada">Data:</label>
+            <input type="date" id="data_2a_rodada" name="data_2a_rodada" value="{{ visita['data_2a_rodada'] }}">
+            
+            <label for="equipe_3">Equipe 3:</label>
+            <select id="equipe_3" name="equipe_3">
+                <option value="">Selecione uma Equipe</option>
+                {% for equipe in equipes %}
+                    <option value="{{ equipe }}" {% if equipe == visita['equipe_3'] %}selected{% endif %}>{{ equipe }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="tecnico_3">Técnico 3:</label>
+            <select id="tecnico_3" name="tecnico_3">
+                <option value="">Selecione um Técnico</option>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}" {% if tecnico == visita['tecnico_3'] %}selected{% endif %}>{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="status_2a_rodada">Status 2ª Rodada:</label>
+            <select id="status_2a_rodada" name="status_2a_rodada">
+                <option value="Planejada" {% if visita['status_2a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
+                <option value="Realizada" {% if visita['status_2a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
+                <option value="Cancelada" {% if visita['status_2a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+            </select>
+
+            <label for="equipe_4">Equipe 4:</label>
+            <select id="equipe_4" name="equipe_4">
+                <option value="">Selecione uma Equipe</option>
+                {% for equipe in equipes %}
+                    <option value="{{ equipe }}" {% if equipe == visita['equipe_4'] %}selected{% endif %}>{{ equipe }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="tecnico_4">Técnico 4:</label>
+            <select id="tecnico_4" name="tecnico_4">
+                <option value="">Selecione um Técnico</option>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}" {% if tecnico == visita['tecnico_4'] %}selected{% endif %}>{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Salvar Alterações</button>
+        </form>
+    </div>
+</body>
+</html>

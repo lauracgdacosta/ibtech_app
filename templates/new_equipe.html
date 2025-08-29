@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nova Equipe</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Nova Equipe</h1>
+        <a href="{{ url_for('equipes') }}" class="button">Voltar para a Lista</a>
+        
+        <form action="{{ url_for('new_equipe') }}" method="post">
+            <label for="nome">Nome da Equipe:</label>
+            <input type="text" id="nome" name="nome" required>
+            
+            <label for="sigla">Sigla:</label>
+            <input type="text" id="sigla" name="sigla">
+            
+            <label for="lider">Líder:</label>
+            <select id="lider" name="lider">
+                <option value="">Selecione um Líder</option>
+                {% for tecnico in tecnicos %}
+                <option value="{{ tecnico[0] }}">{{ tecnico[0] }}</option>
+                {% endfor %}
+            </select>
+            
+            <button type="submit">Salvar Equipe</button>
+        </form>
+    </div>
+</body>
+</html>

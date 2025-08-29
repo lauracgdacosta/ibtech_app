@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Técnico</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Técnico</h1>
+        <a href="{{ url_for('tecnicos') }}" class="button">Voltar para a Lista</a>
+        
+        <form action="{{ url_for('edit_tecnico', id=tecnico['id']) }}" method="post">
+            <input type="hidden" name="id" value="{{ tecnico['id'] }}">
+            
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" value="{{ tecnico['nome'] }}" required>
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="{{ tecnico['email'] }}">
+            
+            <label for="telefone">Telefone:</label>
+            <input type="tel" id="telefone" name="telefone" value="{{ tecnico['telefone'] }}">
+            
+            <label for="funcao">Função:</label>
+            <input type="text" id="funcao" name="funcao" value="{{ tecnico['funcao'] }}">
+            
+            <label for="equipe">Equipe:</label>
+            <select id="equipe" name="equipe">
+                <option value="">Selecione uma Equipe</option>
+                {% for equipe in equipes %}
+                <option value="{{ equipe[1] }}" {% if equipe[1] == tecnico['equipe'] %}selected{% endif %}>{{ equipe[1] }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="contrato">Contrato:</label>
+            <input type="text" id="contrato" name="contrato" value="{{ tecnico['contrato'] }}">
+            
+            <button type="submit">Salvar Alterações</button>
+        </form>
+    </div>
+</body>
+</html>
