@@ -1,11 +1,12 @@
 import sqlite3
+import os
 from flask import Flask, render_template, request, redirect, url_for
 
 app = Flask(__name__)
 
 # Configuração do banco de dados
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/tmp/database.db')
     cursor = conn.cursor()
     
     # Criação das tabelas
@@ -141,13 +142,17 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Inicializa o banco de dados
-init_db()
-
+# Conectando ao banco de dados
 def get_db_connection():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/tmp/database.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+# Inicializa o banco de dados antes da primeira requisição
+@app.before_request
+def before_request_func():
+    if not os.path.exists('/tmp/database.db'):
+        init_db()
 
 @app.route('/')
 def index():
@@ -277,7 +282,7 @@ def equipes():
 @app.route('/new_equipe', methods=['GET', 'POST'])
 def new_equipe():
     conn = get_db_connection()
-    tecnicos_data = conn.execute('SELECT nome FROM tecnicos').fetchall()
+    tecnicos_data = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos').fetchall()]
     conn.close()
     if request.method == 'POST':
         conn = get_db_connection()
@@ -295,7 +300,7 @@ def new_equipe():
 def edit_equipe(id):
     conn = get_db_connection()
     equipe = conn.execute('SELECT * FROM equipes WHERE id = ?', (id,)).fetchone()
-    tecnicos_data = conn.execute('SELECT nome FROM tecnicos').fetchall()
+    tecnicos_data = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos').fetchall()]
     if request.method == 'POST':
         nome = request.form['nome']
         sigla = request.form['sigla']
