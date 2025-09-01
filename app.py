@@ -431,14 +431,17 @@ def pendencias():
     conn.close()
     return render_template('pendencias.html', pendencias=pendencias_data)
 
+# Trecho do arquivo app.py
 @app.route('/new_pendencia', methods=['GET', 'POST'])
 def new_pendencia():
     conn = get_db_connection()
-    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
+    # Modificado para buscar municipio e orgao e concatenar
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
     if request.method == 'POST':
         processo = request.form['processo']
-        cliente = request.form['cliente']
+        cliente = request.form['cliente'] # cliente já virá como "município - órgão"
         sistema = request.form['sistema']
         data_prioridade = request.form['data_prioridade']
         prazo_entrega = request.form['prazo_entrega']
