@@ -458,11 +458,12 @@ def new_pendencia():
 def edit_pendencia(id):
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
-    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
     if request.method == 'POST':
         processo = request.form['processo']
-        cliente = request.form['cliente']
+        cliente = request.form['cliente'] # cliente já virá como "município - órgão"
         sistema = request.form['sistema']
         data_prioridade = request.form['data_prioridade']
         prazo_entrega = request.form['prazo_entrega']
@@ -472,6 +473,7 @@ def edit_pendencia(id):
         conn.commit()
         conn.close()
         return redirect(url_for('pendencias'))
+    
     conn.close()
     return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
