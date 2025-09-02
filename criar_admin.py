@@ -2,9 +2,9 @@ import sqlite3
 from werkzeug.security import generate_password_hash
 
 # --- CONFIGURE SEU ADMIN AQUI ---
-ADMIN_NOME = "Laura"
-ADMIN_EMAIL = "laura.costa@ibtechti.com.br"
-ADMIN_SENHA = "Emanuel2037*" # Troque por uma senha segura
+ADMIN_NOME = "Administrador"
+ADMIN_EMAIL = "admin@ibtech.com"
+ADMIN_SENHA = "senhaSuperForte123" # Troque por uma senha segura
 # -----------------------------------
 
 # Gera o hash da senha
