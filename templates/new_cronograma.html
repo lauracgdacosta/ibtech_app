@@ -13,8 +13,12 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Novo Cronograma</h1>
-        <a href="{{ url_for('cronograma') }}" class="button">Voltar para a Lista</a>
+        <div class="header-actions">
+            <h1>Novo Cronograma</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('cronograma') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
 
         <form action="{{ url_for('new_cronograma') }}" method="post">
             <label for="equipe">Equipe:</label>
@@ -47,7 +51,7 @@
             <label for="atividade_sabado">Sábado:</label>
             <textarea id="atividade_sabado" name="atividade_sabado"></textarea>
 
-            <button type="submit">Salvar Cronograma</button>
+            <button type="submit" class="button new">Salvar Cronograma</button>
         </form>
     </div>
 </body>

@@ -13,7 +13,9 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Adicionar Novo Agendamento</h1>
+        <div class="header-actions">
+            <h1>Adicionar Novo Agendamento</h1>
+        </div>
         <form method="post">
             <label for="cliente">Cliente</label>
             <select id="cliente" name="cliente" required>
@@ -58,9 +60,11 @@
                 <option value="Cancelada">Cancelada</option>
             </select>
 
-            <button type="submit">Salvar Agendamento</button>
+            <div class="actions-group" style="margin-top: 20px;">
+                <button type="submit" class="button new">Salvar Agendamento</button>
+                <a href="{{ url_for('agenda') }}" class="button">Cancelar</a>
+            </div>
         </form>
-        <a href="{{ url_for('agenda') }}" class="button">Cancelar</a>
     </div>
 </body>
 </html>

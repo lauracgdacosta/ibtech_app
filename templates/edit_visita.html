@@ -13,8 +13,12 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Editar Visita</h1>
-        <a href="{{ url_for('visitas') }}" class="button">Voltar para a Lista</a>
+        <div class="header-actions">
+            <h1>Editar Visita</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('visitas') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
         
         <form action="{{ url_for('edit_visita', id=visita['id']) }}" method="post">
             <input type="hidden" name="id" value="{{ visita['id'] }}">
@@ -47,7 +51,7 @@
                 {% endfor %}
             </select>
             <label for="status_1a_rodada">Status Visita:</label>
-            <select id="status_1a_rodada" name="status_2a_rodada">
+            <select id="status_1a_rodada" name="status_1a_rodada">
                 <option value="Planejada" {% if visita['status_1a_rodada'] == 'Planejada' %}selected{% endif %}>Planejada</option>
                 <option value="Realizada" {% if visita['status_1a_rodada'] == 'Realizada' %}selected{% endif %}>Realizada</option>
                 <option value="Cancelada" {% if visita['status_1a_rodada'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
@@ -137,7 +141,7 @@
             <label for="obs">Observações:</label>
             <textarea id="obs" name="obs">{{ visita['obs'] }}</textarea>
             
-            <button type="submit">Salvar Alterações</button>
+            <button type="submit" class="button edit">Salvar Alterações</button>
         </form>
     </div>
 </body>

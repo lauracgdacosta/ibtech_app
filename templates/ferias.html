@@ -13,14 +13,15 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Planejamento de Férias</h1>
-        <a href="{{ url_for('index') }}" class="button">Voltar para o Início</a>
-        
         <div class="header-actions">
-            <h2>Férias Planejadas</h2>
-            <a href="{{ url_for('new_ferias') }}" class="button">Novo Cadastro</a>
+            <h1>Planejamento de Férias</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('new_ferias') }}" class="button new">Novo Planejamento</a>
+                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+            </div>
         </div>
-        
+
+        <h2>Férias Planejadas</h2>
         <div class="controls">
             <input type="text" id="filterInput" placeholder="Filtrar por nome...">
             <select id="sortSelect">
@@ -35,7 +36,7 @@
             </select>
         </div>
         <button onclick="abrirTelaCheia('tabela-ferias')">Abrir Tabela em Tela Cheia</button>
-        <table id="tabela-ferias" border="1">
+        <table id="tabela-ferias">
             <thead>
                 <tr>
                     <th>Funcionário</th>
@@ -45,7 +46,7 @@
                     <th>Data Início</th>
                     <th>Data Término</th>
                     <th>Observações</th>
-                    <th>Ações</th>
+                    <th style="width: 220px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,10 +59,10 @@
                     <td>{{ ferias_item['data_inicio'] }}</td>
                     <td>{{ ferias_item['data_termino'] }}</td>
                     <td>{{ ferias_item['obs'] }}</td>
-                    <td>
-                        <a href="{{ url_for('edit_ferias', id=ferias_item['id']) }}">Editar</a>
-                        <form action="{{ url_for('delete_ferias', id=ferias_item['id']) }}" method="post" onsubmit="return confirm('Tem certeza que deseja deletar este plano de férias?');" style="display:inline;">
-                            <button type="submit">Deletar</button>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_ferias', id=ferias_item['id']) }}" class="button edit">Editar</a>
+                        <form action="{{ url_for('delete_ferias', id=ferias_item['id']) }}" method="post">
+                            <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar este plano de férias?');">Deletar</button>
                         </form>
                     </td>
                 </tr>

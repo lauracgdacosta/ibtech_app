@@ -1,3 +1,4 @@
+/* --- Estilos Gerais --- */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #eef2f5;
@@ -35,6 +36,31 @@ h1, h2 {
     margin-top: 25px;
 }
 
+/* --- Layout do Cabeçalho --- */
+/* Esta nova regra corrige o alinhamento do título com os botões */
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap; /* Permite quebrar linha em telas menores */
+    gap: 15px; /* Espaço entre os elementos */
+}
+
+.header-actions h1 {
+    margin: 0; /* Remove margem padrão do H1 */
+    flex-grow: 1; /* Faz o título ocupar o espaço disponível */
+}
+
+/* Container para os botões no cabeçalho */
+.header-actions .actions-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Espaço entre os botões */
+}
+
+
+/* --- Estilos de Formulário --- */
 form {
     background: #fdfdfd;
     padding: 20px;
@@ -54,6 +80,7 @@ input[type="text"],
 input[type="email"],
 input[type="tel"],
 input[type="date"],
+input[type="password"],
 input[type="number"],
 select,
 textarea {
@@ -67,108 +94,121 @@ textarea {
     transition: border-color 0.3s;
 }
 
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="tel"]:focus,
-input[type="date"]:focus,
-input[type="number"]:focus,
+input:focus,
 select:focus,
 textarea:focus {
-    border-color: #3498db;
+    border-color: #007bff; /* Azul ao focar */
     outline: none;
 }
 
-button[type="submit"] {
-    background-color: #3498db;
-    color: white;
-    padding: 12px 20px;
+/* --- Estilos de Botões (Alterado e Centralizado) --- */
+.button, button {
+    display: inline-block;
+    padding: 10px 18px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
+    font-size: 1em;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    margin: 2px 5px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
+.button:hover, button:hover {
+    transform: translateY(-2px); /* Efeito de elevação */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Cor Padrão (Cancelar, Voltar, etc.) */
+.button {
+    background-color: #6c757d; /* Cinza */
+}
+.button:hover {
+    background-color: #5a6268;
+}
+
+/* Botão de Salvar/Submeter Principal (Azul) */
+button[type="submit"] {
+    background-color: #007bff; /* Azul */
+}
 button[type="submit"]:hover {
-    background-color: #2980b9;
+    background-color: #0056b3;
 }
 
-hr {
-    border: 0;
-    height: 1px;
-    background: #ecf0f1;
-    margin: 20px 0;
+/* Cor Verde (Novo / Adicionar) */
+.button.new {
+    background-color: #28a745; /* Verde */
+}
+.button.new:hover {
+    background-color: #218838;
 }
 
+/* Cor Azul (Editar / Atualizar) */
+.button.edit {
+    background-color: #007bff; /* Azul */
+}
+.button.edit:hover {
+    background-color: #0056b3;
+}
+
+/* Cor Vermelha (Deletar / Excluir) */
+.button.delete {
+    background-color: #dc3545; /* Vermelho */
+}
+.button.delete:hover {
+    background-color: #c82333;
+}
+
+
+/* --- Estilos de Tabela --- */
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
-    table-layout: fixed; /* Adicionado para fixar o layout da tabela */
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.03);
 }
 
 th, td {
-    padding: 12px;
-    border: 1px solid #f0f4f7;
+    padding: 12px 15px;
+    border: 1px solid #e1e1e1;
     text-align: left;
-    vertical-align: top;
-    word-wrap: break-word; /* Adicionado para quebrar palavras longas */
+    vertical-align: middle;
 }
 
 th {
-    background-color: #f7f9fb;
+    background-color: #f8f9fa;
     font-weight: 600;
-    color: #555;
+    color: #333;
 }
 
 tr:nth-child(even) {
     background-color: #fbfcfd;
 }
 
-.actions a, .actions button {
+/* Célula de Ações na Tabela */
+td.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px; /* Espaço entre os botões de ação */
+    align-items: center;
+    border: none; /* Remove bordas na célula de ações para um look mais limpo */
+    background-color: transparent;
+}
+
+td.actions .button, td.actions button {
+    padding: 6px 12px;
+    font-size: 0.9em;
+}
+
+.actions form {
     display: inline-block;
-    padding: 8px 12px;
-    margin-right: 5px;
-    border: none;
-    border-radius: 5px;
-    text-decoration: none;
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
+    margin: 0;
 }
 
-.actions a {
-    background-color: #2ecc71;
-}
-
-.actions a:hover {
-    background-color: #27ae60;
-}
-
-.actions button {
-    background-color: #e74c3c;
-}
-
-.actions button:hover {
-    background-color: #c0392b;
-}
-
-a.button {
-    display: inline-block;
-    padding: 12px 20px;
-    background-color: #95a5a6;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    transition: background-color 0.3s;
-}
-
-a.button:hover {
-    background-color: #7f8c8d;
-}
-
+/* --- Outros --- */
 .module-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -195,18 +235,4 @@ a.button:hover {
 .module-button:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-}
-
-.header-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
 }

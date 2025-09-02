@@ -13,7 +13,9 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Adicionar Novo Usuário</h1>
+        <div class="header-actions">
+            <h1>Adicionar Novo Usuário</h1>
+        </div>
         <form method="post">
             <label for="nome">Nome</label>
             <input type="text" id="nome" name="nome" required>
@@ -30,9 +32,11 @@
                 <option value="Admin">Admin</option>
             </select>
 
-            <button type="submit">Salvar Usuário</button>
+            <div class="actions-group" style="margin-top: 20px;">
+                <button type="submit" class="button new">Salvar Usuário</button>
+                <a href="{{ url_for('usuarios') }}" class="button">Cancelar</a>
+            </div>
         </form>
-        <a href="{{ url_for('usuarios') }}" class="button">Cancelar</a>
     </div>
 </body>
 </html>

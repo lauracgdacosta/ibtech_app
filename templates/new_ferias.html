@@ -13,8 +13,12 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Novo Plano de Férias</h1>
-        <a href="{{ url_for('ferias') }}" class="button">Voltar para a Lista</a>
+        <div class="header-actions">
+            <h1>Novo Plano de Férias</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('ferias') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
         
         <form action="{{ url_for('new_ferias') }}" method="post">
             <label for="funcionario">Funcionário:</label>
@@ -32,7 +36,7 @@
             <input type="text" id="contrato" name="contrato" readonly>
             
             <label for="ano">Ano:</label>
-            <input type="number" id="ano" name="ano" value="{{ 2024 }}" required>
+            <input type="number" id="ano" name="ano" value="2025" required>
 
             <label for="data_inicio">Data de Início:</label>
             <input type="date" id="data_inicio" name="data_inicio">
@@ -43,7 +47,7 @@
             <label for="obs">Observações:</label>
             <textarea id="obs" name="obs"></textarea>
             
-            <button type="submit">Salvar Plano</button>
+            <button type="submit" class="button new">Salvar Plano</button>
         </form>
     </div>
     

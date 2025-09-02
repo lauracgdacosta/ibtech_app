@@ -13,13 +13,15 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Lista de Técnicos</h1>
-        <a href="{{ url_for('index') }}">Voltar para o Início</a>
-        
-        <hr>
+        <div class="header-actions">
+            <h1>Lista de Técnicos</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('index') }}" class="button">Voltar para o Início</a>
+            </div>
+        </div>
         
         <h2>Técnicos Cadastrados</h2>
-        <table border="1">
+        <table>
             <thead>
                 <tr>
                     <th>ID</th>

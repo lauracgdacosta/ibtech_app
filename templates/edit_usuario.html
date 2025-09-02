@@ -13,7 +13,9 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Editar Usuário</h1>
+        <div class="header-actions">
+            <h1>Editar Usuário</h1>
+        </div>
         <form method="post">
             <label for="nome">Nome</label>
             <input type="text" id="nome" name="nome" value="{{ usuario['nome'] }}" required>
@@ -30,9 +32,11 @@
                 <option value="Admin" {% if usuario['nivel_acesso'] == 'Admin' %}selected{% endif %}>Admin</option>
             </select>
 
-            <button type="submit">Atualizar Usuário</button>
+            <div class="actions-group" style="margin-top: 20px;">
+                <button type="submit" class="button edit">Atualizar Usuário</button>
+                <a href="{{ url_for('usuarios') }}" class="button">Cancelar</a>
+            </div>
         </form>
-        <a href="{{ url_for('usuarios') }}" class="button">Cancelar</a>
     </div>
 </body>
 </html>

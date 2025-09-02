@@ -13,7 +13,9 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Editar Agendamento</h1>
+        <div class="header-actions">
+            <h1>Editar Agendamento</h1>
+        </div>
         <form method="post">
             <label for="cliente">Cliente</label>
             <select id="cliente" name="cliente" required>
@@ -58,9 +60,11 @@
                 <option value="Cancelada" {% if agendamento['status'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
             </select>
 
-            <button type="submit">Atualizar Agendamento</button>
+            <div class="actions-group" style="margin-top: 20px;">
+                <button type="submit" class="button edit">Atualizar Agendamento</button>
+                <a href="{{ url_for('agenda') }}" class="button">Cancelar</a>
+            </div>
         </form>
-        <a href="{{ url_for('agenda') }}" class="button">Cancelar</a>
     </div>
 </body>
 </html>

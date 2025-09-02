@@ -13,8 +13,12 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1>Nova Equipe</h1>
-        <a href="{{ url_for('equipes') }}" class="button">Voltar para a Lista</a>
+        <div class="header-actions">
+            <h1>Nova Equipe</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('equipes') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
         
         <form action="{{ url_for('new_equipe') }}" method="post">
             <label for="nome">Nome da Equipe:</label>
@@ -31,7 +35,7 @@
                 {% endfor %}
             </select>
             
-            <button type="submit">Salvar Equipe</button>
+            <button type="submit" class="button new">Salvar Equipe</button>
         </form>
     </div>
 </body>
