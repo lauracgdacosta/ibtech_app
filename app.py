@@ -360,6 +360,7 @@ def new_visita():
         data_1a_rodada = request.form['data_1a_rodada']
         equipe_1 = request.form['equipe_1']
         tecnico_1 = request.form['tecnico_1']
+        status_1a_rodada = request.form['status_1a_rodada']
         data_2a_rodada = request.form['data_2a_rodada']
         equipe_2 = request.form['equipe_2']
         tecnico_2 = request.form['tecnico_2']
@@ -374,8 +375,8 @@ def new_visita():
         status_4a_rodada = request.form.get('status_4a_rodada')
         obs = request.form.get('obs')
 
-        conn.execute('INSERT INTO visitas (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs))
+        conn.execute('INSERT INTO visitas (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, status_1a_rodada, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, status_1a_rodada, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs))
         conn.commit()
         conn.close()
         return redirect(url_for('visitas'))
@@ -400,6 +401,7 @@ def edit_visita(id):
         data_1a_rodada = request.form['data_1a_rodada']
         equipe_1 = request.form['equipe_1']
         tecnico_1 = request.form['tecnico_1']
+        status_1a_rodada = request.form['status_1a_rodada']
         data_2a_rodada = request.form['data_2a_rodada']
         equipe_2 = request.form['equipe_2']
         tecnico_2 = request.form['tecnico_2']
@@ -414,8 +416,8 @@ def edit_visita(id):
         status_4a_rodada = request.form.get('status_4a_rodada')
         obs = request.form.get('obs')
 
-        conn.execute('UPDATE visitas SET localidade_orgao = ?, data_1a_rodada = ?, equipe_1 = ?, tecnico_1 = ?, data_2a_rodada = ?, equipe_2 = ?, tecnico_2 = ?, status_2a_rodada = ?, data_3a_rodada = ?, equipe_3 = ?, tecnico_3 = ?, status_3a_rodada = ?, data_4a_rodada = ?, equipe_4 = ?, tecnico_4, status_4a_rodada = ?, obs = ? WHERE id = ?',
-                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs, id))
+        conn.execute('UPDATE visitas SET localidade_orgao = ?, data_1a_rodada = ?, equipe_1 = ?, tecnico_1 = ?, status_1a_rodada = ?, data_2a_rodada = ?, equipe_2 = ?, tecnico_2 = ?, status_2a_rodada = ?, data_3a_rodada = ?, equipe_3 = ?, tecnico_3 = ?, status_3a_rodada = ?, data_4a_rodada = ?, equipe_4 = ?, tecnico_4, status_4a_rodada = ?, obs = ? WHERE id = ?',
+                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, status_1a_rodada, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs, id))
         conn.commit()
         conn.close()
         return redirect(url_for('visitas'))
