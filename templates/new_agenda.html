@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Novo Agendamento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Adicionar Novo Agendamento</h1>
+        <form method="post">
+            <label for="cliente">Cliente</label>
+            <select id="cliente" name="cliente" required>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}">{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="tecnico">Técnico</label>
+            <select id="tecnico" name="tecnico" required>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}">{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="sistema">Sistema</label>
+            <select id="sistema" name="sistema">
+                <option value="">Nenhum</option>
+                {% for sistema in sistemas %}
+                    <option value="{{ sistema }}">{{ sistema }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="data_agendamento">Data do Agendamento</label>
+            <input type="date" id="data_agendamento" name="data_agendamento" required>
+
+            <label for="motivo">Motivo</label>
+            <select id="motivo" name="motivo">
+                <option value="Treinamento">Treinamento</option>
+                <option value="Visita Contratual">Visita Contratual</option>
+                <option value="Visita Cortesia">Visita Cortesia</option>
+                <option value="Atendimento Externo">Atendimento Externo</option>
+            </select>
+            
+            <label for="descricao">Descrição da Tarefa</label>
+            <textarea id="descricao" name="descricao" rows="4"></textarea>
+
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="Planejada">Planejada</option>
+                <option value="Realizada">Realizada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+
+            <button type="submit">Salvar Agendamento</button>
+        </form>
+        <a href="{{ url_for('agenda') }}" class="button">Cancelar</a>
+    </div>
+</body>
+</html>

@@ -105,6 +105,18 @@ def init_db():
             sigla TEXT NOT NULL
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS agenda (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente TEXT NOT NULL,
+            tecnico TEXT NOT NULL,
+            sistema TEXT,
+            data_agendamento DATE NOT NULL,
+            motivo TEXT,
+            descricao TEXT,
+            status TEXT
+        )
+    ''')
     
     conn.commit()
     conn.close()
@@ -344,14 +356,10 @@ def visitas():
     conn.close()
     return render_template('visitas.html', visitas=visitas_data)
 
-# Trecho do arquivo app.py
-
 @app.route('/new_visita', methods=['GET', 'POST'])
 def new_visita():
     conn = get_db_connection()
-    # MODIFICADO: Busca municipio e orgao e os concatena
-    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
-    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
     equipes = [row['nome'] for row in conn.execute('SELECT nome FROM equipes').fetchall()]
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos').fetchall()]
 
@@ -360,7 +368,6 @@ def new_visita():
         data_1a_rodada = request.form['data_1a_rodada']
         equipe_1 = request.form['equipe_1']
         tecnico_1 = request.form['tecnico_1']
-        status_1a_rodada = request.form['status_1a_rodada']
         data_2a_rodada = request.form['data_2a_rodada']
         equipe_2 = request.form['equipe_2']
         tecnico_2 = request.form['tecnico_2']
@@ -375,8 +382,8 @@ def new_visita():
         status_4a_rodada = request.form.get('status_4a_rodada')
         obs = request.form.get('obs')
 
-        conn.execute('INSERT INTO visitas (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, status_1a_rodada, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, status_1a_rodada, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs))
+        conn.execute('INSERT INTO visitas (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs))
         conn.commit()
         conn.close()
         return redirect(url_for('visitas'))
@@ -384,15 +391,11 @@ def new_visita():
     conn.close()
     return render_template('new_visita.html', clientes=clientes, equipes=equipes, tecnicos=tecnicos)
 
-# Trecho do arquivo app.py
-
 @app.route('/edit_visita/<int:id>', methods=['GET', 'POST'])
 def edit_visita(id):
     conn = get_db_connection()
     visita = conn.execute('SELECT * FROM visitas WHERE id = ?', (id,)).fetchone()
-    # MODIFICADO: Busca municipio e orgao e os concatena
-    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
-    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
     equipes = [row['nome'] for row in conn.execute('SELECT nome FROM equipes').fetchall()]
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos').fetchall()]
     
@@ -401,7 +404,6 @@ def edit_visita(id):
         data_1a_rodada = request.form['data_1a_rodada']
         equipe_1 = request.form['equipe_1']
         tecnico_1 = request.form['tecnico_1']
-        status_1a_rodada = request.form['status_1a_rodada']
         data_2a_rodada = request.form['data_2a_rodada']
         equipe_2 = request.form['equipe_2']
         tecnico_2 = request.form['tecnico_2']
@@ -416,8 +418,8 @@ def edit_visita(id):
         status_4a_rodada = request.form.get('status_4a_rodada')
         obs = request.form.get('obs')
 
-        conn.execute('UPDATE visitas SET localidade_orgao = ?, data_1a_rodada = ?, equipe_1 = ?, tecnico_1 = ?, status_1a_rodada = ?, data_2a_rodada = ?, equipe_2 = ?, tecnico_2 = ?, status_2a_rodada = ?, data_3a_rodada = ?, equipe_3 = ?, tecnico_3 = ?, status_3a_rodada = ?, data_4a_rodada = ?, equipe_4 = ?, tecnico_4, status_4a_rodada = ?, obs = ? WHERE id = ?',
-                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, status_1a_rodada, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs, id))
+        conn.execute('UPDATE visitas SET localidade_orgao = ?, data_1a_rodada = ?, equipe_1 = ?, tecnico_1 = ?, data_2a_rodada = ?, equipe_2 = ?, tecnico_2 = ?, status_2a_rodada = ?, data_3a_rodada = ?, equipe_3 = ?, tecnico_3 = ?, status_3a_rodada = ?, data_4a_rodada = ?, equipe_4 = ?, tecnico_4 = ?, status_4a_rodada = ?, obs = ? WHERE id = ?',
+                     (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs, id))
         conn.commit()
         conn.close()
         return redirect(url_for('visitas'))
@@ -468,12 +470,11 @@ def new_pendencia():
 def edit_pendencia(id):
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
-    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
-    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
     if request.method == 'POST':
         processo = request.form['processo']
-        cliente = request.form['cliente'] # cliente já virá como "município - órgão"
+        cliente = request.form['cliente']
         sistema = request.form['sistema']
         data_prioridade = request.form['data_prioridade']
         prazo_entrega = request.form['prazo_entrega']
@@ -483,7 +484,6 @@ def edit_pendencia(id):
         conn.commit()
         conn.close()
         return redirect(url_for('pendencias'))
-    
     conn.close()
     return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
@@ -595,3 +595,79 @@ def delete_sistema(id):
     conn.commit()
     conn.close()
     return redirect(url_for('sistemas'))
+
+# Rotas do Módulo de Agenda
+
+@app.route('/agenda')
+def agenda():
+    conn = get_db_connection()
+    agenda_data = conn.execute('SELECT * FROM agenda ORDER BY data_agendamento DESC').fetchall()
+    conn.close()
+    return render_template('agenda.html', agenda_data=agenda_data)
+
+@app.route('/new_agenda', methods=['GET', 'POST'])
+def new_agenda():
+    conn = get_db_connection()
+    
+    # Busca dados para os seletores do formulário
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        tecnico = request.form['tecnico']
+        sistema = request.form['sistema']
+        data_agendamento = request.form['data_agendamento']
+        motivo = request.form['motivo']
+        descricao = request.form['descricao']
+        status = request.form['status']
+        
+        conn.execute('INSERT INTO agenda (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                     (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('agenda'))
+    
+    conn.close()
+    return render_template('new_agenda.html', clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
+
+@app.route('/edit_agenda/<int:id>', methods=['GET', 'POST'])
+def edit_agenda(id):
+    conn = get_db_connection()
+    agendamento = conn.execute('SELECT * FROM agenda WHERE id = ?', (id,)).fetchone()
+
+    # Busca dados para os seletores do formulário
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        tecnico = request.form['tecnico']
+        sistema = request.form['sistema']
+        data_agendamento = request.form['data_agendamento']
+        motivo = request.form['motivo']
+        descricao = request.form['descricao']
+        status = request.form['status']
+        
+        conn.execute('UPDATE agenda SET cliente = ?, tecnico = ?, sistema = ?, data_agendamento = ?, motivo = ?, descricao = ?, status = ? WHERE id = ?',
+                     (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('agenda'))
+        
+    conn.close()
+    return render_template('edit_agenda.html', agendamento=agendamento, clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
+
+@app.route('/delete_agenda/<int:id>', methods=['POST'])
+def delete_agenda(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM agenda WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('agenda'))
