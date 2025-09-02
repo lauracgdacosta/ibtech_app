@@ -1,7 +1,8 @@
 import sqlite3
 import os
-from flask import Flask, render_template, request, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from functools import wraps
 
 
 app = Flask(__name__)
@@ -850,3 +851,9 @@ def logout():
     session.clear() # Limpa todos os dados da sessão
     flash('Você saiu do sistema.', 'info')
     return redirect(url_for('login'))
+
+if __name__ == '__main__':
+    # A linha abaixo irá iniciar o servidor em modo de depuração.
+    # Isso mostrará erros detalhados no navegador.
+    # Lembre-se de desativar (debug=False) antes de colocar em produção!
+    app.run(debug=True)
