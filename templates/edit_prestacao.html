@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Prestação de Contas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Editar Prestação de Contas</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('prestacao_contas') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
+        <p><strong>Última atualização:</strong> {{ item['atualizado_por'] }}</p>
+
+        <form method="post">
+            <label for="cliente">Cliente:</label>
+            <select id="cliente" name="cliente" required>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}" {% if cliente == item['cliente'] %}selected{% endif %}>{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="sistema">Sistema:</label>
+            <select id="sistema" name="sistema" required>
+                {% for sistema in sistemas %}
+                    <option value="{{ sistema }}" {% if sistema == item['sistema'] %}selected{% endif %}>{{ sistema }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="responsavel">Responsável:</label>
+            <select id="responsavel" name="responsavel" required>
+                {% for responsavel in responsaveis %}
+                    <option value="{{ responsavel }}" {% if responsavel == item['responsavel'] %}selected{% endif %}>{{ responsavel }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="modulo">Módulo:</label>
+            <select id="modulo" name="modulo" required>
+                <option value="SICOM AM" {% if item['modulo'] == 'SICOM AM' %}selected{% endif %}>SICOM AM</option>
+                <option value="SICOM BLC" {% if item['modulo'] == 'SICOM BLC' %}selected{% endif %}>SICOM BLC</option>
+                <option value="SICOM RH" {% if item['modulo'] == 'SICOM RH' %}selected{% endif %}>SICOM RH</option>
+                <option value="SIOPE" {% if item['modulo'] == 'SIOPE' %}selected{% endif %}>SIOPE</option>
+                <option value="SIOPS" {% if item['modulo'] == 'SIOPS' %}selected{% endif %}>SIOPS</option>
+                <option value="SICONFI" {% if item['modulo'] == 'SICONFI' %}selected{% endif %}>SICONFI</option>
+                <option value="RREO" {% if item['modulo'] == 'RREO' %}selected{% endif %}>RREO</option>
+                <option value="RGF" {% if item['modulo'] == 'RGF' %}selected{% endif %}>RGF</option>
+                <option value="IP" {% if item['modulo'] == 'IP' %}selected{% endif %}>IP</option>
+                <option value="DCASP" {% if item['modulo'] == 'DCASP' %}selected{% endif %}>DCASP</option>
+                <option value="E-social" {% if item['modulo'] == 'E-social' %}selected{% endif %}>E-social</option>
+            </select>
+
+            <label for="periodo">Período:</label>
+            <select id="periodo" name="periodo" required>
+                <option value="Diário" {% if item['periodo'] == 'Diário' %}selected{% endif %}>Diário</option>
+                <option value="Mensal" {% if item['periodo'] == 'Mensal' %}selected{% endif %}>Mensal</option>
+                <option value="Bimestral" {% if item['periodo'] == 'Bimestral' %}selected{% endif %}>Bimestral</option>
+                <option value="Quadrimestral" {% if item['periodo'] == 'Quadrimestral' %}selected{% endif %}>Quadrimestral</option>
+                <option value="Semestral" {% if item['periodo'] == 'Semestral' %}selected{% endif %}>Semestral</option>
+                <option value="Anual" {% if item['periodo'] == 'Anual' %}selected{% endif %}>Anual</option>
+            </select>
+            
+            <label for="competencia">Competência (Último Envio):</label>
+            <input type="text" id="competencia" name="competencia" value="{{ item['competencia'] }}" required>
+            
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Finalizado" {% if item['status'] == 'Finalizado' %}selected{% endif %}>Finalizado</option>
+                <option value="Atrasado" {% if item['status'] == 'Atrasado' %}selected{% endif %}>Atrasado</option>
+                <option value="Reenvio Necessário" {% if item['status'] == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
+            </select>
+            
+            <label for="observacao">Observação:</label>
+            <textarea id="observacao" name="observacao" rows="4">{{ item['observacao'] }}</textarea>
+
+            <button type="submit" class="button edit">Atualizar Registro</button>
+        </form>
+    </div>
+</body>
+</html>

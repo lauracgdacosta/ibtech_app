@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Módulo de Prestação de Contas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Módulo de Prestação de Contas</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('new_prestacao') }}" class="button new">Nova Prestação de Contas</a>
+                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+            </div>
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Sistema</th>
+                        <th>Responsável</th>
+                        <th>Módulo</th>
+                        <th>Período</th>
+                        <th>Competência (Último Envio)</th>
+                        <th>Status</th>
+                        <th>Observação</th>
+                        <th>Atualizado Por</th>
+                        <th style="width: 220px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dados %}
+                    <tr>
+                        <td>{{ item['cliente'] }}</td>
+                        <td>{{ item['sistema'] }}</td>
+                        <td>{{ item['responsavel'] }}</td>
+                        <td>{{ item['modulo'] }}</td>
+                        <td>{{ item['periodo'] }}</td>
+                        <td>{{ item['competencia'] }}</td>
+                        <td>{{ item['status'] }}</td>
+                        <td>{{ item['observacao'] }}</td>
+                        <td>{{ item['atualizado_por'] }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('edit_prestacao', id=item['id']) }}" class="button edit">Editar</a>
+                            <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post">
+                                <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja excluir este registro?');">Deletar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

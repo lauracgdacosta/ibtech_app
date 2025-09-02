@@ -3,6 +3,8 @@ import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from functools import wraps
+import datetime
+
 
 
 app = Flask(__name__)
@@ -130,6 +132,20 @@ def init_db():
             email TEXT UNIQUE NOT NULL,
             senha TEXT NOT NULL,
             nivel_acesso TEXT NOT NULL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS prestacao_contas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente TEXT,
+            sistema TEXT,
+            responsavel TEXT,
+            modulo TEXT,
+            periodo TEXT,
+            competencia TEXT,
+            status TEXT,
+            observacao TEXT,
+            atualizado_por TEXT
         )
     ''')
     
@@ -851,6 +867,102 @@ def logout():
     session.clear() # Limpa todos os dados da sessão
     flash('Você saiu do sistema.', 'info')
     return redirect(url_for('login'))
+
+
+# Rotas do Módulo de Prestação de Contas
+
+@app.route('/prestacao_contas')
+@login_required
+def prestacao_contas():
+    conn = get_db_connection()
+    dados = conn.execute('SELECT * FROM prestacao_contas ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('prestacao_contas.html', dados=dados)
+
+@app.route('/new_prestacao', methods=['GET', 'POST'])
+@login_required
+def new_prestacao():
+    conn = get_db_connection()
+    
+    # Busca dados para os seletores do formulário
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        responsavel = request.form['responsavel']
+        modulo = request.form['modulo']
+        periodo = request.form['periodo']
+        competencia = request.form['competencia']
+        status = request.form['status']
+        observacao = request.form['observacao']
+        
+        # Gera o campo "atualizado_por" automaticamente
+        timestamp = datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{timestamp} por {usuario_logado}"
+
+        conn.execute(
+            'INSERT INTO prestacao_contas (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por)
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+    
+    conn.close()
+    return render_template('new_prestacao.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/edit_prestacao/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_prestacao(id):
+    conn = get_db_connection()
+    item = conn.execute('SELECT * FROM prestacao_contas WHERE id = ?', (id,)).fetchone()
+
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        responsavel = request.form['responsavel']
+        modulo = request.form['modulo']
+        periodo = request.form['periodo']
+        competencia = request.form['competencia']
+        status = request.form['status']
+        observacao = request.form['observacao']
+        
+        # Atualiza o campo "atualizado_por"
+        timestamp = datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{timestamp} por {usuario_logado}"
+
+        conn.execute(
+            'UPDATE prestacao_contas SET cliente = ?, sistema = ?, responsavel = ?, modulo = ?, periodo = ?, competencia = ?, status = ?, observacao = ?, atualizado_por = ? WHERE id = ?',
+            (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por, id)
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+
+    # Busca dados para os seletores no modo GET
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    
+    conn.close()
+    return render_template('edit_prestacao.html', item=item, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/delete_prestacao/<int:id>', methods=['POST'])
+@login_required
+def delete_prestacao(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM prestacao_contas WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('prestacao_contas'))
 
 if __name__ == '__main__':
     # A linha abaixo irá iniciar o servidor em modo de depuração.

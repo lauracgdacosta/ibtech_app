@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nova Prestação de Contas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Nova Prestação de Contas</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('prestacao_contas') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
+
+        <form method="post">
+            <label for="cliente">Cliente:</label>
+            <select id="cliente" name="cliente" required>
+                <option value="">Selecione um Cliente</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}">{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="sistema">Sistema:</label>
+            <select id="sistema" name="sistema" required>
+                <option value="">Selecione um Sistema</option>
+                {% for sistema in sistemas %}
+                    <option value="{{ sistema }}">{{ sistema }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="responsavel">Responsável:</label>
+            <select id="responsavel" name="responsavel" required>
+                <option value="">Selecione um Responsável</option>
+                {% for responsavel in responsaveis %}
+                    <option value="{{ responsavel }}">{{ responsavel }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="modulo">Módulo:</label>
+            <select id="modulo" name="modulo" required>
+                <option value="SICOM AM">SICOM AM</option>
+                <option value="SICOM BLC">SICOM BLC</option>
+                <option value="SICOM RH">SICOM RH</option>
+                <option value="SIOPE">SIOPE</option>
+                <option value="SIOPS">SIOPS</option>
+                <option value="SICONFI">SICONFI</option>
+                <option value="RREO">RREO</option>
+                <option value="RGF">RGF</option>
+                <option value="IP">IP</option>
+                <option value="DCASP">DCASP</option>
+                <option value="E-social">E-social</option>
+            </select>
+
+            <label for="periodo">Período:</label>
+            <select id="periodo" name="periodo" required>
+                <option value="Diário">Diário</option>
+                <option value="Mensal">Mensal</option>
+                <option value="Bimestral">Bimestral</option>
+                <option value="Quadrimestral">Quadrimestral</option>
+                <option value="Semestral">Semestral</option>
+                <option value="Anual">Anual</option>
+            </select>
+            
+            <label for="competencia">Competência (Último Envio):</label>
+            <input type="text" id="competencia" name="competencia" placeholder="Ex: 08/2025" required>
+            
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Finalizado">Finalizado</option>
+                <option value="Atrasado">Atrasado</option>
+                <option value="Reenvio Necessário">Reenvio Necessário</option>
+            </select>
+            
+            <label for="observacao">Observação:</label>
+            <textarea id="observacao" name="observacao" rows="4"></textarea>
+
+            <button type="submit" class="button new">Salvar Registro</button>
+        </form>
+    </div>
+</body>
+</html>
