@@ -344,10 +344,14 @@ def visitas():
     conn.close()
     return render_template('visitas.html', visitas=visitas_data)
 
+# Trecho do arquivo app.py
+
 @app.route('/new_visita', methods=['GET', 'POST'])
 def new_visita():
     conn = get_db_connection()
-    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
+    # MODIFICADO: Busca municipio e orgao e os concatena
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     equipes = [row['nome'] for row in conn.execute('SELECT nome FROM equipes').fetchall()]
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos').fetchall()]
 
@@ -379,11 +383,15 @@ def new_visita():
     conn.close()
     return render_template('new_visita.html', clientes=clientes, equipes=equipes, tecnicos=tecnicos)
 
+# Trecho do arquivo app.py
+
 @app.route('/edit_visita/<int:id>', methods=['GET', 'POST'])
 def edit_visita(id):
     conn = get_db_connection()
     visita = conn.execute('SELECT * FROM visitas WHERE id = ?', (id,)).fetchone()
-    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
+    # MODIFICADO: Busca municipio e orgao e os concatena
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     equipes = [row['nome'] for row in conn.execute('SELECT nome FROM equipes').fetchall()]
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos').fetchall()]
     
@@ -406,7 +414,7 @@ def edit_visita(id):
         status_4a_rodada = request.form.get('status_4a_rodada')
         obs = request.form.get('obs')
 
-        conn.execute('UPDATE visitas SET localidade_orgao = ?, data_1a_rodada = ?, equipe_1 = ?, tecnico_1 = ?, data_2a_rodada = ?, equipe_2 = ?, tecnico_2 = ?, status_2a_rodada = ?, data_3a_rodada = ?, equipe_3 = ?, tecnico_3 = ?, status_3a_rodada = ?, data_4a_rodada = ?, equipe_4 = ?, tecnico_4 = ?, status_4a_rodada = ?, obs = ? WHERE id = ?',
+        conn.execute('UPDATE visitas SET localidade_orgao = ?, data_1a_rodada = ?, equipe_1 = ?, tecnico_1 = ?, data_2a_rodada = ?, equipe_2 = ?, tecnico_2 = ?, status_2a_rodada = ?, data_3a_rodada = ?, equipe_3 = ?, tecnico_3 = ?, status_3a_rodada = ?, data_4a_rodada = ?, equipe_4 = ?, tecnico_4, status_4a_rodada = ?, obs = ? WHERE id = ?',
                      (localidade_orgao, data_1a_rodada, equipe_1, tecnico_1, data_2a_rodada, equipe_2, tecnico_2, status_2a_rodada, data_3a_rodada, equipe_3, tecnico_3, status_3a_rodada, data_4a_rodada, equipe_4, tecnico_4, status_4a_rodada, obs, id))
         conn.commit()
         conn.close()
