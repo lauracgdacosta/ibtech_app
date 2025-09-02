@@ -1,8 +1,13 @@
 import sqlite3
 import os
 from flask import Flask, render_template, request, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
+
+app.secret_key = '18T3ch'
+
 
 # Configuração do banco de dados
 def init_db():
@@ -117,6 +122,15 @@ def init_db():
             status TEXT
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            senha TEXT NOT NULL,
+            nivel_acesso TEXT NOT NULL
+        )
+    ''')
     
     conn.commit()
     conn.close()
@@ -125,6 +139,17 @@ def get_db_connection():
     conn = sqlite3.connect('/tmp/database.db')
     conn.row_factory = sqlite3.Row
     return conn
+
+# Decorador para exigir login
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Por favor, faça login para acessar esta página.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 
 # Inicializar o banco de dados no início da aplicação
 with app.app_context():
@@ -136,6 +161,7 @@ def index():
 
 # Rotas do Módulo de Técnicos
 @app.route('/tecnicos')
+@login_required
 def tecnicos():
     conn = get_db_connection()
     tecnicos_data = conn.execute('SELECT * FROM tecnicos').fetchall()
@@ -143,6 +169,7 @@ def tecnicos():
     return render_template('tecnicos.html', tecnicos=tecnicos_data)
 
 @app.route('/new_tecnico', methods=['GET', 'POST'])
+@login_required
 def new_tecnico():
     conn = get_db_connection()
     equipes = conn.execute('SELECT nome FROM equipes').fetchall()
@@ -162,6 +189,7 @@ def new_tecnico():
     return render_template('new_tecnico.html', equipes=equipes)
 
 @app.route('/edit_tecnico/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_tecnico(id):
     conn = get_db_connection()
     tecnico = conn.execute('SELECT * FROM tecnicos WHERE id = ?', (id,)).fetchone()
@@ -182,6 +210,7 @@ def edit_tecnico(id):
     return render_template('edit_tecnico.html', tecnico=tecnico, equipes=equipes)
 
 @app.route('/delete_tecnico/<int:id>', methods=['POST'])
+@login_required
 def delete_tecnico(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM tecnicos WHERE id = ?', (id,))
@@ -191,6 +220,7 @@ def delete_tecnico(id):
 
 # Rotas do Módulo de Clientes
 @app.route('/clientes')
+@login_required
 def clientes():
     conn = get_db_connection()
     clientes_data = conn.execute('SELECT * FROM clientes').fetchall()
@@ -198,6 +228,7 @@ def clientes():
     return render_template('clientes.html', clientes=clientes_data)
 
 @app.route('/new_cliente', methods=['GET', 'POST'])
+@login_required
 def new_cliente():
     conn = get_db_connection()
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
@@ -215,6 +246,7 @@ def new_cliente():
     return render_template('new_cliente.html', sistemas_para_selecao=sistemas_para_selecao)
 
 @app.route('/edit_cliente/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_cliente(id):
     conn = get_db_connection()
     cliente = conn.execute('SELECT * FROM clientes WHERE id = ?', (id,)).fetchone()
@@ -234,6 +266,7 @@ def edit_cliente(id):
     return render_template('edit_cliente.html', cliente=cliente, sistemas_para_selecao=sistemas_para_selecao, sistemas_salvos=sistemas_salvos)
 
 @app.route('/delete_cliente/<int:id>', methods=['POST'])
+@login_required
 def delete_cliente(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM clientes WHERE id = ?', (id,))
@@ -243,6 +276,7 @@ def delete_cliente(id):
 
 # Rotas do Módulo de Equipes
 @app.route('/equipes')
+@login_required
 def equipes():
     conn = get_db_connection()
     equipes_data = conn.execute('SELECT * FROM equipes').fetchall()
@@ -250,6 +284,7 @@ def equipes():
     return render_template('equipes.html', equipes=equipes_data)
 
 @app.route('/new_equipe', methods=['GET', 'POST'])
+@login_required
 def new_equipe():
     conn = get_db_connection()
     tecnicos = conn.execute('SELECT nome FROM tecnicos').fetchall()
@@ -265,6 +300,7 @@ def new_equipe():
     return render_template('new_equipe.html', tecnicos=tecnicos)
 
 @app.route('/edit_equipe/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_equipe(id):
     conn = get_db_connection()
     equipe = conn.execute('SELECT * FROM equipes WHERE id = ?', (id,)).fetchone()
@@ -281,6 +317,7 @@ def edit_equipe(id):
     return render_template('edit_equipe.html', equipe=equipe, tecnicos=tecnicos)
 
 @app.route('/delete_equipe/<int:id>', methods=['POST'])
+@login_required
 def delete_equipe(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM equipes WHERE id = ?', (id,))
@@ -290,6 +327,7 @@ def delete_equipe(id):
 
 # Rotas do Módulo de Cronograma
 @app.route('/cronograma')
+@login_required
 def cronograma():
     conn = get_db_connection()
     cronogramas_data = conn.execute('SELECT * FROM cronogramas').fetchall()
@@ -297,6 +335,7 @@ def cronograma():
     return render_template('cronograma.html', cronogramas=cronogramas_data)
 
 @app.route('/new_cronograma', methods=['GET', 'POST'])
+@login_required
 def new_cronograma():
     if request.method == 'POST':
         conn = get_db_connection()
@@ -318,6 +357,7 @@ def new_cronograma():
     return render_template('new_cronograma.html')
 
 @app.route('/edit_cronograma/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_cronograma(id):
     conn = get_db_connection()
     cronograma_item = conn.execute('SELECT * FROM cronogramas WHERE id = ?', (id,)).fetchone()
@@ -341,6 +381,7 @@ def edit_cronograma(id):
     return render_template('edit_cronograma.html', cronograma_item=cronograma_item)
 
 @app.route('/delete_cronograma/<int:id>', methods=['POST'])
+@login_required
 def delete_cronograma(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM cronogramas WHERE id = ?', (id,))
@@ -350,6 +391,7 @@ def delete_cronograma(id):
 
 # Rotas do Módulo de Visitas
 @app.route('/visitas')
+@login_required
 def visitas():
     conn = get_db_connection()
     visitas_data = conn.execute('SELECT * FROM visitas').fetchall()
@@ -357,6 +399,7 @@ def visitas():
     return render_template('visitas.html', visitas=visitas_data)
 
 @app.route('/new_visita', methods=['GET', 'POST'])
+@login_required
 def new_visita():
     conn = get_db_connection()
     clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
@@ -392,6 +435,7 @@ def new_visita():
     return render_template('new_visita.html', clientes=clientes, equipes=equipes, tecnicos=tecnicos)
 
 @app.route('/edit_visita/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_visita(id):
     conn = get_db_connection()
     visita = conn.execute('SELECT * FROM visitas WHERE id = ?', (id,)).fetchone()
@@ -428,6 +472,7 @@ def edit_visita(id):
     return render_template('edit_visita.html', visita=visita, clientes=clientes, equipes=equipes, tecnicos=tecnicos)
 
 @app.route('/delete_visita/<int:id>', methods=['POST'])
+@login_required
 def delete_visita(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM visitas WHERE id = ?', (id,))
@@ -437,6 +482,7 @@ def delete_visita(id):
 
 # Rotas do Módulo de Pendências
 @app.route('/pendencias')
+@login_required
 def pendencias():
     conn = get_db_connection()
     pendencias_data = conn.execute('SELECT * FROM pendencias').fetchall()
@@ -445,6 +491,7 @@ def pendencias():
 
 # Trecho do arquivo app.py
 @app.route('/new_pendencia', methods=['GET', 'POST'])
+@login_required
 def new_pendencia():
     conn = get_db_connection()
     # Modificado para buscar municipio e orgao e concatenar
@@ -467,6 +514,7 @@ def new_pendencia():
     return render_template('new_pendencia.html', clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_pendencia(id):
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
@@ -488,6 +536,7 @@ def edit_pendencia(id):
     return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
+@login_required
 def delete_pendencia(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM pendencias WHERE id = ?', (id,))
@@ -497,6 +546,7 @@ def delete_pendencia(id):
     
 # Rotas do Módulo de Férias
 @app.route('/ferias')
+@login_required
 def ferias():
     conn = get_db_connection()
     ferias_data = conn.execute('SELECT * FROM ferias').fetchall()
@@ -504,6 +554,7 @@ def ferias():
     return render_template('ferias.html', ferias=ferias_data)
 
 @app.route('/new_ferias', methods=['GET', 'POST'])
+@login_required
 def new_ferias():
     conn = get_db_connection()
     tecnicos_data = conn.execute('SELECT nome, contrato FROM tecnicos').fetchall()
@@ -525,6 +576,7 @@ def new_ferias():
     return render_template('new_ferias.html', tecnicos=tecnicos)
 
 @app.route('/edit_ferias/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_ferias(id):
     conn = get_db_connection()
     ferias_item = conn.execute('SELECT * FROM ferias WHERE id = ?', (id,)).fetchone()
@@ -547,6 +599,7 @@ def edit_ferias(id):
     return render_template('edit_ferias.html', ferias_item=ferias_item, tecnicos=tecnicos)
 
 @app.route('/delete_ferias/<int:id>', methods=['POST'])
+@login_required
 def delete_ferias(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM ferias WHERE id = ?', (id,))
@@ -556,6 +609,7 @@ def delete_ferias(id):
 
 # Rotas do Módulo de Sistemas
 @app.route('/sistemas')
+@login_required
 def sistemas():
     conn = get_db_connection()
     sistemas_data = conn.execute('SELECT * FROM sistemas').fetchall()
@@ -563,6 +617,7 @@ def sistemas():
     return render_template('sistemas.html', sistemas=sistemas_data)
 
 @app.route('/new_sistema', methods=['GET', 'POST'])
+@login_required
 def new_sistema():
     if request.method == 'POST':
         conn = get_db_connection()
@@ -575,6 +630,7 @@ def new_sistema():
     return render_template('new_sistema.html')
 
 @app.route('/edit_sistema/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_sistema(id):
     conn = get_db_connection()
     sistema = conn.execute('SELECT * FROM sistemas WHERE id = ?', (id,)).fetchone()
@@ -589,6 +645,7 @@ def edit_sistema(id):
     return render_template('edit_sistema.html', sistema=sistema)
 
 @app.route('/delete_sistema/<int:id>', methods=['POST'])
+@login_required
 def delete_sistema(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM sistemas WHERE id = ?', (id,))
@@ -599,6 +656,7 @@ def delete_sistema(id):
 # Rotas do Módulo de Agenda
 
 @app.route('/agenda')
+@login_required
 def agenda():
     conn = get_db_connection()
     agenda_data = conn.execute('SELECT * FROM agenda ORDER BY data_agendamento DESC').fetchall()
@@ -606,6 +664,7 @@ def agenda():
     return render_template('agenda.html', agenda_data=agenda_data)
 
 @app.route('/new_agenda', methods=['GET', 'POST'])
+@login_required
 def new_agenda():
     conn = get_db_connection()
     
@@ -635,6 +694,7 @@ def new_agenda():
     return render_template('new_agenda.html', clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
 
 @app.route('/edit_agenda/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit_agenda(id):
     conn = get_db_connection()
     agendamento = conn.execute('SELECT * FROM agenda WHERE id = ?', (id,)).fetchone()
@@ -665,9 +725,128 @@ def edit_agenda(id):
     return render_template('edit_agenda.html', agendamento=agendamento, clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
 
 @app.route('/delete_agenda/<int:id>', methods=['POST'])
+@login_required
 def delete_agenda(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM agenda WHERE id = ?', (id,))
     conn.commit()
     conn.close()
     return redirect(url_for('agenda'))
+
+# Rotas do Módulo de Gestão de Usuários
+
+@app.route('/usuarios')
+@login_required
+def usuarios():
+    conn = get_db_connection()
+    # Excluindo a senha da consulta para não a expor desnecessariamente
+    users_data = conn.execute('SELECT id, nome, email, nivel_acesso FROM usuarios').fetchall()
+    conn.close()
+    return render_template('usuarios.html', usuarios=users_data)
+
+@app.route('/new_usuario', methods=['GET', 'POST'])
+@login_required
+def new_usuario():
+    if request.method == 'POST':
+        nome = request.form['nome']
+        email = request.form['email']
+        senha = request.form['senha']
+        nivel_acesso = request.form['nivel_acesso']
+
+        # Gerar o hash da senha
+        hashed_senha = generate_password_hash(senha)
+
+        conn = get_db_connection()
+        try:
+            conn.execute('INSERT INTO usuarios (nome, email, senha, nivel_acesso) VALUES (?, ?, ?, ?)',
+                         (nome, email, hashed_senha, nivel_acesso))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            # Lidar com o caso de email duplicado
+            conn.close()
+            # Aqui você poderia retornar uma mensagem de erro para o template
+            return "Erro: O e-mail informado já existe.", 400
+        finally:
+            conn.close()
+
+        return redirect(url_for('usuarios'))
+    
+    return render_template('new_usuario.html')
+
+@app.route('/edit_usuario/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_usuario(id):
+    conn = get_db_connection()
+    # Buscando sem a senha
+    usuario = conn.execute('SELECT id, nome, email, nivel_acesso FROM usuarios WHERE id = ?', (id,)).fetchone()
+
+    if request.method == 'POST':
+        nome = request.form['nome']
+        email = request.form['email']
+        nivel_acesso = request.form['nivel_acesso']
+        senha = request.form.get('senha') # Pega a senha, pode ser vazia
+
+        if senha:
+            # Se uma nova senha foi fornecida, atualiza o hash
+            hashed_senha = generate_password_hash(senha)
+            conn.execute('UPDATE usuarios SET nome = ?, email = ?, nivel_acesso = ?, senha = ? WHERE id = ?',
+                         (nome, email, nivel_acesso, hashed_senha, id))
+        else:
+            # Caso contrário, mantém a senha antiga
+            conn.execute('UPDATE usuarios SET nome = ?, email = ?, nivel_acesso = ? WHERE id = ?',
+                         (nome, email, nivel_acesso, id))
+        
+        conn.commit()
+        conn.close()
+        return redirect(url_for('usuarios'))
+
+    conn.close()
+    return render_template('edit_usuario.html', usuario=usuario)
+
+@app.route('/delete_usuario/<int:id>', methods=['POST'])
+@login_required
+def delete_usuario(id):
+    # Adicionar verificação para não permitir que o usuário se auto-delete ou delete o admin principal
+    # (Isso seria uma lógica mais avançada de sessão)
+    conn = get_db_connection()
+    conn.execute('DELETE FROM usuarios WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('usuarios'))
+
+# Rotas de Autenticação
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Se o usuário já estiver logado, redireciona para a home
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        email = request.form['email']
+        senha = request.form['senha']
+        
+        conn = get_db_connection()
+        usuario = conn.execute('SELECT * FROM usuarios WHERE email = ?', (email,)).fetchone()
+        conn.close()
+
+        if usuario and check_password_hash(usuario['senha'], senha):
+            # Login bem-sucedido, armazena dados na sessão
+            session['user_id'] = usuario['id']
+            session['user_name'] = usuario['nome']
+            session['user_level'] = usuario['nivel_acesso']
+            flash('Login realizado com sucesso!', 'success')
+            return redirect(url_for('index'))
+        else:
+            # Falha no login
+            flash('Email ou senha inválidos.', 'danger')
+            return redirect(url_for('login'))
+            
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    session.clear() # Limpa todos os dados da sessão
+    flash('Você saiu do sistema.', 'info')
+    return redirect(url_for('login'))

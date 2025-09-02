@@ -6,6 +6,12 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Módulo de Agenda</h1>
