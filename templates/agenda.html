@@ -38,7 +38,7 @@
                 <tr>
                     <td>{{ item['cliente'] }}</td>
                     <td>{{ item['tecnico'] }}</td>
-                    <td>{{ item['data_agendamento'] }}</td>
+                    <td>{{ item['data_agendamento'] | dateformat }}</td>
                     <td>{{ item['motivo'] }}</td>
                     <td>{{ item['status'] }}</td>
                     <td>{{ item['descricao'] }}</td>

@@ -11,6 +11,22 @@ app = Flask(__name__)
 
 app.secret_key = '18T3ch'
 
+# --- INÍCIO DO CÓDIGO DO FILTRO DE DATA ---
+def format_date(value):
+    """Formata uma string de data AAAA-MM-DD para DD/MM/AAAA."""
+    if value is None or value == "":
+        return ""
+    try:
+        # Converte a string para um objeto de data e depois formata
+        date_obj = datetime.datetime.strptime(value, '%Y-%m-%d')
+        return date_obj.strftime('%d/%m/%Y')
+    except ValueError:
+        # Retorna o valor original se não for uma data válida no formato esperado
+        return value
+
+# Registra a função como um filtro Jinja2
+app.jinja_env.filters['dateformat'] = format_date
+# --- FIM DO CÓDIGO DO FILTRO DE DATA ---
 
 # Configuração do banco de dados
 def init_db():

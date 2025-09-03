@@ -58,8 +58,8 @@
                     <td>{{ pendencia['processo'] }}</td>
                     <td>{{ pendencia['cliente'] }}</td>
                     <td>{{ pendencia['sistema'] }}</td>
-                    <td>{{ pendencia['data_prioridade'] }}</td>
-                    <td>{{ pendencia['prazo_entrega'] }}</td>
+                    <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
+                    <td>{{ pendencia['prazo_entrega'] | dateformat }}</td>
                     <td>{{ pendencia['status'] }}</td>
                     <td class="actions">
                         <a href="{{ url_for('edit_pendencia', id=pendencia['id']) }}" class="button edit">Editar</a>
