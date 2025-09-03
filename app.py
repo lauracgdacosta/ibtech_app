@@ -506,18 +506,25 @@ def pendencias():
     conn.close()
     return render_template('pendencias.html', pendencias=pendencias_data)
 
-# Trecho do arquivo app.py
+# Substitua a sua função new_pendencia por esta:
+
 @app.route('/new_pendencia', methods=['GET', 'POST'])
 @login_required
 def new_pendencia():
     conn = get_db_connection()
-    # Modificado para buscar municipio e orgao e concatenar
-    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes').fetchall()
+
+    # --- INÍCIO DA CORREÇÃO ---
+    # Busca os dois campos do banco de dados
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    # Cria a lista formatada para o template
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    # --- FIM DA CORREÇÃO ---
+
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    
     if request.method == 'POST':
         processo = request.form['processo']
-        cliente = request.form['cliente'] # cliente já virá como "município - órgão"
+        cliente = request.form['cliente']
         sistema = request.form['sistema']
         data_prioridade = request.form['data_prioridade']
         prazo_entrega = request.form['prazo_entrega']
@@ -527,19 +534,35 @@ def new_pendencia():
         conn.commit()
         conn.close()
         return redirect(url_for('pendencias'))
+        
     conn.close()
+    # Passa a lista 'clientes' já formatada para o template
     return render_template('new_pendencia.html', clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
+
+# Substitua a sua função edit_pendencia por esta:
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_pendencia(id):
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
-    clientes = [row['orgao'] for row in conn.execute('SELECT orgao FROM clientes').fetchall()]
+
+    if pendencia is None:
+        conn.close()
+        abort(404)
+
+    # --- INÍCIO DA CORREÇÃO ---
+    # Busca os dois campos do banco de dados
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    # Cria a lista formatada para o template
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    # --- FIM DA CORREÇÃO ---
+
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    
     if request.method == 'POST':
         processo = request.form['processo']
-        cliente = request.form['cliente']
+        cliente = request.form['cliente'] 
         sistema = request.form['sistema']
         data_prioridade = request.form['data_prioridade']
         prazo_entrega = request.form['prazo_entrega']
@@ -549,8 +572,13 @@ def edit_pendencia(id):
         conn.commit()
         conn.close()
         return redirect(url_for('pendencias'))
+    
     conn.close()
+    # Passa a lista 'clientes' já formatada para o template
     return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
+
+
+
 
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
