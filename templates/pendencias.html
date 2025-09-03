@@ -11,67 +11,66 @@
     <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/datetime-moment.js"></script>
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
-    <div class="container">
-        <div class="header-actions">
-            <h1>Módulo de Pendências</h1>
-            <div class="actions-group">
-                <a href="{{ url_for('new_pendencia') }}" class="button new">Nova Pendência</a>
-                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
-            </div>
+<div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+{% if session.user_name %}
+    <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+    <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+{% endif %}
+</div>
+<div class="container">
+    <div class="header-actions">
+        <h1>Módulo de Pendências</h1>
+        <div class="actions-group">
+            <a href="{{ url_for('new_pendencia') }}" class="button new">Nova Pendência</a>
+            <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
         </div>
+    </div>
 
-        <h2>Pendências Cadastradas</h2>
-        <table id="tabela" class="display" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Processo</th>
-                    <th>Cliente</th>
-                    <th>Sistema</th>
-                    <th>Data Prioridade</th>
-                    <th>Prazo Entrega</th>
-                    <th>Status</th>
-                    <th class="no-sort">Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pendencia in pendencias %}
-                <tr>
-                    <td>{{ pendencia['processo'] }}</td>
-                    <td>{{ pendencia['cliente'] }}</td>
-                    <td>{{ pendencia['sistema'] }}</td>
-                    <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
-                    <td>{{ pendencia['prazo_entrega'] | dateformat }}</td>
-                    <td>{{ pendencia['status'] }}</td>
-                    <td class="actions">
+    <h2>Pendências Cadastradas</h2>
+    <table id="tabela" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>Processo</th>
+                <th>Cliente</th>
+                <th>Sistema</th>
+                <th>Data Prioridade</th>
+                <th>Prazo Entrega</th>
+                <th>Status</th>
+                <th class="no-sort">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pendencia in pendencias %}
+            <tr>
+                <td>{{ pendencia['processo'] }}</td>
+                <td>{{ pendencia['cliente'] }}</td>
+                <td>{{ pendencia['sistema'] }}</td>
+                <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
+                <td>{{ pendencia['prazo_entrega'] | dateformat }}</td>
+                <td>{{ pendencia['status'] }}</td>
+                <td class="actions">
+                    <div style="display: flex; gap: 8px; align-items: center;">
                         <a href="{{ url_for('edit_pendencia', id=pendencia['id']) }}" class="button edit">Editar</a>
-                        <form action="{{ url_for('delete_pendencia', id=pendencia['id']) }}" method="post">
+                        <form action="{{ url_for('delete_pendencia', id=pendencia['id']) }}" method="post" style="margin: 0;">
                             {{ csrf_token() }}
                             <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar esta pendência?');">Deletar</button>
                         </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-    <script>
-    $(document).ready(function() {
-        // Ativa o plugin para o formato de data DD/MM/YYYY
-        DataTable.moment('DD/MM/YYYY');
-
-        // Inicializa a tabela
-        $('#tabela').DataTable({
-            "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
-            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
-        });
+<script>
+$(document).ready(function() {
+    DataTable.moment('DD/MM/YYYY');
+    $('#tabela').DataTable({
+        "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
+        "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
     });
-    </script>
+});
+</script>
 </body>
 </html>
