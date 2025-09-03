@@ -21,6 +21,7 @@
         </div>
         
         <form action="{{ url_for('edit_cliente', id=cliente['id']) }}" method="post">
+            {{ csrf_token() }}
             <input type="hidden" name="id" value="{{ cliente['id'] }}">
             
             <label for="municipio">Município:</label>

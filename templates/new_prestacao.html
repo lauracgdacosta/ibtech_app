@@ -21,6 +21,7 @@
         </div>
 
         <form method="post">
+            {{ csrf_token() }}
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
                 <option value="">Selecione um Cliente</option>

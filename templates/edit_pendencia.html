@@ -21,6 +21,7 @@
         </div>
         
         <form action="{{ url_for('edit_pendencia', id=pendencia['id']) }}" method="post">
+            {{ csrf_token() }}
             <input type="hidden" name="id" value="{{ pendencia['id'] }}">
             
             <label for="processo">Processo:</label>

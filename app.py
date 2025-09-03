@@ -4,12 +4,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from functools import wraps
 import datetime
-
-
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 
-app.secret_key = '18T3ch'
+# Chave secreta já existente, necessária para o CSRF
+app.secret_key = '18T3ch' 
+
+# Proteção CSRF
+csrf = CSRFProtect(app)
 
 # --- INÍCIO DO CÓDIGO DO FILTRO DE DATA ---
 def format_date(value):

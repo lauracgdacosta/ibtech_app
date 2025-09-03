@@ -21,6 +21,7 @@
         </div>
         
         <form action="{{ url_for('new_ferias') }}" method="post">
+            {{ csrf_token() }}
             <label for="funcionario">Funcionário:</label>
             <select id="funcionario" name="funcionario" required>
                 <option value="">Selecione o Funcionário</option>

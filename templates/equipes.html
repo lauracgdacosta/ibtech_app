@@ -43,6 +43,7 @@
                     <td class="actions">
                         <a href="{{ url_for('edit_equipe', id=equipe['id']) }}" class="button edit">Editar</a>
                         <form action="{{ url_for('delete_equipe', id=equipe['id']) }}" method="post">
+                            {{ csrf_token() }}
                             <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar esta equipe?');">Deletar</button>
                         </form>
                     </td>

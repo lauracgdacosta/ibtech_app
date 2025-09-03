@@ -21,6 +21,7 @@
         </div>
         
         <form action="{{ url_for('edit_ferias', id=ferias_item['id']) }}" method="post">
+            {{ csrf_token() }}
             <input type="hidden" name="id" value="{{ ferias_item['id'] }}">
             
             <label for="funcionario">Funcionário:</label>

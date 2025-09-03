@@ -21,6 +21,7 @@
         </div>
         
         <form action="{{ url_for('edit_sistema', id=sistema['id']) }}" method="post">
+            {{ csrf_token() }}
             <input type="hidden" name="id" value="{{ sistema['id'] }}">
             
             <label for="nome">Nome do Sistema:</label>
