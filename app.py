@@ -821,8 +821,4 @@ if __name__ == '__main__':
     # A linha abaixo irá iniciar o servidor em modo de depuração.
     # Isso mostrará erros detalhados no navegador.
     # Lembre-se de desativar (debug=False) antes de colocar em produção!
-<<<<<<< HEAD
     app.run(debug=True)
-=======
-    app.run(debug=True)
->>>>>>> a13b37d90bfe16a0b5b4641dae1fed9f3488ace7
