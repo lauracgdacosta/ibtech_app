@@ -4,13 +4,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from functools import wraps
 import datetime
-from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 
 # Configurações da Aplicação
 app.secret_key = '18T3ch'
-csrf = CSRFProtect(app)
+# LINHA DO CSRF FOI REMOVIDA
 
 # --- Filtro Jinja2 para Formatação de Data ---
 def format_date(value):
@@ -152,21 +151,15 @@ def login_required(f):
 def index():
     conn = get_db_connection()
     
-    # Data de hoje para as consultas
     hoje_str = datetime.date.today().strftime('%Y-%m-%d')
 
-    # 1. Buscar próximos 5 agendamentos
     proximos_agendamentos = conn.execute(
         'SELECT * FROM agenda WHERE data_agendamento >= ? ORDER BY data_agendamento ASC LIMIT 5',
         (hoje_str,)
     ).fetchall()
-
-    # 2. Buscar 5 pendências em aberto com prioridade mais próxima
     pendencias_abertas = conn.execute(
         "SELECT * FROM pendencias WHERE status = 'Aberto' ORDER BY data_prioridade ASC LIMIT 5"
     ).fetchall()
-
-    # 3. Buscar técnicos que estão em férias hoje
     tecnicos_em_ferias = conn.execute(
         'SELECT * FROM ferias WHERE data_inicio <= ? AND data_termino >= ?',
         (hoje_str, hoje_str)
@@ -180,6 +173,12 @@ def index():
         pendencias_abertas=pendencias_abertas,
         tecnicos_em_ferias=tecnicos_em_ferias
     )
+
+# --- Rota para a página de Cadastros ---
+@app.route('/cadastros')
+@login_required
+def cadastros():
+    return render_template('cadastros.html')
 
 # --- Rotas do Módulo de Técnicos ---
 @app.route('/tecnicos')
@@ -787,12 +786,6 @@ def delete_prestacao(id):
     conn.commit()
     conn.close()
     return redirect(url_for('prestacao_contas'))
-
-# --- Rota para a página de Cadastros ---
-@app.route('/cadastros')
-@login_required
-def cadastros():
-    return render_template('cadastros.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
