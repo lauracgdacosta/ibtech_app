@@ -17,7 +17,6 @@
             <h1>Adicionar Novo Agendamento</h1>
         </div>
         <form method="post">
-            {{ csrf_token() }}
             <label for="cliente">Cliente</label>
             <select id="cliente" name="cliente" required>
                 {% for cliente in clientes %}

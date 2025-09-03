@@ -21,7 +21,6 @@
         </div>
         
         <form action="{{ url_for('new_equipe') }}" method="post">
-            {{ csrf_token() }}
             <label for="nome">Nome da Equipe:</label>
             <input type="text" id="nome" name="nome" required>
             

@@ -9,65 +9,62 @@
     <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
 </head>
 <body>
-<div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-{% if session.user_name %}
-    <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-    <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-{% endif %}
-</div>
-<div class="container">
-    <div class="header-actions">
-        <h1>Módulo de Técnicos</h1>
-        <div class="actions-group">
-            <a href="{{ url_for('new_tecnico') }}" class="button new">Novo Técnico</a>
-            <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
-        </div>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
     </div>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Módulo de Técnicos</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('new_tecnico') }}" class="button new">Novo Técnico</a>
+                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+            </div>
+        </div>
 
-    <h2>Técnicos Cadastrados</h2>
-    <table id="tabela" class="display" style="width:100%">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Telefone</th>
-                <th>Função</th>
-                <th>Equipe</th>
-                <th>Contrato</th>
-                <th class="no-sort">Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tecnico in tecnicos %}
-            <tr>
-                <td>{{ tecnico['nome'] }}</td>
-                <td>{{ tecnico['email'] }}</td>
-                <td>{{ tecnico['telefone'] }}</td>
-                <td>{{ tecnico['funcao'] }}</td>
-                <td>{{ tecnico['equipe'] }}</td>
-                <td>{{ tecnico['contrato'] }}</td>
-                <td class="actions">
-                    <div style="display: flex; gap: 8px; align-items: center;">
+        <h2>Técnicos Cadastrados</h2>
+        <table id="tabela" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Telefone</th>
+                    <th>Função</th>
+                    <th>Equipe</th>
+                    <th>Contrato</th>
+                    <th class="no-sort">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tecnico in tecnicos %}
+                <tr>
+                    <td>{{ tecnico['nome'] }}</td>
+                    <td>{{ tecnico['email'] }}</td>
+                    <td>{{ tecnico['telefone'] }}</td>
+                    <td>{{ tecnico['funcao'] }}</td>
+                    <td>{{ tecnico['equipe'] }}</td>
+                    <td>{{ tecnico['contrato'] }}</td>
+                    <td class="actions">
                         <a href="{{ url_for('edit_tecnico', id=tecnico['id']) }}" class="button edit">Editar</a>
-                        <form action="{{ url_for('delete_tecnico', id=tecnico['id']) }}" method="post" style="margin: 0;">
-                            {{ csrf_token() }}
+                        <form action="{{ url_for('delete_tecnico', id=tecnico['id']) }}" method="post">
                             <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar este técnico?');">Deletar</button>
                         </form>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-<script>
-$(document).ready(function() {
-    $('#tabela').DataTable({
-        "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
-        "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
+    <script>
+    $(document).ready(function() {
+        $('#tabela').DataTable({
+            "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
+            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
+        });
     });
-});
-</script>
+    </script>
 </body>
 </html>

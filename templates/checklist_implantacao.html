@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Checklist de Implantação</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .grupo-header {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+        td input, td select, td textarea {
+            width: 95%;
+            padding: 4px;
+            font-size: 0.9em;
+        }
+        .alert-success {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: center;
+            background-color: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
+
+    <div class="container" style="max-width: 98%;">
+        <div class="header-actions">
+            <h1>Checklist do Projeto: {{ implantacao['cliente'] }}</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('implantacoes') }}" class="button">Voltar para Implantações</a>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post">
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Atividade</th>
+                            <th style="width: 130px;">Data Início</th>
+                            <th style="width: 130px;">Data Término</th>
+                            <th style="width: 100px;">Duração</th>
+                            <th style="width: 150px;">Responsável PM</th>
+                            <th style="width: 150px;">Responsável CM</th>
+                            <th style="width: 150px;">Status</th>
+                            <th style="width: 150px;">Local de execução</th>
+                            <th>Observações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set ns = namespace(current_group=None) %}
+                        {% for atividade in atividades %}
+                            {% if ns.current_group != atividade['grupo'] %}
+                                {% set ns.current_group = atividade['grupo'] %}
+                                <tr>
+                                    <td colspan="9" class="grupo-header">{{ ns.current_group }}</td>
+                                </tr>
+                            {% endif %}
+                            <tr>
+                                <input type="hidden" name="atividade_id" value="{{ atividade['id'] }}">
+                                <td>{{ atividade['atividade'] }}</td>
+                                <td><input type="date" name="data_inicio_{{ atividade['id'] }}" value="{{ atividade['data_inicio'] or '' }}"></td>
+                                <td><input type="date" name="data_termino_{{ atividade['id'] }}" value="{{ atividade['data_termino'] or '' }}"></td>
+                                <td><input type="text" name="duracao_{{ atividade['id'] }}" value="{{ atividade['duracao'] or '' }}"></td>
+                                <td><input type="text" name="responsavel_pm_{{ atividade['id'] }}" value="{{ atividade['responsavel_pm'] or '' }}"></td>
+                                <td><input type="text" name="responsavel_cm_{{ atividade['id'] }}" value="{{ atividade['responsavel_cm'] or '' }}"></td>
+                                <td>
+                                    <select name="status_{{ atividade['id'] }}">
+                                        <option value="Pendente" {% if atividade['status'] == 'Pendente' %}selected{% endif %}>Pendente</option>
+                                        <option value="Em Andamento" {% if atividade['status'] == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                                        <option value="Concluído" {% if atividade['status'] == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                        <option value="Atrasado" {% if atividade['status'] == 'Atrasado' %}selected{% endif %}>Atrasado</option>
+                                        <option value="Cancelado" {% if atividade['status'] == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" name="local_execucao_{{ atividade['id'] }}" value="{{ atividade['local_execucao'] or '' }}"></td>
+                                <td><textarea name="observacoes_{{ atividade['id'] }}" rows="1">{{ atividade['observacoes'] or '' }}</textarea></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <br>
+            <button type="submit" class="button edit">Salvar Alterações no Checklist</button>
+        </form>
+    </div>
+</body>
+</html>

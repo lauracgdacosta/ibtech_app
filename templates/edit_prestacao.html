@@ -22,7 +22,6 @@
         <p><strong>Última atualização:</strong> {{ item['atualizado_por'] }}</p>
 
         <form method="post">
-            {{ csrf_token() }}
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
                 {% for cliente in clientes %}

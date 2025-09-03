@@ -21,7 +21,6 @@
         </div>
         
         <form action="{{ url_for('new_pendencia') }}" method="post">
-            {{ csrf_token() }}
             <label for="processo">Processo:</label>
             <input type="text" id="processo" name="processo" required>
             

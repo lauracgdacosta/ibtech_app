@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Implantação</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Editar Implantação</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('implantacoes') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
+        <p><strong>Última atualização:</strong> {{ item['atualizado_por'] }}</p>
+
+        <form method="post">
+            <label for="cliente">Cliente:</label>
+            <select id="cliente" name="cliente" required>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}" {% if cliente == item['cliente'] %}selected{% endif %}>{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="responsavel_implantacao">Responsável pela Implantação:</label>
+            <select id="responsavel_implantacao" name="responsavel_implantacao" required>
+                {% for responsavel in responsaveis %}
+                    <option value="{{ responsavel }}" {% if responsavel == item['responsavel_implantacao'] %}selected{% endif %}>{{ responsavel }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="data_prevista">Data Prevista:</label>
+            <input type="date" id="data_prevista" name="data_prevista" value="{{ item['data_prevista'] }}">
+
+            <label for="data_execucao">Data de Execução:</label>
+            <input type="date" id="data_execucao" name="data_execucao" value="{{ item['data_execucao'] }}">
+
+            <label for="versao_sistema">Versão do Sistema:</label>
+            <input type="text" id="versao_sistema" name="versao_sistema" value="{{ item['versao_sistema'] }}">
+            
+            <label for="tipo_implantacao">Tipo de Implantação:</label>
+            <select id="tipo_implantacao" name="tipo_implantacao" required>
+                <option value="Inicial" {% if item['tipo_implantacao'] == 'Inicial' %}selected{% endif %}>Inicial</option>
+                <option value="Atualização" {% if item['tipo_implantacao'] == 'Atualização' %}selected{% endif %}>Atualização</option>
+                <option value="Correção" {% if item['tipo_implantacao'] == 'Correção' %}selected{% endif %}>Correção</option>
+                <option value="Migração" {% if item['tipo_implantacao'] == 'Migração' %}selected{% endif %}>Migração</option>
+            </select>
+
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Planejada" {% if item['status'] == 'Planejada' %}selected{% endif %}>Planejada</option>
+                <option value="Em Andamento" {% if item['status'] == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                <option value="Concluída" {% if item['status'] == 'Concluída' %}selected{% endif %}>Concluída</option>
+                <option value="Cancelada" {% if item['status'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+                <option value="Adiada" {% if item['status'] == 'Adiada' %}selected{% endif %}>Adiada</option>
+            </select>
+            
+            <label for="observacoes">Observações:</label>
+            <textarea id="observacoes" name="observacoes" rows="4">{{ item['observacoes'] }}</textarea>
+
+            <button type="submit" class="button edit">Atualizar Implantação</button>
+        </form>
+    </div>
+</body>
+</html>
