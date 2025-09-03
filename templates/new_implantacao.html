@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nova Implantação</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Nova Implantação</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('implantacoes') }}" class="button">Voltar para a Lista</a>
+            </div>
+        </div>
+
+        <form method="post">
+            <label for="cliente">Cliente:</label>
+            <select id="cliente" name="cliente" required>
+                <option value="">Selecione um Cliente</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}">{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="responsavel_implantacao">Responsável pela Implantação:</label>
+            <select id="responsavel_implantacao" name="responsavel_implantacao" required>
+                <option value="">Selecione um Responsável</option>
+                {% for responsavel in responsaveis %}
+                    <option value="{{ responsavel }}">{{ responsavel }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="data_prevista">Data Prevista:</label>
+            <input type="date" id="data_prevista" name="data_prevista">
+
+            <label for="data_execucao">Data de Execução:</label>
+            <input type="date" id="data_execucao" name="data_execucao">
+
+            <label for="versao_sistema">Versão do Sistema:</label>
+            <input type="text" id="versao_sistema" name="versao_sistema" placeholder="Ex: 2.5.1">
+            
+            <label for="tipo_implantacao">Tipo de Implantação:</label>
+            <select id="tipo_implantacao" name="tipo_implantacao" required>
+                <option value="Inicial">Inicial</option>
+                <option value="Atualização">Atualização</option>
+                <option value="Correção">Correção</option>
+                <option value="Migração">Migração</option>
+            </select>
+
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Planejada">Planejada</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Concluída">Concluída</option>
+                <option value="Cancelada">Cancelada</option>
+                <option value="Adiada">Adiada</option>
+            </select>
+            
+            <label for="observacoes">Observações:</label>
+            <textarea id="observacoes" name="observacoes" rows="4"></textarea>
+
+            <button type="submit" class="button new">Salvar Implantação</button>
+        </form>
+    </div>
+</body>
+</html>
