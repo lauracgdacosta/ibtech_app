@@ -1,85 +1,131 @@
 import sqlite3
 import os
-import datetime
-from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from functools import wraps
+import datetime
+
+
 
 app = Flask(__name__)
-app.secret_key = 'sua_chave_secreta_super_segura_e_dificil_de_adivinhar'
 
-# --- FILTRO DE DATA ---
+app.secret_key = '18T3ch'
+
+# --- INÍCIO DO CÓDIGO DO FILTRO DE DATA ---
 def format_date(value):
     """Formata uma string de data AAAA-MM-DD para DD/MM/AAAA."""
     if value is None or value == "":
         return ""
     try:
+        # Converte a string para um objeto de data e depois formata
         date_obj = datetime.datetime.strptime(value, '%Y-%m-%d')
         return date_obj.strftime('%d/%m/%Y')
     except ValueError:
+        # Retorna o valor original se não for uma data válida no formato esperado
         return value
 
+# Registra a função como um filtro Jinja2
 app.jinja_env.filters['dateformat'] = format_date
+# --- FIM DO CÓDIGO DO FILTRO DE DATA ---
 
-# --- CONFIGURAÇÃO DO BANCO DE DADOS ---
+# Configuração do banco de dados
 def init_db():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/tmp/database.db')
     cursor = conn.cursor()
     
-    # --- CRIAÇÃO DAS TABELAS ---
+    # Criação das tabelas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tecnicos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT, telefone TEXT, funcao TEXT, equipe TEXT, contrato TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            email TEXT,
+            telefone TEXT,
+            funcao TEXT,
+            equipe TEXT,
+            contrato TEXT
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, municipio TEXT NOT NULL, orgao TEXT, contrato TEXT, sistemas TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            municipio TEXT NOT NULL,
+            orgao TEXT,
+            contrato TEXT,
+            sistemas TEXT
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS equipes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT, lider TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            sigla TEXT,
+            lider TEXT
         )
     ''')
+    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS pendencias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, processo TEXT, cliente TEXT, sistema TEXT, data_prioridade TEXT, prazo_entrega TEXT, status TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            processo TEXT,
+            cliente TEXT,
+            sistema TEXT,
+            data_prioridade TEXT,
+            prazo_entrega TEXT,
+            status TEXT
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ferias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            funcionario TEXT NOT NULL,
+            admissao TEXT,
+            contrato TEXT,
+            ano INTEGER,
+            data_inicio TEXT,
+            data_termino TEXT,
+            obs TEXT
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sistemas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            sigla TEXT NOT NULL
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS agenda (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, motivo TEXT, descricao TEXT, status TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente TEXT NOT NULL,
+            tecnico TEXT NOT NULL,
+            sistema TEXT,
+            data_agendamento DATE NOT NULL,
+            motivo TEXT,
+            descricao TEXT,
+            status TEXT
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            senha TEXT NOT NULL,
+            nivel_acesso TEXT NOT NULL
         )
     ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS prestacao_contas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, periodo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS implantacoes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, data_prevista TEXT, data_execucao TEXT, versao_sistema TEXT, responsavel_implantacao TEXT, status TEXT, tipo_implantacao TEXT, observacoes TEXT, atualizado_por TEXT
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS atividades_implantacao (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, implantacao_id INTEGER NOT NULL, grupo TEXT, atividade TEXT, data_inicio TEXT, data_termino TEXT, duracao TEXT, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT, local_execucao TEXT, observacoes TEXT, FOREIGN KEY (implantacao_id) REFERENCES implantacoes (id)
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente TEXT,
+            sistema TEXT,
+            responsavel TEXT,
+            modulo TEXT,
+            periodo TEXT,
+            competencia TEXT,
+            status TEXT,
+            observacao TEXT,
+            atualizado_por TEXT
         )
     ''')
     
@@ -87,14 +133,11 @@ def init_db():
     conn.close()
 
 def get_db_connection():
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/tmp/database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
-with app.app_context():
-    init_db()
-
-# --- DECORADOR DE LOGIN ---
+# Decorador para exigir login
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -104,40 +147,16 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- ROTAS PRINCIPAIS E DE AUTENTICAÇÃO ---
+
+# Inicializar o banco de dados no início da aplicação
+with app.app_context():
+    init_db()
+
 @app.route('/')
-@login_required
 def index():
     return render_template('index.html')
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if 'user_id' in session:
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        email = request.form['email']
-        senha = request.form['senha']
-        conn = get_db_connection()
-        usuario = conn.execute('SELECT * FROM usuarios WHERE email = ?', (email,)).fetchone()
-        conn.close()
-        if usuario and check_password_hash(usuario['senha'], senha):
-            session['user_id'] = usuario['id']
-            session['user_name'] = usuario['nome']
-            session['user_level'] = usuario['nivel_acesso']
-            flash('Login realizado com sucesso!', 'success')
-            return redirect(url_for('index'))
-        else:
-            flash('Email ou senha inválidos.', 'danger')
-            return redirect(url_for('login'))
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash('Você saiu do sistema.', 'info')
-    return redirect(url_for('login'))
-
-# --- MÓDULO DE TÉCNICOS ---
+# Rotas do Módulo de Técnicos
 @app.route('/tecnicos')
 @login_required
 def tecnicos():
@@ -196,7 +215,7 @@ def delete_tecnico(id):
     conn.close()
     return redirect(url_for('tecnicos'))
 
-# --- MÓDULO DE CLIENTES ---
+# Rotas do Módulo de Clientes
 @app.route('/clientes')
 @login_required
 def clientes():
@@ -252,7 +271,7 @@ def delete_cliente(id):
     conn.close()
     return redirect(url_for('clientes'))
 
-# --- MÓDULO DE EQUIPES ---
+# Rotas do Módulo de Equipes
 @app.route('/equipes')
 @login_required
 def equipes():
@@ -303,7 +322,7 @@ def delete_equipe(id):
     conn.close()
     return redirect(url_for('equipes'))
 
-# --- MÓDULO DE PENDÊNCIAS ---
+# Rotas do Módulo de Pendências
 @app.route('/pendencias')
 @login_required
 def pendencias():
@@ -312,13 +331,22 @@ def pendencias():
     conn.close()
     return render_template('pendencias.html', pendencias=pendencias_data)
 
+# Substitua a sua função new_pendencia por esta:
+
 @app.route('/new_pendencia', methods=['GET', 'POST'])
 @login_required
 def new_pendencia():
     conn = get_db_connection()
+
+    # --- INÍCIO DA CORREÇÃO ---
+    # Busca os dois campos do banco de dados
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    # Cria a lista formatada para o template
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    # --- FIM DA CORREÇÃO ---
+
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    
     if request.method == 'POST':
         processo = request.form['processo']
         cliente = request.form['cliente']
@@ -331,20 +359,32 @@ def new_pendencia():
         conn.commit()
         conn.close()
         return redirect(url_for('pendencias'))
+        
     conn.close()
+    # Passa a lista 'clientes' já formatada para o template
     return render_template('new_pendencia.html', clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
+
+# Substitua a sua função edit_pendencia por esta:
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_pendencia(id):
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
+
     if pendencia is None:
         conn.close()
         abort(404)
+
+    # --- INÍCIO DA CORREÇÃO ---
+    # Busca os dois campos do banco de dados
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    # Cria a lista formatada para o template
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    # --- FIM DA CORREÇÃO ---
+
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    
     if request.method == 'POST':
         processo = request.form['processo']
         cliente = request.form['cliente'] 
@@ -357,8 +397,13 @@ def edit_pendencia(id):
         conn.commit()
         conn.close()
         return redirect(url_for('pendencias'))
+    
     conn.close()
+    # Passa a lista 'clientes' já formatada para o template
     return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
+
+
+
 
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
@@ -368,8 +413,8 @@ def delete_pendencia(id):
     conn.commit()
     conn.close()
     return redirect(url_for('pendencias'))
-
-# --- MÓDULO DE FÉRIAS ---
+    
+# Rotas do Módulo de Férias
 @app.route('/ferias')
 @login_required
 def ferias():
@@ -432,7 +477,7 @@ def delete_ferias(id):
     conn.close()
     return redirect(url_for('ferias'))
 
-# --- MÓDULO DE SISTEMAS ---
+# Rotas do Módulo de Sistemas
 @app.route('/sistemas')
 @login_required
 def sistemas():
@@ -478,7 +523,8 @@ def delete_sistema(id):
     conn.close()
     return redirect(url_for('sistemas'))
 
-# --- MÓDULO DE AGENDA ---
+# Rotas do Módulo de Agenda
+
 @app.route('/agenda')
 @login_required
 def agenda():
@@ -491,10 +537,14 @@ def agenda():
 @login_required
 def new_agenda():
     conn = get_db_connection()
+    
+    # Busca dados para os seletores do formulário
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+
     if request.method == 'POST':
         cliente = request.form['cliente']
         tecnico = request.form['tecnico']
@@ -503,11 +553,13 @@ def new_agenda():
         motivo = request.form['motivo']
         descricao = request.form['descricao']
         status = request.form['status']
+        
         conn.execute('INSERT INTO agenda (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
                      (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status))
         conn.commit()
         conn.close()
         return redirect(url_for('agenda'))
+    
     conn.close()
     return render_template('new_agenda.html', clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
 
@@ -516,10 +568,14 @@ def new_agenda():
 def edit_agenda(id):
     conn = get_db_connection()
     agendamento = conn.execute('SELECT * FROM agenda WHERE id = ?', (id,)).fetchone()
+
+    # Busca dados para os seletores do formulário
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+
     if request.method == 'POST':
         cliente = request.form['cliente']
         tecnico = request.form['tecnico']
@@ -528,11 +584,13 @@ def edit_agenda(id):
         motivo = request.form['motivo']
         descricao = request.form['descricao']
         status = request.form['status']
+        
         conn.execute('UPDATE agenda SET cliente = ?, tecnico = ?, sistema = ?, data_agendamento = ?, motivo = ?, descricao = ?, status = ? WHERE id = ?',
                      (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status, id))
         conn.commit()
         conn.close()
         return redirect(url_for('agenda'))
+        
     conn.close()
     return render_template('edit_agenda.html', agendamento=agendamento, clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
 
@@ -545,11 +603,13 @@ def delete_agenda(id):
     conn.close()
     return redirect(url_for('agenda'))
 
-# --- MÓDULO DE USUÁRIOS ---
+# Rotas do Módulo de Gestão de Usuários
+
 @app.route('/usuarios')
 @login_required
 def usuarios():
     conn = get_db_connection()
+    # Excluindo a senha da consulta para não a expor desnecessariamente
     users_data = conn.execute('SELECT id, nome, email, nivel_acesso FROM usuarios').fetchall()
     conn.close()
     return render_template('usuarios.html', usuarios=users_data)
@@ -562,23 +622,203 @@ def new_usuario():
         email = request.form['email']
         senha = request.form['senha']
         nivel_acesso = request.form['nivel_acesso']
+
+        # Gerar o hash da senha
         hashed_senha = generate_password_hash(senha)
+
         conn = get_db_connection()
         try:
             conn.execute('INSERT INTO usuarios (nome, email, senha, nivel_acesso) VALUES (?, ?, ?, ?)',
                          (nome, email, hashed_senha, nivel_acesso))
             conn.commit()
         except sqlite3.IntegrityError:
+            # Lidar com o caso de email duplicado
             conn.close()
-            flash('Erro: O e-mail informado já existe.', 'danger')
-            return redirect(url_for('new_usuario'))
+            # Aqui você poderia retornar uma mensagem de erro para o template
+            return "Erro: O e-mail informado já existe.", 400
         finally:
             conn.close()
+
         return redirect(url_for('usuarios'))
+    
     return render_template('new_usuario.html')
 
 @app.route('/edit_usuario/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_usuario(id):
     conn = get_db_connection()
+    # Buscando sem a senha
     usuario = conn.execute('SELECT id, nome, email, nivel_acesso FROM usuarios WHERE id = ?', (id,)).fetchone()
+
+    if request.method == 'POST':
+        nome = request.form['nome']
+        email = request.form['email']
+        nivel_acesso = request.form['nivel_acesso']
+        senha = request.form.get('senha') # Pega a senha, pode ser vazia
+
+        if senha:
+            # Se uma nova senha foi fornecida, atualiza o hash
+            hashed_senha = generate_password_hash(senha)
+            conn.execute('UPDATE usuarios SET nome = ?, email = ?, nivel_acesso = ?, senha = ? WHERE id = ?',
+                         (nome, email, nivel_acesso, hashed_senha, id))
+        else:
+            # Caso contrário, mantém a senha antiga
+            conn.execute('UPDATE usuarios SET nome = ?, email = ?, nivel_acesso = ? WHERE id = ?',
+                         (nome, email, nivel_acesso, id))
+        
+        conn.commit()
+        conn.close()
+        return redirect(url_for('usuarios'))
+
+    conn.close()
+    return render_template('edit_usuario.html', usuario=usuario)
+
+@app.route('/delete_usuario/<int:id>', methods=['POST'])
+@login_required
+def delete_usuario(id):
+    # Adicionar verificação para não permitir que o usuário se auto-delete ou delete o admin principal
+    # (Isso seria uma lógica mais avançada de sessão)
+    conn = get_db_connection()
+    conn.execute('DELETE FROM usuarios WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('usuarios'))
+
+# Rotas de Autenticação
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Se o usuário já estiver logado, redireciona para a home
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        email = request.form['email']
+        senha = request.form['senha']
+        
+        conn = get_db_connection()
+        usuario = conn.execute('SELECT * FROM usuarios WHERE email = ?', (email,)).fetchone()
+        conn.close()
+
+        if usuario and check_password_hash(usuario['senha'], senha):
+            # Login bem-sucedido, armazena dados na sessão
+            session['user_id'] = usuario['id']
+            session['user_name'] = usuario['nome']
+            session['user_level'] = usuario['nivel_acesso']
+            flash('Login realizado com sucesso!', 'success')
+            return redirect(url_for('index'))
+        else:
+            # Falha no login
+            flash('Email ou senha inválidos.', 'danger')
+            return redirect(url_for('login'))
+            
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    session.clear() # Limpa todos os dados da sessão
+    flash('Você saiu do sistema.', 'info')
+    return redirect(url_for('login'))
+
+
+# Rotas do Módulo de Prestação de Contas
+
+@app.route('/prestacao_contas')
+@login_required
+def prestacao_contas():
+    conn = get_db_connection()
+    dados = conn.execute('SELECT * FROM prestacao_contas ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('prestacao_contas.html', dados=dados)
+
+@app.route('/new_prestacao', methods=['GET', 'POST'])
+@login_required
+def new_prestacao():
+    conn = get_db_connection()
+    
+    # Busca dados para os seletores do formulário
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        responsavel = request.form['responsavel']
+        modulo = request.form['modulo']
+        periodo = request.form['periodo']
+        competencia = request.form['competencia']
+        status = request.form['status']
+        observacao = request.form['observacao']
+        
+        # Gera o campo "atualizado_por" automaticamente
+        timestamp = datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{timestamp} por {usuario_logado}"
+
+        conn.execute(
+            'INSERT INTO prestacao_contas (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por)
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+    
+    conn.close()
+    return render_template('new_prestacao.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/edit_prestacao/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_prestacao(id):
+    conn = get_db_connection()
+    item = conn.execute('SELECT * FROM prestacao_contas WHERE id = ?', (id,)).fetchone()
+
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        responsavel = request.form['responsavel']
+        modulo = request.form['modulo']
+        periodo = request.form['periodo']
+        competencia = request.form['competencia']
+        status = request.form['status']
+        observacao = request.form['observacao']
+        
+        # Atualiza o campo "atualizado_por"
+        timestamp = datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{timestamp} por {usuario_logado}"
+
+        conn.execute(
+            'UPDATE prestacao_contas SET cliente = ?, sistema = ?, responsavel = ?, modulo = ?, periodo = ?, competencia = ?, status = ?, observacao = ?, atualizado_por = ? WHERE id = ?',
+            (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por, id)
+        )
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+
+    # Busca dados para os seletores no modo GET
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    
+    conn.close()
+    return render_template('edit_prestacao.html', item=item, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/delete_prestacao/<int:id>', methods=['POST'])
+@login_required
+def delete_prestacao(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM prestacao_contas WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('prestacao_contas'))
+
+if __name__ == '__main__':
+    # A linha abaixo irá iniciar o servidor em modo de depuração.
+    # Isso mostrará erros detalhados no navegador.
+    # Lembre-se de desativar (debug=False) antes de colocar em produção!
+    app.run(debug=True)
