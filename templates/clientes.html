@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Módulo de Clientes</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css">
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
 </head>
 <body>
     <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
@@ -22,28 +25,18 @@
         </div>
 
         <h2>Clientes Cadastrados</h2>
-        <div class="controls">
-            <input type="text" id="filterInput" placeholder="Filtrar por nome...">
-            <select id="sortSelect">
-                <option value="0">Ordenar por Município (A-Z)</option>
-                <option value="0_desc">Ordenar por Município (Z-A)</option>
-                <option value="1">Ordenar por Órgão (A-Z)</option>
-                <option value="1_desc">Ordenar por Órgão (Z-A)</option>
-            </select>
-        </div>
-        <button onclick="abrirTelaCheia('tabela-clientes')">Abrir Tabela em Tela Cheia</button>
-        <table id="tabela-clientes">
+        <table id="tabela" class="display" style="width:100%">
             <thead>
                 <tr>
                     <th>Município</th>
                     <th>Órgão</th>
                     <th>Contrato</th>
                     <th>Sistemas Utilizados</th>
-                    <th style="width: 220px;">Ações</th>
+                    <th class="no-sort">Ações</th>
                 </tr>
             </thead>
             <tbody>
-                {% for cliente in clientes %}
+                {% for cliente in clientes_data %}
                 <tr>
                     <td>{{ cliente['municipio'] }}</td>
                     <td>{{ cliente['orgao'] }}</td>
@@ -62,53 +55,12 @@
     </div>
 
     <script>
-        function setupTable(tableId, filterId, sortId) {
-            const table = document.getElementById(tableId);
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            const filterInput = document.getElementById(filterId);
-            const sortSelect = document.getElementById(sortId);
-
-            function filterAndSort() {
-                const filterText = filterInput.value.toLowerCase();
-                const [sortCol, sortDir] = sortSelect.value.split('_');
-
-                const visibleRows = rows.filter(row => {
-                    const textContent = row.textContent.toLowerCase();
-                    return textContent.includes(filterText);
-                });
-
-                visibleRows.sort((a, b) => {
-                    const aText = a.children[sortCol].textContent.toLowerCase();
-                    const bText = b.children[sortCol].textContent.toLowerCase();
-                    if (aText < bText) return sortDir === 'desc' ? 1 : -1;
-                    if (aText > bText) return sortDir === 'desc' ? -1 : 1;
-                    return 0;
-                });
-
-                tbody.innerHTML = '';
-                visibleRows.forEach(row => tbody.appendChild(row));
-            }
-
-            filterInput.addEventListener('input', filterAndSort);
-            sortSelect.addEventListener('change', filterAndSort);
-            filterAndSort();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            setupTable('tabela-clientes', 'filterInput', 'sortSelect');
+    $(document).ready(function() {
+        $('#tabela').DataTable({
+            "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
+            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
         });
-        
-        function abrirTelaCheia(idTabela) {
-            var tabela = document.getElementById(idTabela);
-            if (tabela.requestFullscreen) {
-                tabela.requestFullscreen();
-            } else if (tabela.webkitRequestFullscreen) {
-                tabela.webkitRequestFullscreen();
-            } else if (tabela.msRequestFullscreen) {
-                tabela.msRequestFullscreen();
-            }
-        }
+    });
     </script>
 </body>
 </html>

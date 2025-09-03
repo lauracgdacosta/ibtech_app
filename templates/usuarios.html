@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Módulo de Usuários</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css">
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
 </head>
 <body>
     <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
@@ -20,13 +23,13 @@
             </div>
         </div>
         
-        <table>
+        <table id="tabela" class="display" style="width:100%">
             <thead>
                 <tr>
                     <th>Nome</th>
                     <th>Email</th>
                     <th>Nível de Acesso</th>
-                    <th style="width: 220px;">Ações</th>
+                    <th class="no-sort">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -48,5 +51,14 @@
         <br>
         <a href="{{ url_for('index') }}" class="button">Voltar</a>
     </div>
+
+    <script>
+    $(document).ready(function() {
+        $('#tabela').DataTable({
+            "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
+            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
+        });
+    });
+    </script>
 </body>
 </html>
