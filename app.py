@@ -788,5 +788,11 @@ def delete_prestacao(id):
     conn.close()
     return redirect(url_for('prestacao_contas'))
 
+# --- Rota para a página de Cadastros ---
+@app.route('/cadastros')
+@login_required
+def cadastros():
+    return render_template('cadastros.html')
+
 if __name__ == '__main__':
     app.run(debug=True)
