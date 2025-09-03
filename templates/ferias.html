@@ -39,7 +39,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for ferias_item in ferias_data %}
+                {% for ferias_item in ferias %}
                 <tr>
                     <td>{{ ferias_item['funcionario'] }}</td>
                     <td>{{ ferias_item['admissao'] | dateformat }}</td>
