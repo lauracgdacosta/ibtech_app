@@ -37,26 +37,24 @@ h1, h2 {
 }
 
 /* --- Layout do Cabeçalho --- */
-/* Esta nova regra corrige o alinhamento do título com os botões */
 .header-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    flex-wrap: wrap; /* Permite quebrar linha em telas menores */
-    gap: 15px; /* Espaço entre os elementos */
+    flex-wrap: wrap; 
+    gap: 15px; 
 }
 
 .header-actions h1 {
-    margin: 0; /* Remove margem padrão do H1 */
-    flex-grow: 1; /* Faz o título ocupar o espaço disponível */
+    margin: 0; 
+    flex-grow: 1; 
 }
 
-/* Container para os botões no cabeçalho */
 .header-actions .actions-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px; /* Espaço entre os botões */
+    gap: 10px; 
 }
 
 
@@ -97,11 +95,11 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-    border-color: #007bff; /* Azul ao focar */
+    border-color: #007bff;
     outline: none;
 }
 
-/* --- Estilos de Botões (Alterado e Centralizado) --- */
+/* --- Estilos de Botões --- */
 .button, button {
     display: inline-block;
     padding: 10px 18px;
@@ -118,45 +116,40 @@ textarea:focus {
 }
 
 .button:hover, button:hover {
-    transform: translateY(-2px); /* Efeito de elevação */
+    transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Cor Padrão (Cancelar, Voltar, etc.) */
 .button {
-    background-color: #6c757d; /* Cinza */
+    background-color: #6c757d;
 }
 .button:hover {
     background-color: #5a6268;
 }
 
-/* Botão de Salvar/Submeter Principal (Azul) */
 button[type="submit"] {
-    background-color: #007bff; /* Azul */
+    background-color: #007bff;
 }
 button[type="submit"]:hover {
     background-color: #0056b3;
 }
 
-/* Cor Verde (Novo / Adicionar) */
 .button.new {
-    background-color: #28a745; /* Verde */
+    background-color: #28a745;
 }
 .button.new:hover {
     background-color: #218838;
 }
 
-/* Cor Azul (Editar / Atualizar) */
 .button.edit {
-    background-color: #007bff; /* Azul */
+    background-color: #007bff;
 }
 .button.edit:hover {
     background-color: #0056b3;
 }
 
-/* Cor Vermelha (Deletar / Excluir) */
 .button.delete {
-    background-color: #dc3545; /* Vermelho */
+    background-color: #dc3545;
 }
 .button.delete:hover {
     background-color: #c82333;
@@ -188,13 +181,12 @@ tr:nth-child(even) {
     background-color: #fbfcfd;
 }
 
-/* Célula de Ações na Tabela */
 td.actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px; /* Espaço entre os botões de ação */
+    gap: 8px; 
     align-items: center;
-    border: none; /* Remove bordas na célula de ações para um look mais limpo */
+    border: none; 
     background-color: transparent;
 }
 
@@ -208,7 +200,7 @@ td.actions .button, td.actions button {
     margin: 0;
 }
 
-/* --- Outros --- */
+/* --- Módulos e Grid da Home --- */
 .module-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -235,4 +227,63 @@ td.actions .button, td.actions button {
 .module-button:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* --- Estilos do Dashboard --- */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.dashboard-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-top: 4px solid #3498db;
+}
+
+.dashboard-card h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #2c3e50;
+    border-bottom: 1px solid #ecf0f1;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.dashboard-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dashboard-card li {
+    padding: 10px 5px;
+    border-bottom: 1px solid #f0f4f7;
+    font-size: 0.95em;
+}
+
+.dashboard-card li:last-child {
+    border-bottom: none;
+}
+
+.dashboard-card .meta {
+    font-size: 0.8em;
+    color: #7f8c8d;
+    display: block;
+}
+
+.dashboard-card .no-data {
+    color: #95a5a6;
+    text-align: center;
+    padding: 20px;
+}
+
+.modules-section-title {
+    margin-top: 50px;
+    text-align: center;
+    color: #34495e;
 }

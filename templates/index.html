@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema de Gestão de Equipes</title>
+    <title>Dashboard - Sistema de Gestão</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -13,9 +13,62 @@
     {% endif %}
     </div>
     <div class="container">
-        <h1 class="main-title">Sistema de Gestão de Equipes</h1>
-        <p class="subtitle">Bem-vindo ao sistema de gestão. Selecione um dos módulos abaixo:</p>
-        
+        <h1 class="main-title">Dashboard</h1>
+        <p class="subtitle">Visão geral das atividades recentes e pendências.</p>
+
+        <div class="dashboard-grid">
+            
+            <div class="dashboard-card">
+                <h2>Próximos Agendamentos</h2>
+                <ul>
+                    {% if proximos_agendamentos %}
+                        {% for item in proximos_agendamentos %}
+                            <li>
+                                <strong>{{ item['cliente'] }}</strong> ({{ item['tecnico'] }})
+                                <span class="meta">{{ item['data_agendamento'] | dateformat }} - {{ item['motivo'] }}</span>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="no-data">Nenhum agendamento futuro.</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="dashboard-card">
+                <h2>Pendências em Aberto</h2>
+                <ul>
+                    {% if pendencias_abertas %}
+                        {% for item in pendencias_abertas %}
+                            <li>
+                                <strong>{{ item['processo'] }}</strong> - {{ item['cliente'] }}
+                                <span class="meta">Prazo: {{ item['prazo_entrega'] | dateformat if item['prazo_entrega'] else 'Não definido' }}</span>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="no-data">Nenhuma pendência em aberto.</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="dashboard-card">
+                <h2>Técnicos em Férias Hoje</h2>
+                <ul>
+                    {% if tecnicos_em_ferias %}
+                        {% for item in tecnicos_em_ferias %}
+                            <li>
+                                <strong>{{ item['funcionario'] }}</strong>
+                                <span class="meta">Retorna em: {{ item['data_termino'] | dateformat }}</span>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="no-data">Nenhum técnico em férias hoje.</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+        </div>
+
+        <h2 class="modules-section-title">Acessar Módulos do Sistema</h2>
         <div class="module-grid">
             <a href="{{ url_for('tecnicos') }}" class="module-button">Módulo de Técnicos</a>
             <a href="{{ url_for('clientes') }}" class="module-button">Módulo de Clientes</a>
@@ -26,8 +79,6 @@
             <a href="{{ url_for('agenda') }}" class="module-button">Módulo de Agenda</a>
             <a href="{{ url_for('usuarios') }}" class="module-button">Gestão de Usuários</a>
             <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
-           
-    
         </div>
     </div>
 </body>
