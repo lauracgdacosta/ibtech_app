@@ -704,49 +704,9 @@ def logout():
 @login_required
 def prestacao_contas():
     conn = get_db_connection()
-    
-    # Pega os parâmetros da URL, ex: /prestacao_contas?busca=ClienteA&ordenar_por=status
-    busca = request.args.get('busca', '')
-    ordenar_por = request.args.get('ordenar_por', 'id_desc') # Padrão: mais recentes
-
-    # Mapeamento seguro de opções de ordenação para cláusulas SQL
-    valid_sort_options = {
-        'id_desc': 'id DESC',
-        'cliente_asc': 'cliente ASC',
-        'cliente_desc': 'cliente DESC',
-        'sistema_asc': 'sistema ASC',
-        'sistema_desc': 'sistema DESC',
-        'responsavel_asc': 'responsavel ASC',
-        'responsavel_desc': 'responsavel DESC',
-        'status_asc': 'status ASC',
-        'status_desc': 'status DESC'
-    }
-    
-    # Usa a ordenação escolhida ou a padrão se a opção for inválida
-    order_clause = valid_sort_options.get(ordenar_por, 'id DESC')
-
-    query = "SELECT * FROM prestacao_contas"
-    params = []
-
-    # Se houver um termo de busca, adiciona a cláusula WHERE para procurar em múltiplos campos
-    if busca:
-        query += " WHERE cliente LIKE ? OR sistema LIKE ? OR responsavel LIKE ? OR modulo LIKE ? OR status LIKE ?"
-        search_term = f"%{busca}%"
-        # Adiciona o termo de busca para cada campo na consulta
-        params.extend([search_term] * 5)
-
-    # Adiciona a cláusula de ordenação na consulta
-    query += f" ORDER BY {order_clause}"
-
-    dados = conn.execute(query, params).fetchall()
+    dados = conn.execute('SELECT * FROM prestacao_contas ORDER BY id DESC').fetchall()
     conn.close()
-    
-    # Passa os dados e os parâmetros de filtro/ordem para o template
-    return render_template('prestacao_contas.html', 
-                           dados=dados, 
-                           busca_atual=busca, 
-                           ordem_atual=ordenar_por)
-
+    return render_template('prestacao_contas.html', dados=dados)
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
 @login_required
