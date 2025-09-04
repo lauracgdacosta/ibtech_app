@@ -36,7 +36,7 @@
         <div class="header-actions">
             <h1 class="main-title">Painel de Controle</h1>
             <div>
-                <span>Bem-vindo(a), {{ session.user_name }}!</span> |
+                <span>Bem-vindo(a), {{ session['user_name'] }}!</span> |
                 <a href="{{ url_for('logout') }}">Sair</a>
             </div>
         </div>
@@ -56,9 +56,9 @@
                     <tbody>
                         {% for agendamento in proximos_agendamentos %}
                         <tr>
-                            <td>{{ agendamento.data_agendamento | dateformat }}</td>
-                            <td>{{ agendamento.cliente }}</td>
-                            <td>{{ agendamento.tecnico }}</td>
+                            <td>{{ agendamento['data_agendamento'] | dateformat }}</td>
+                            <td>{{ agendamento['cliente'] }}</td>
+                            <td>{{ agendamento['tecnico'] }}</td>
                         </tr>
                         {% else %}
                         <tr>
@@ -82,9 +82,9 @@
                     <tbody>
                         {% for pendencia in pendencias_abertas %}
                         <tr>
-                            <td>{{ pendencia.cliente }}</td>
-                            <td>{{ pendencia.sistema }}</td>
-                            <td>{{ pendencia.data_prioridade | dateformat }}</td>
+                            <td>{{ pendencia['cliente'] }}</td>
+                            <td>{{ pendencia['sistema'] }}</td>
+                            <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
                         </tr>
                         {% else %}
                         <tr>
@@ -108,9 +108,9 @@
                     <tbody>
                         {% for ferias in tecnicos_em_ferias %}
                         <tr>
-                            <td>{{ ferias.funcionario }}</td>
-                            <td>{{ ferias.data_inicio | dateformat }}</td>
-                            <td>{{ ferias.data_termino | dateformat }}</td>
+                            <td>{{ ferias['funcionario'] }}</td>
+                            <td>{{ ferias['data_inicio'] | dateformat }}</td>
+                            <td>{{ ferias['data_termino'] | dateformat }}</td>
                         </tr>
                         {% else %}
                         <tr>
@@ -132,7 +132,7 @@
             <a href="{{ url_for('pendencias') }}" class="module-button">Pendências</a>
             <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
             <a href="{{ url_for('ferias') }}" class="module-button">Férias</a>
-            {% if session.user_level == 'Admin' %}
+            {% if session['user_level'] == 'Admin' %}
                 <a href="{{ url_for('usuarios') }}" class="module-button">Gestão de Usuários</a>
             {% endif %}
         </div>
