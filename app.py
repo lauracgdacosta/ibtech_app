@@ -127,6 +127,7 @@ def init_db():
     ''')
     
     cursor.execute('DROP TABLE IF EXISTS cronogramas')
+    cursor.execute('DROP TABLE IF EXISTS tarefas')
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS projetos (
@@ -145,9 +146,14 @@ def init_db():
             projeto_id INTEGER NOT NULL,
             atividade_id TEXT,
             descricao TEXT NOT NULL,
+            data_inicio DATE,
+            data_termino DATE,
+            duracao INTEGER,
             responsavel_pm TEXT,
             responsavel_cm TEXT,
             status TEXT NOT NULL,
+            local_execucao TEXT,
+            observacoes TEXT,
             FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE
         )
     ''')
@@ -437,25 +443,59 @@ def checklist_projeto(projeto_id):
         return redirect(url_for('projetos'))
     return render_template('checklist_projeto.html', projeto=projeto, tarefas=lista_tarefas)
 
-@app.route('/projeto/<int:projeto_id>/new_tarefa', methods=['GET', 'POST'])
+@app.route('/projeto/<int:projeto_id>/new_tarefa', methods=['POST'])
 @login_required
 def new_tarefa(projeto_id):
+    atividade_id = request.form['atividade_id']
+    descricao = request.form['descricao']
+    data_inicio = request.form['data_inicio'] or None
+    data_termino = request.form['data_termino'] or None
+    duracao = request.form['duracao'] or None
+    responsavel_pm = request.form['responsavel_pm']
+    responsavel_cm = request.form['responsavel_cm']
+    local_execucao = request.form['local_execucao']
+    observacoes = request.form['observacoes']
     conn = get_db_connection()
-    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
-    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    conn.execute('''
+        INSERT INTO tarefas (projeto_id, atividade_id, descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, status, local_execucao, observacoes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (projeto_id, atividade_id, descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, 'Planejada', local_execucao, observacoes))
+    conn.commit()
+    conn.close()
+    flash('Tarefa adicionada com sucesso!', 'success')
+    return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
+
+@app.route('/tarefa/edit/<int:tarefa_id>', methods=['GET', 'POST'])
+@login_required
+def edit_tarefa(tarefa_id):
+    conn = get_db_connection()
+    tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
     if request.method == 'POST':
-        descricao = request.form['descricao']
         atividade_id = request.form['atividade_id']
+        descricao = request.form['descricao']
+        data_inicio = request.form['data_inicio'] or None
+        data_termino = request.form['data_termino'] or None
+        duracao = request.form['duracao'] or None
         responsavel_pm = request.form['responsavel_pm']
         responsavel_cm = request.form['responsavel_cm']
-        conn.execute('INSERT INTO tarefas (projeto_id, descricao, atividade_id, responsavel_pm, responsavel_cm, status) VALUES (?, ?, ?, ?, ?, ?)',
-                     (projeto_id, descricao, atividade_id, responsavel_pm, responsavel_cm, 'Planejada'))
+        status = request.form['status']
+        local_execucao = request.form['local_execucao']
+        observacoes = request.form['observacoes']
+        conn.execute('''
+            UPDATE tarefas SET
+            atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, duracao = ?, 
+            responsavel_pm = ?, responsavel_cm = ?, status = ?, local_execucao = ?, observacoes = ?
+            WHERE id = ?
+        ''', (atividade_id, descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, status, local_execucao, observacoes, tarefa_id))
         conn.commit()
         conn.close()
-        flash('Tarefa adicionada com sucesso!', 'success')
-        return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
+        flash('Tarefa atualizada com sucesso!', 'success')
+        return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
     conn.close()
-    return render_template('new_tarefa.html', projeto=projeto, tecnicos=tecnicos)
+    return render_template('edit_tarefa.html', tarefa=tarefa, tecnicos=tecnicos, locais=locais)
 
 @app.route('/tarefa/toggle_status/<int:tarefa_id>', methods=['POST'])
 @login_required
@@ -463,7 +503,7 @@ def toggle_tarefa_status(tarefa_id):
     conn = get_db_connection()
     tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
     if tarefa:
-        novo_status = 'Concluída' if tarefa['status'] == 'Planejada' else 'Planejada'
+        novo_status = 'Concluída' if tarefa['status'] != 'Concluída' else 'Planejada'
         conn.execute('UPDATE tarefas SET status = ? WHERE id = ?', (novo_status, tarefa_id))
         conn.commit()
         flash(f'Status da tarefa alterado para "{novo_status}"!', 'success')
@@ -736,7 +776,6 @@ def edit_prestacao(id):
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
-    # --- LINHA CORRIGIDA ---
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
     return render_template('edit_prestacao.html', item=item, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)

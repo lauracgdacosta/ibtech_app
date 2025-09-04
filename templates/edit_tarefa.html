@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Tarefa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Editar Tarefa</h1>
+    <form method="post">
+        <label for="atividade_id">Item</label>
+        <input type="text" name="atividade_id" value="{{ tarefa['atividade_id'] }}">
+
+        <label for="descricao">Atividade</label>
+        <textarea name="descricao" required>{{ tarefa['descricao'] }}</textarea>
+
+        <label for="data_inicio">Data Início</label>
+        <input type="date" name="data_inicio" value="{{ tarefa['data_inicio'] }}">
+
+        <label for="data_termino">Data Término</label>
+        <input type="date" name="data_termino" value="{{ tarefa['data_termino'] }}">
+
+        <label for="duracao">Duração (dias)</label>
+        <input type="number" name="duracao" value="{{ tarefa['duracao'] }}">
+
+        <label for="responsavel_pm">Responsável PM</label>
+        <select name="responsavel_pm">
+            <option value="">Selecione</option>
+            {% for tecnico in tecnicos %}<option value="{{ tecnico }}" {% if tecnico == tarefa['responsavel_pm'] %}selected{% endif %}>{{ tecnico }}</option>{% endfor %}
+        </select>
+
+        <label for="responsavel_cm">Responsável CM</label>
+        <select name="responsavel_cm">
+            <option value="">Selecione</option>
+            {% for tecnico in tecnicos %}<option value="{{ tecnico }}" {% if tecnico == tarefa['responsavel_cm'] %}selected{% endif %}>{{ tecnico }}</option>{% endfor %}
+        </select>
+
+        <label for="local_execucao">Local de Execução</label>
+        <select name="local_execucao">
+            <option value="">Selecione</option>
+            {% for local in locais %}<option value="{{ local }}" {% if local == tarefa['local_execucao'] %}selected{% endif %}>{{ local }}</option>{% endfor %}
+        </select>
+        
+        <label for="status">Status</label>
+        <select name="status" required>
+            <option value="Planejada" {% if tarefa['status'] == 'Planejada' %}selected{% endif %}>Planejada</option>
+            <option value="Concluída" {% if tarefa['status'] == 'Concluída' %}selected{% endif %}>Concluída</option>
+            <option value="Em Andamento" {% if tarefa['status'] == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+            <option value="Cancelada" {% if tarefa['status'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+        </select>
+        
+        <label for="observacoes">Observações</label>
+        <textarea name="observacoes">{{ tarefa['observacoes'] }}</textarea>
+
+        <button type="submit">Salvar Alterações</button>
+    </form>
+    <a href="{{ url_for('checklist_projeto', projeto_id=tarefa['projeto_id']) }}" class="button">Cancelar</a>
+</div>
+</body>
+</html>
