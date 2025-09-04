@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Cronograma de Implantação</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Cronograma de Implantação</h1>
+            <a href="{{ url_for('new_cronograma') }}" class="button">Adicionar Nova Atividade</a>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Atividade</th>
+                    <th>Descrição</th>
+                    <th>Data Início</th>
+                    <th>Data Término</th>
+                    <th>Duração (dias)</th>
+                    <th>Responsável PM</th>
+                    <th>Responsável CM</th>
+                    <th>Status</th>
+                    <th>Local</th>
+                    <th>Observações</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cronogramas %}
+                <tr>
+                    <td>{{ item['atividade_id'] }}</td>
+                    <td>{{ item['atividade_descricao'] }}</td>
+                    <td>{{ item['data_inicio'] | dateformat }}</td>
+                    <td>{{ item['data_termino'] | dateformat }}</td>
+                    <td>{{ item['duracao'] }}</td>
+                    <td>{{ item['responsavel_pm'] }}</td>
+                    <td>{{ item['responsavel_cm'] }}</td>
+                    <td>{{ item['status'] }}</td>
+                    <td>{{ item['local_execucao'] }}</td>
+                    <td>{{ item['observacoes'] }}</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_cronograma', id=item['id']) }}">Editar</a>
+                        <form action="{{ url_for('delete_cronograma', id=item['id']) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta atividade?');">
+                            <button type="submit">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11" style="text-align: center;">Nenhuma atividade no cronograma ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+    </div>
+</body>
+</html>

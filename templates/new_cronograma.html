@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nova Atividade do Cronograma</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Adicionar Nova Atividade ao Cronograma</h1>
+        <form method="post">
+            <label for="atividade_id">ID da Atividade (ex: 1.1, 2.1.1)</label>
+            <input type="text" name="atividade_id" id="atividade_id" required>
+
+            <label for="atividade_descricao">Descrição da Atividade</label>
+            <textarea name="atividade_descricao" id="atividade_descricao" required></textarea>
+
+            <label for="data_inicio">Data de Início</label>
+            <input type="date" name="data_inicio" id="data_inicio">
+
+            <label for="data_termino">Data de Término</label>
+            <input type="date" name="data_termino" id="data_termino">
+
+            <label for="duracao">Duração (dias)</label>
+            <input type="number" name="duracao" id="duracao">
+
+            <label for="responsavel_pm">Responsável PM</label>
+            <select name="responsavel_pm" id="responsavel_pm">
+                <option value="">Selecione</option>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}">{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="responsavel_cm">Responsável CM</label>
+            <select name="responsavel_cm" id="responsavel_cm">
+                <option value="">Selecione</option>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}">{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+            
+            <label for="status">Status</label>
+            <select name="status" id="status">
+                <option value="Planejada">Planejada</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Concluída">Concluída</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+
+            <label for="local_execucao">Local de Execução</label>
+            <select name="local_execucao" id="local_execucao">
+                <option value="">Selecione</option>
+                {% for local in locais %}
+                    <option value="{{ local }}">{{ local }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="observacoes">Observações</label>
+            <textarea name="observacoes" id="observacoes"></textarea>
+
+            <button type="submit">Salvar Atividade</button>
+        </form>
+        <a href="{{ url_for('cronograma') }}" class="button">Cancelar</a>
+    </div>
+</body>
+</html>

@@ -9,7 +9,6 @@ app = Flask(__name__)
 
 # Configurações da Aplicação
 app.secret_key = '18T3ch'
-# LINHA DO CSRF FOI REMOVIDA
 
 # --- Filtro Jinja2 para Formatação de Data ---
 def format_date(value):
@@ -17,10 +16,17 @@ def format_date(value):
     if value is None or value == "":
         return ""
     try:
+        # Tenta primeiro com o formato de data
         date_obj = datetime.datetime.strptime(value, '%Y-%m-%d')
         return date_obj.strftime('%d/%m/%Y')
     except ValueError:
-        return value
+        # Se falhar, tenta com o formato de data e hora (se aplicável)
+        try:
+            date_obj = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            return date_obj.strftime('%d/%m/%Y %H:%M')
+        except ValueError:
+            # Se ambos falharem, retorna o valor original
+            return value
 
 app.jinja_env.filters['dateformat'] = format_date
 
@@ -120,6 +126,23 @@ def init_db():
             status TEXT,
             observacao TEXT,
             atualizado_por TEXT
+        )
+    ''')
+    
+    # --- Tabela para o Módulo de Cronograma ---
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS cronogramas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            atividade_id TEXT,
+            atividade_descricao TEXT,
+            data_inicio DATE,
+            data_termino DATE,
+            duracao INTEGER,
+            responsavel_pm TEXT,
+            responsavel_cm TEXT,
+            status TEXT,
+            local_execucao TEXT,
+            observacoes TEXT
         )
     ''')
     
@@ -239,6 +262,7 @@ def delete_tecnico(id):
     conn.close()
     return redirect(url_for('tecnicos'))
 
+
 # --- Rotas do Módulo de Clientes ---
 @app.route('/clientes')
 @login_required
@@ -295,6 +319,7 @@ def delete_cliente(id):
     conn.close()
     return redirect(url_for('clientes'))
 
+
 # --- Rotas do Módulo de Equipes ---
 @app.route('/equipes')
 @login_required
@@ -345,6 +370,103 @@ def delete_equipe(id):
     conn.commit()
     conn.close()
     return redirect(url_for('equipes'))
+
+
+# --- MÓDULO DE CRONOGRAMA ---
+@app.route('/cronograma')
+@login_required
+def cronograma():
+    conn = get_db_connection()
+    cronogramas_data = conn.execute('SELECT * FROM cronogramas ORDER BY atividade_id').fetchall()
+    conn.close()
+    return render_template('cronograma.html', cronogramas=cronogramas_data)
+
+@app.route('/new_cronograma', methods=['GET', 'POST'])
+@login_required
+def new_cronograma():
+    conn = get_db_connection()
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
+    
+    if request.method == 'POST':
+        atividade_id = request.form.get('atividade_id')
+        atividade_descricao = request.form.get('atividade_descricao')
+        data_inicio = request.form.get('data_inicio')
+        data_termino = request.form.get('data_termino')
+        duracao = request.form.get('duracao')
+        responsavel_pm = request.form.get('responsavel_pm')
+        responsavel_cm = request.form.get('responsavel_cm')
+        status = request.form.get('status')
+        local_execucao = request.form.get('local_execucao')
+        observacoes = request.form.get('observacoes')
+        
+        conn.execute('''
+            INSERT INTO cronogramas (atividade_id, atividade_descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, status, local_execucao, observacoes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (atividade_id, atividade_descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, status, local_execucao, observacoes))
+        
+        conn.commit()
+        conn.close()
+        flash('Atividade adicionada ao cronograma com sucesso!', 'success')
+        return redirect(url_for('cronograma'))
+        
+    conn.close()
+    return render_template('new_cronograma.html', tecnicos=tecnicos, locais=locais)
+
+@app.route('/edit_cronograma/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_cronograma(id):
+    conn = get_db_connection()
+    cronograma_item = conn.execute('SELECT * FROM cronogramas WHERE id = ?', (id,)).fetchone()
+
+    if cronograma_item is None:
+        conn.close()
+        flash('Atividade do cronograma não encontrada.', 'danger')
+        return redirect(url_for('cronograma'))
+
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
+
+    if request.method == 'POST':
+        atividade_id = request.form.get('atividade_id')
+        atividade_descricao = request.form.get('atividade_descricao')
+        data_inicio = request.form.get('data_inicio')
+        data_termino = request.form.get('data_termino')
+        duracao = request.form.get('duracao')
+        responsavel_pm = request.form.get('responsavel_pm')
+        responsavel_cm = request.form.get('responsavel_cm')
+        status = request.form.get('status')
+        local_execucao = request.form.get('local_execucao')
+        observacoes = request.form.get('observacoes')
+        
+        conn.execute('''
+            UPDATE cronogramas SET 
+                atividade_id = ?, atividade_descricao = ?, data_inicio = ?, data_termino = ?, 
+                duracao = ?, responsavel_pm = ?, responsavel_cm = ?, status = ?, 
+                local_execucao = ?, observacoes = ?
+            WHERE id = ?
+        ''', (atividade_id, atividade_descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, status, local_execucao, observacoes, id))
+        
+        conn.commit()
+        conn.close()
+        flash('Atividade do cronograma atualizada com sucesso!', 'success')
+        return redirect(url_for('cronograma'))
+        
+    conn.close()
+    return render_template('edit_cronograma.html', cronograma_item=cronograma_item, tecnicos=tecnicos, locais=locais)
+
+@app.route('/delete_cronograma/<int:id>', methods=['POST'])
+@login_required
+def delete_cronograma(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM cronogramas WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    flash('Atividade do cronograma excluída com sucesso!', 'success')
+    return redirect(url_for('cronograma'))
+
 
 # --- Rotas do Módulo de Pendências ---
 @app.route('/pendencias')
@@ -417,6 +539,7 @@ def delete_pendencia(id):
     conn.commit()
     conn.close()
     return redirect(url_for('pendencias'))
+
     
 # --- Rotas do Módulo de Férias ---
 @app.route('/ferias')
@@ -481,6 +604,7 @@ def delete_ferias(id):
     conn.close()
     return redirect(url_for('ferias'))
 
+
 # --- Rotas do Módulo de Sistemas ---
 @app.route('/sistemas')
 @login_required
@@ -526,6 +650,7 @@ def delete_sistema(id):
     conn.commit()
     conn.close()
     return redirect(url_for('sistemas'))
+
 
 # --- Rotas do Módulo de Agenda ---
 @app.route('/agenda')
@@ -600,6 +725,7 @@ def delete_agenda(id):
     conn.close()
     return redirect(url_for('agenda'))
 
+
 # --- Rotas do Módulo de Gestão de Usuários ---
 @app.route('/usuarios')
 @login_required
@@ -667,6 +793,7 @@ def delete_usuario(id):
     conn.close()
     return redirect(url_for('usuarios'))
 
+
 # --- Rotas de Autenticação ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -698,6 +825,7 @@ def logout():
     session.clear()
     flash('Você saiu do sistema.', 'info')
     return redirect(url_for('login'))
+
 
 # --- Rotas do Módulo de Prestação de Contas ---
 @app.route('/prestacao_contas')
@@ -787,5 +915,8 @@ def delete_prestacao(id):
     conn.close()
     return redirect(url_for('prestacao_contas'))
 
+# --- BLOCO DE EXECUÇÃO CORRIGIDO ---
 if __name__ == '__main__':
+    # Garante que o banco de dados e todas as tabelas existam ao iniciar
+    init_db()
     app.run(debug=True)
