@@ -32,6 +32,7 @@ def init_db():
     conn = sqlite3.connect('/tmp/database.db')
     cursor = conn.cursor()
     
+    # --- VERSÃO CORRIGIDA COM TODOS OS SCHEMAS COMPLETOS ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tecnicos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
