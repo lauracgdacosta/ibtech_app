@@ -52,10 +52,6 @@
                 <input type="date" name="data_termino">
             </div>
             <div>
-                <label for="duracao">Duração (dias)</label>
-                <input type="number" name="duracao">
-            </div>
-            <div>
                 <label for="responsavel_pm">Responsável PM</label>
                 <input type="text" name="responsavel_pm">
             </div>
@@ -101,7 +97,7 @@
                         {% endif %}
                     </td>
                     <td>{{ tarefa['data_inicio'] | dateformat }} - {{ tarefa['data_termino'] | dateformat }}</td>
-                    <td>{{ tarefa['duracao'] }} d</td>
+                    <td>{{ tarefa['duracao_calculada'] }}</td>
                     <td><b>PM:</b> {{ tarefa['responsavel_pm'] }}<br><b>CM:</b> {{ tarefa['responsavel_cm'] }}</td>
                     <td>{{ tarefa['local_execucao'] }}</td>
                     <td>

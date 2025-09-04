@@ -148,7 +148,6 @@ def init_db():
             descricao TEXT NOT NULL,
             data_inicio DATE,
             data_termino DATE,
-            duracao INTEGER,
             responsavel_pm TEXT,
             responsavel_cm TEXT,
             status TEXT NOT NULL,
@@ -436,12 +435,26 @@ def new_projeto():
 def checklist_projeto(projeto_id):
     conn = get_db_connection()
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
-    lista_tarefas = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
+    tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
     conn.close()
     if projeto is None:
         flash('Projeto não encontrado.', 'danger')
         return redirect(url_for('projetos'))
-    return render_template('checklist_projeto.html', projeto=projeto, tarefas=lista_tarefas)
+    lista_tarefas_com_duracao = []
+    for tarefa in tarefas_from_db:
+        tarefa_dict = dict(tarefa)
+        duracao = ""
+        if tarefa_dict['data_inicio'] and tarefa_dict['data_termino']:
+            try:
+                data_inicio = datetime.datetime.strptime(tarefa_dict['data_inicio'], '%Y-%m-%d')
+                data_termino = datetime.datetime.strptime(tarefa_dict['data_termino'], '%Y-%m-%d')
+                delta = (data_termino - data_inicio).days + 1
+                duracao = f"{delta} d" if delta >= 0 else ""
+            except (ValueError, TypeError):
+                duracao = ""
+        tarefa_dict['duracao_calculada'] = duracao
+        lista_tarefas_com_duracao.append(tarefa_dict)
+    return render_template('checklist_projeto.html', projeto=projeto, tarefas=lista_tarefas_com_duracao)
 
 @app.route('/projeto/<int:projeto_id>/new_tarefa', methods=['POST'])
 @login_required
@@ -450,16 +463,15 @@ def new_tarefa(projeto_id):
     descricao = request.form['descricao']
     data_inicio = request.form['data_inicio'] or None
     data_termino = request.form['data_termino'] or None
-    duracao = request.form['duracao'] or None
     responsavel_pm = request.form['responsavel_pm']
     responsavel_cm = request.form['responsavel_cm']
     local_execucao = request.form['local_execucao']
     observacoes = request.form['observacoes']
     conn = get_db_connection()
     conn.execute('''
-        INSERT INTO tarefas (projeto_id, atividade_id, descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, status, local_execucao, observacoes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (projeto_id, atividade_id, descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, 'Planejada', local_execucao, observacoes))
+        INSERT INTO tarefas (projeto_id, atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, status, local_execucao, observacoes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (projeto_id, atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, 'Planejada', local_execucao, observacoes))
     conn.commit()
     conn.close()
     flash('Tarefa adicionada com sucesso!', 'success')
@@ -475,7 +487,6 @@ def edit_tarefa(tarefa_id):
         descricao = request.form['descricao']
         data_inicio = request.form['data_inicio'] or None
         data_termino = request.form['data_termino'] or None
-        duracao = request.form['duracao'] or None
         responsavel_pm = request.form['responsavel_pm']
         responsavel_cm = request.form['responsavel_cm']
         status = request.form['status']
@@ -483,10 +494,10 @@ def edit_tarefa(tarefa_id):
         observacoes = request.form['observacoes']
         conn.execute('''
             UPDATE tarefas SET
-            atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, duracao = ?, 
+            atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, 
             responsavel_pm = ?, responsavel_cm = ?, status = ?, local_execucao = ?, observacoes = ?
             WHERE id = ?
-        ''', (atividade_id, descricao, data_inicio, data_termino, duracao, responsavel_pm, responsavel_cm, status, local_execucao, observacoes, tarefa_id))
+        ''', (atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, status, local_execucao, observacoes, tarefa_id))
         conn.commit()
         conn.close()
         flash('Tarefa atualizada com sucesso!', 'success')
