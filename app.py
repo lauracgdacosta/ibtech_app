@@ -376,23 +376,28 @@ def delete_equipe(id):
 @app.route('/cronograma')
 @login_required
 def cronograma():
-    # --- CÓDIGO DE TESTE TEMPORÁRIO ---
-    # Vamos usar dados falsos para ver se o template funciona.
-    cronogramas_data = [
-        {
-            'id': 1,
-            'atividade_id': '1.0',
-            'atividade_descricao': 'Atividade de Teste',
-            'data_inicio': '2025-09-04',
-            'data_termino': '2025-09-05',
-            'duracao': 2,
-            'responsavel_pm': 'Laura',
-            'responsavel_cm': 'Laura',
-            'status': 'Em Andamento',
-            'local_execucao': 'Ibtech',
-            'observacoes': 'Isso é apenas um teste.'
-        }
-    ]
+    conn = get_db_connection()
+    # Query corrigida que trata campos vazios (NULL), substituindo-os por strings vazias.
+    # Isso evita erros no template ao tentar formatar ou exibir dados que não existem.
+    query = """
+        SELECT
+            id,
+            IFNULL(atividade_id, '') as atividade_id,
+            IFNULL(atividade_descricao, '') as atividade_descricao,
+            IFNULL(data_inicio, '') as data_inicio,
+            IFNULL(data_termino, '') as data_termino,
+            IFNULL(duracao, '') as duracao,
+            IFNULL(responsavel_pm, '') as responsavel_pm,
+            IFNULL(responsavel_cm, '') as responsavel_cm,
+            IFNULL(status, '') as status,
+            IFNULL(local_execucao, '') as local_execucao,
+            IFNULL(observacoes, '') as observacoes
+        FROM cronogramas
+        ORDER BY atividade_id
+    """
+    cronogramas_data = conn.execute(query).fetchall()
+    conn.close()
+    
     return render_template('cronograma.html', cronogramas=cronogramas_data)
 
 @app.route('/new_cronograma', methods=['GET', 'POST'])
