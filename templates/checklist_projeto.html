@@ -7,21 +7,61 @@
     <style>
         .task-completed { text-decoration: line-through; color: #95a5a6; }
         .task-completed td { background-color: #f8f9f9; }
+        .form-inline {
+            display: grid;
+            grid-template-columns: 1fr 3fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fdfdfd;
+            border: 1px solid #f0f4f7;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header-actions">
-            <h1>Checklist: {{ projeto['nome'] }}</h1>
+            <div>
+                <h1>Checklist: {{ projeto['nome'] }}</h1>
+                <p class="subtitle" style="text-align: left; margin-top: -10px;">Cliente: {{ projeto['cliente'] }} | Status: {{ projeto['status'] }}</p>
+            </div>
             <a href="{{ url_for('projetos') }}" class="button">Voltar para Projetos</a>
         </div>
-        <p class="subtitle">Cliente: {{ projeto['cliente'] }} | Status: {{ projeto['status'] }}</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <hr>
 
         <h2>Adicionar Nova Tarefa</h2>
         <form action="{{ url_for('new_tarefa', projeto_id=projeto['id']) }}" method="post">
-             </form>
+             <div class="form-inline">
+                <div>
+                    <label for="atividade_id">Atividade ID</label>
+                    <input type="text" name="atividade_id" id="atividade_id" placeholder="Ex: 2.4.2">
+                </div>
+                <div>
+                    <label for="descricao">Descrição da Tarefa</label>
+                    <input type="text" name="descricao" id="descricao" required placeholder="Ex: Contabilidade">
+                </div>
+                 <div>
+                    <label for="responsavel_pm">Responsável PM</label>
+                    <input type="text" name="responsavel_pm" id="responsavel_pm" placeholder="Ex: Wilher">
+                </div>
+                 <div>
+                    <label for="responsavel_cm">Responsável CM</label>
+                    <input type="text" name="responsavel_cm" id="responsavel_cm" placeholder="Ex: Wilher">
+                </div>
+                <button type="submit">Adicionar Tarefa</button>
+             </div>
+        </form>
 
         <h2>Tarefas do Projeto</h2>
         <table>
