@@ -23,7 +23,7 @@
         <form method="post">
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
-                <option value="">Selecione um Cliente</option>
+                <option value="" disabled selected>Selecione um Cliente</option>
                 {% for cliente in clientes %}
                     <option value="{{ cliente }}">{{ cliente }}</option>
                 {% endfor %}
@@ -31,7 +31,7 @@
 
             <label for="sistema">Sistema:</label>
             <select id="sistema" name="sistema" required>
-                <option value="">Selecione um Sistema</option>
+                <option value="" disabled selected>Selecione um Sistema</option>
                 {% for sistema in sistemas %}
                     <option value="{{ sistema }}">{{ sistema }}</option>
                 {% endfor %}
@@ -39,7 +39,7 @@
 
             <label for="responsavel">Responsável:</label>
             <select id="responsavel" name="responsavel" required>
-                <option value="">Selecione um Responsável</option>
+                <option value="" disabled selected>Selecione um Responsável</option>
                 {% for responsavel in responsaveis %}
                     <option value="{{ responsavel }}">{{ responsavel }}</option>
                 {% endfor %}
@@ -56,8 +56,13 @@
                 <option value="RREO">RREO</option>
                 <option value="RGF">RGF</option>
                 <option value="IP">IP</option>
-                <option value="DCASP">DCASP</option>
+                <option value="DCASP ISO">DCASP ISO</option>
                 <option value="E-social">E-social</option>
+                <option value="Edital e Licitação">Edital e Licitação</option>
+                <option value="SICOM - Obra">SICOM - Obra</option>
+                <option value="DCASP CON">DCASP CON</option>
+                <option value="MSC">MSC</option>
+                <option value="Rateio">Rateio</option>
             </select>
 
             <label for="periodo">Período:</label>
