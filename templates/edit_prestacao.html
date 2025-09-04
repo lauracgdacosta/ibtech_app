@@ -26,7 +26,8 @@
             <select id="cliente" name="cliente" required>
                 <option value="" disabled {% if not item['cliente'] %}selected{% endif %}>Selecione um Cliente</option>
                 {% for cliente in clientes %}
-                    <option value="{{ cliente }}" {% if cliente == item['cliente'] %}selected{% endif %}>{{ cliente }}</option>
+                    {# A correção está aqui: .strip() remove espaços extras no início e no fim #}
+                    <option value="{{ cliente }}" {% if cliente.strip() == item['cliente'].strip() %}selected{% endif %}>{{ cliente }}</option>
                 {% endfor %}
             </select>
 
@@ -34,7 +35,7 @@
             <select id="sistema" name="sistema" required>
                 <option value="" disabled {% if not item['sistema'] %}selected{% endif %}>Selecione um Sistema</option>
                 {% for sistema in sistemas %}
-                    <option value="{{ sistema }}" {% if sistema == item['sistema'] %}selected{% endif %}>{{ sistema }}</option>
+                    <option value="{{ sistema }}" {% if sistema.strip() == item['sistema'].strip() %}selected{% endif %}>{{ sistema }}</option>
                 {% endfor %}
             </select>
 
@@ -42,7 +43,7 @@
             <select id="responsavel" name="responsavel" required>
                 <option value="" disabled {% if not item['responsavel'] %}selected{% endif %}>Selecione um Responsável</option>
                 {% for responsavel in responsaveis %}
-                    <option value="{{ responsavel }}" {% if responsavel == item['responsavel'] %}selected{% endif %}>{{ responsavel }}</option>
+                    <option value="{{ responsavel }}" {% if responsavel.strip() == item['responsavel'].strip() %}selected{% endif %}>{{ responsavel }}</option>
                 {% endfor %}
             </select>
             
