@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Projetos de Implantação</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Projetos de Implantação</h1>
+            <a href="{{ url_for('new_projeto') }}" class="button">Criar Novo Projeto</a>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome do Projeto</th>
+                    <th>Cliente</th>
+                    <th>Início Previsto</th>
+                    <th>Término Previsto</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for projeto in projetos %}
+                <tr>
+                    <td>{{ projeto['nome'] }}</td>
+                    <td>{{ projeto['cliente'] }}</td>
+                    <td>{{ projeto['data_inicio_previsto'] | dateformat }}</td>
+                    <td>{{ projeto['data_termino_previsto'] | dateformat }}</td>
+                    <td>{{ projeto['status'] }}</td>
+                    <td class="actions">
+                        <a href="{{ url_for('checklist_projeto', projeto_id=projeto['id']) }}" style="background-color: #3498db;">Ver Checklist</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">Nenhum projeto cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Nova Tarefa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Adicionar Tarefa ao Projeto: {{ projeto['nome'] }}</h1>
+    <form method="post">
+        <label for="atividade_id">ID da Atividade (ex: 1.1, 2.1.1)</label>
+        <input type="text" name="atividade_id" id="atividade_id">
+
+        <label for="descricao">Descrição da Tarefa</label>
+        <textarea name="descricao" id="descricao" required></textarea>
+
+        <label for="responsavel_pm">Responsável PM</label>
+        <select name="responsavel_pm" id="responsavel_pm">
+            <option value="">Selecione</option>
+            {% for tecnico in tecnicos %}
+                <option value="{{ tecnico }}">{{ tecnico }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="responsavel_cm">Responsável CM</label>
+        <select name="responsavel_cm" id="responsavel_cm">
+            <option value="">Selecione</option>
+            {% for tecnico in tecnicos %}
+                <option value="{{ tecnico }}">{{ tecnico }}</option>
+            {% endfor %}
+        </select>
+        
+        <button type="submit">Salvar Tarefa</button>
+    </form>
+    <a href="{{ url_for('checklist_projeto', projeto_id=projeto['id']) }}" class="button">Cancelar</a>
+</div>
+</body>
+</html>

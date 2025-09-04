@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Checklist do Projeto</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .task-completed { text-decoration: line-through; color: #95a5a6; }
+        .task-completed td { background-color: #f8f9f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-actions">
+            <h1>Checklist: {{ projeto['nome'] }}</h1>
+            <a href="{{ url_for('projetos') }}" class="button">Voltar para Projetos</a>
+        </div>
+        <p class="subtitle">Cliente: {{ projeto['cliente'] }} | Status: {{ projeto['status'] }}</p>
+
+        <hr>
+
+        <h2>Adicionar Nova Tarefa</h2>
+        <form action="{{ url_for('new_tarefa', projeto_id=projeto['id']) }}" method="post">
+             </form>
+
+        <h2>Tarefas do Projeto</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Atividade</th>
+                    <th>Descrição</th>
+                    <th style="width: 15%;">Responsável PM</th>
+                    <th style="width: 15%;">Responsável CM</th>
+                    <th style="width: 15%;">Status (Checklist)</th>
+                    <th style="width: 10%;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tarefa in tarefas %}
+                <tr class="{% if tarefa['status'] == 'Concluída' %}task-completed{% endif %}">
+                    <td>{{ tarefa['atividade_id'] }}</td>
+                    <td>{{ tarefa['descricao'] }}</td>
+                    <td>{{ tarefa['responsavel_pm'] }}</td>
+                    <td>{{ tarefa['responsavel_cm'] }}</td>
+                    <td>
+                        <form action="{{ url_for('toggle_tarefa_status', tarefa_id=tarefa['id']) }}" method="post" style="margin:0;">
+                            {% if tarefa['status'] == 'Concluída' %}
+                                <button type="submit" class="button" style="background-color:#e74c3c; padding: 8px 12px;">Desmarcar</button>
+                            {% else %}
+                                <button type="submit" class="button" style="background-color:#2ecc71; padding: 8px 12px;">Concluir</button>
+                            {% endif %}
+                        </form>
+                    </td>
+                    <td class="actions">
+                        <form action="{{ url_for('delete_tarefa', tarefa_id=tarefa['id']) }}" method="post" onsubmit="return confirm('Tem certeza?');" style="display:inline;">
+                             <button type="submit">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align:center;">Nenhuma tarefa adicionada a este projeto.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
