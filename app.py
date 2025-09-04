@@ -376,9 +376,23 @@ def delete_equipe(id):
 @app.route('/cronograma')
 @login_required
 def cronograma():
-    conn = get_db_connection()
-    cronogramas_data = conn.execute('SELECT * FROM cronogramas ORDER BY atividade_id').fetchall()
-    conn.close()
+    # --- CÓDIGO DE TESTE TEMPORÁRIO ---
+    # Vamos usar dados falsos para ver se o template funciona.
+    cronogramas_data = [
+        {
+            'id': 1,
+            'atividade_id': '1.0',
+            'atividade_descricao': 'Atividade de Teste',
+            'data_inicio': '2025-09-04',
+            'data_termino': '2025-09-05',
+            'duracao': 2,
+            'responsavel_pm': 'Laura',
+            'responsavel_cm': 'Laura',
+            'status': 'Em Andamento',
+            'local_execucao': 'Ibtech',
+            'observacoes': 'Isso é apenas um teste.'
+        }
+    ]
     return render_template('cronograma.html', cronogramas=cronogramas_data)
 
 @app.route('/new_cronograma', methods=['GET', 'POST'])
