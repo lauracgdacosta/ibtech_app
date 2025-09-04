@@ -4,9 +4,26 @@
     <meta charset="UTF-8">
     <title>Módulo de Prestação de Contas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css">
-    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
+    <style>
+        /* Estilos adicionais para o formulário de filtro */
+        .filter-form {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .filter-form input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+        }
+        .filter-form select {
+            padding: 8px;
+        }
+    </style>
 </head>
 <body>
     <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
@@ -23,9 +40,29 @@
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
+
+        <div class="filter-form">
+            <form method="GET" action="{{ url_for('prestacao_contas') }}" style="width: 100%; display: flex; gap: 15px; align-items: center;">
+                <input type="text" name="busca" placeholder="Buscar por cliente, sistema, responsável, módulo ou status..." value="{{ busca_atual or '' }}">
+                
+                <select name="ordenar_por" onchange="this.form.submit()">
+                    <option value="id_desc" {% if ordem_atual == 'id_desc' %}selected{% endif %}>Mais Recentes</option>
+                    <option value="cliente_asc" {% if ordem_atual == 'cliente_asc' %}selected{% endif %}>Cliente (A-Z)</option>
+                    <option value="cliente_desc" {% if ordem_atual == 'cliente_desc' %}selected{% endif %}>Cliente (Z-A)</option>
+                    <option value="sistema_asc" {% if ordem_atual == 'sistema_asc' %}selected{% endif %}>Sistema (A-Z)</option>
+                    <option value="sistema_desc" {% if ordem_atual == 'sistema_desc' %}selected{% endif %}>Sistema (Z-A)</option>
+                    <option value="responsavel_asc" {% if ordem_atual == 'responsavel_asc' %}selected{% endif %}>Responsável (A-Z)</option>
+                    <option value="responsavel_desc" {% if ordem_atual == 'responsavel_desc' %}selected{% endif %}>Responsável (Z-A)</option>
+                    <option value="status_asc" {% if ordem_atual == 'status_asc' %}selected{% endif %}>Status (A-Z)</option>
+                    <option value="status_desc" {% if ordem_atual == 'status_desc' %}selected{% endif %}>Status (Z-A)</option>
+                </select>
+                
+                <button type="submit" class="button">Buscar</button>
+            </form>
+        </div>
         
         <div style="overflow-x: auto;">
-            <table id="tabela" class="display" style="width:100%">
+            <table class="styled-table" style="width:100%">
                 <thead>
                     <tr>
                         <th>Cliente</th>
@@ -37,7 +74,7 @@
                         <th>Status</th>
                         <th>Observação</th>
                         <th>Atualizado Por</th>
-                        <th class="no-sort">Ações</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,7 +91,7 @@
                         <td>{{ item['atualizado_por'] }}</td>
                         <td class="actions">
                             <a href="{{ url_for('edit_prestacao', id=item['id']) }}" class="button edit">Editar</a>
-                            <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post">
+                            <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display: inline;">
                                 <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja excluir este registro?');">Deletar</button>
                             </form>
                         </td>
@@ -64,14 +101,5 @@
             </table>
         </div>
     </div>
-
-    <script>
-    $(document).ready(function() {
-        $('#tabela').DataTable({
-            "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
-            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
-        });
-    });
-    </script>
 </body>
 </html>
