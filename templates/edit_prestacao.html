@@ -24,6 +24,7 @@
         <form method="post">
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
+                <option value="" disabled {% if not item['cliente'] %}selected{% endif %}>Selecione um Cliente</option>
                 {% for cliente in clientes %}
                     <option value="{{ cliente }}" {% if cliente == item['cliente'] %}selected{% endif %}>{{ cliente }}</option>
                 {% endfor %}
@@ -31,6 +32,7 @@
 
             <label for="sistema">Sistema:</label>
             <select id="sistema" name="sistema" required>
+                <option value="" disabled {% if not item['sistema'] %}selected{% endif %}>Selecione um Sistema</option>
                 {% for sistema in sistemas %}
                     <option value="{{ sistema }}" {% if sistema == item['sistema'] %}selected{% endif %}>{{ sistema }}</option>
                 {% endfor %}
@@ -38,6 +40,7 @@
 
             <label for="responsavel">Responsável:</label>
             <select id="responsavel" name="responsavel" required>
+                <option value="" disabled {% if not item['responsavel'] %}selected{% endif %}>Selecione um Responsável</option>
                 {% for responsavel in responsaveis %}
                     <option value="{{ responsavel }}" {% if responsavel == item['responsavel'] %}selected{% endif %}>{{ responsavel }}</option>
                 {% endfor %}
@@ -45,6 +48,7 @@
             
             <label for="modulo">Módulo:</label>
             <select id="modulo" name="modulo" required>
+                <option value="" disabled {% if not item['modulo'] %}selected{% endif %}>Selecione um Módulo</option>
                 <option value="SICOM AM" {% if item['modulo'] == 'SICOM AM' %}selected{% endif %}>SICOM AM</option>
                 <option value="SICOM BLC" {% if item['modulo'] == 'SICOM BLC' %}selected{% endif %}>SICOM BLC</option>
                 <option value="SICOM RH" {% if item['modulo'] == 'SICOM RH' %}selected{% endif %}>SICOM RH</option>
@@ -65,6 +69,7 @@
 
             <label for="periodo">Período:</label>
             <select id="periodo" name="periodo" required>
+                <option value="" disabled {% if not item['periodo'] %}selected{% endif %}>Selecione um Período</option>
                 <option value="Diário" {% if item['periodo'] == 'Diário' %}selected{% endif %}>Diário</option>
                 <option value="Mensal" {% if item['periodo'] == 'Mensal' %}selected{% endif %}>Mensal</option>
                 <option value="Bimestral" {% if item['periodo'] == 'Bimestral' %}selected{% endif %}>Bimestral</option>
@@ -78,6 +83,7 @@
             
             <label for="status">Status:</label>
             <select id="status" name="status" required>
+                <option value="" disabled {% if not item['status'] %}selected{% endif %}>Selecione um Status</option>
                 <option value="Finalizado" {% if item['status'] == 'Finalizado' %}selected{% endif %}>Finalizado</option>
                 <option value="Atrasado" {% if item['status'] == 'Atrasado' %}selected{% endif %}>Atrasado</option>
                 <option value="Reenvio Necessário" {% if item['status'] == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
