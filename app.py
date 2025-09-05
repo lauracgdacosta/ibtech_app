@@ -10,6 +10,61 @@ app = Flask(__name__)
 # Configurações da Aplicação
 app.secret_key = '18T3ch'
 
+# --- MODELO DE TAREFAS PADRÃO PARA NOVOS PROJETOS ---
+TAREFAS_PADRAO = [
+    {'id': '1', 'desc': 'Planejamento'},
+    {'id': '1.1', 'desc': 'Criar o cronograma do projeto'},
+    {'id': '1.2', 'desc': 'Validar o cronograma de projeto com equipe IBTECH'},
+    {'id': '1.3', 'desc': 'Aprovação do cronograma do projeto pelo o cliente'},
+    {'id': '2', 'desc': 'Execução'},
+    {'id': '2.1', 'desc': 'Levantamento de requisitos'},
+    {'id': '2.1.1', 'desc': 'Folha de pagamento'},
+    {'id': '2.1.2', 'desc': 'Contabilidade'},
+    {'id': '2.1.3', 'desc': 'Compras, licitações e contratos'},
+    {'id': '2.1.4', 'desc': 'Patrimônio'},
+    {'id': '2.1.5', 'desc': 'Almoxarifado'},
+    {'id': '2.1.6', 'desc': 'Frotas'},
+    {'id': '2.1.7', 'desc': 'Tributário'},
+    {'id': '2.1.8', 'desc': 'Nota Fiscal Eletrônica'},
+    {'id': '2.2', 'desc': 'Treinamento'},
+    {'id': '2.2.1', 'desc': 'Folha de pagamento'},
+    {'id': '2.2.2', 'desc': 'Contabilidade'},
+    {'id': '2.2.3', 'desc': 'Compras, licitações e contratos'},
+    {'id': '2.2.4', 'desc': 'Patrimônio'},
+    {'id': '2.2.5', 'desc': 'Almoxarifado'},
+    {'id': '2.2.6', 'desc': 'Frotas'},
+    {'id': '2.2.7', 'desc': 'Tributário'},
+    {'id': '2.2.8', 'desc': 'Nota Fiscal Eletrônica'},
+    {'id': '2.3', 'desc': 'Paralisação dos Setores para Migração'},
+    {'id': '2.3.1', 'desc': 'Suspensão temporária dos processos nos setores para realizar a migração e seus ajustes finais'},
+    {'id': '2.4', 'desc': 'Migração'},
+    {'id': '2.4.1', 'desc': 'Folha de pagamento'},
+    {'id': '2.4.2', 'desc': 'Contabilidade'},
+    {'id': '2.4.3', 'desc': 'Compras, licitações e contratos'},
+    {'id': '2.4.4', 'desc': 'Patrimônio'},
+    {'id': '2.4.5', 'desc': 'Almoxarifado'},
+    {'id': '2.4.6', 'desc': 'Frotas'},
+    {'id': '2.4.7', 'desc': 'Tributário'},
+    {'id': '2.4.8', 'desc': 'Nota Fiscal Eletrônica'},
+    {'id': '2.5', 'desc': 'Validação e Ajustes Finais'},
+    {'id': '2.5.1', 'desc': 'Folha de pagamento'},
+    {'id': '2.5.2', 'desc': 'Contabilidade'},
+    {'id': '2.5.3', 'desc': 'Compras, licitações e contratos'},
+    {'id': '2.5.4', 'desc': 'Patrimônio'},
+    {'id': '2.5.5', 'desc': 'Almoxarifado'},
+    {'id': '2.5.6', 'desc': 'Frotas'},
+    {'id': '2.5.7', 'desc': 'Tributário'},
+    {'id': '2.5.8', 'desc': 'Nota Fiscal Eletrônica'},
+    {'id': '3', 'desc': 'Go Live'},
+    {'id': '3.1', 'desc': 'Iniciar utilização do GPI'},
+    {'id': '4', 'desc': 'Operação assistida'},
+    {'id': '4.1', 'desc': 'Período onde os usuários poderão contar com suporte técnico contínuo'},
+    {'id': '4.2', 'desc': 'Envio do SICOM de agosto'},
+    {'id': '4.3', 'desc': 'Fechamento da folha de Setembro'},
+    {'id': '5', 'desc': 'Aceite da Implantação'},
+    {'id': '5.1', 'desc': 'Receber o aceite da implantação'},
+]
+
 # --- Filtro Jinja2 para Formatação de Data ---
 def format_date(value):
     """Formata uma string de data AAAA-MM-DD para DD/MM/AAAA."""
@@ -421,11 +476,20 @@ def new_projeto():
         data_inicio = request.form['data_inicio_previsto']
         data_termino = request.form['data_termino_previsto']
         status = request.form['status']
-        conn.execute('INSERT INTO projetos (nome, cliente, data_inicio_previsto, data_termino_previsto, status) VALUES (?, ?, ?, ?, ?)',
+        
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO projetos (nome, cliente, data_inicio_previsto, data_termino_previsto, status) VALUES (?, ?, ?, ?, ?)',
                      (nome, cliente, data_inicio, data_termino, status))
+        
+        # --- LÓGICA DE POPULAÇÃO AUTOMÁTICA ---
+        novo_projeto_id = cursor.lastrowid
+        for tarefa in TAREFAS_PADRAO:
+            cursor.execute('INSERT INTO tarefas (projeto_id, atividade_id, descricao, status) VALUES (?, ?, ?, ?)',
+                         (novo_projeto_id, tarefa['id'], tarefa['desc'], 'Planejada'))
+
         conn.commit()
         conn.close()
-        flash('Projeto criado com sucesso!', 'success')
+        flash('Projeto criado com sucesso e checklist padrão adicionado!', 'success')
         return redirect(url_for('projetos'))
     conn.close()
     return render_template('new_projeto.html', clientes=clientes)
