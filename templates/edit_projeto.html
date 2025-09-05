@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Projeto</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Editar Projeto de Implantação</h1>
+        <form method="post">
+            <label for="nome">Nome do Projeto</label>
+            <input type="text" name="nome" id="nome" value="{{ projeto['nome'] }}" required>
+
+            <label for="cliente">Cliente</label>
+            <select name="cliente" id="cliente">
+                <option value="">Selecione um cliente</option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente }}" {% if cliente == projeto['cliente'] %}selected{% endif %}>{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="data_inicio_previsto">Data de Início Previsto</label>
+            <input type="date" name="data_inicio_previsto" id="data_inicio_previsto" value="{{ projeto['data_inicio_previsto'] }}">
+
+            <label for="data_termino_previsto">Data de Término Previsto</label>
+            <input type="date" name="data_termino_previsto" id="data_termino_previsto" value="{{ projeto['data_termino_previsto'] }}">
+
+            <label for="status">Status</label>
+            <select name="status" id="status" required>
+                <option value="Planejado" {% if projeto['status'] == 'Planejado' %}selected{% endif %}>Planejado</option>
+                <option value="Em Andamento" {% if projeto['status'] == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                <option value="Concluído" {% if projeto['status'] == 'Concluído' %}selected{% endif %}>Concluído</option>
+                <option value="Cancelado" {% if projeto['status'] == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+            </select>
+
+            <button type="submit">Salvar Alterações</button>
+        </form>
+        <a href="{{ url_for('projetos') }}" class="button">Cancelar</a>
+    </div>
+</body>
+</html>
