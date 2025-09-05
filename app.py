@@ -10,59 +10,59 @@ app = Flask(__name__)
 # Configurações da Aplicação
 app.secret_key = '18T3ch'
 
-# --- MODELO DE TAREFAS PADRÃO PARA NOVOS PROJETOS ---
+# --- MODELO DE TAREFAS PADRÃO COM O NOVO CAMPO 'tipo' ---
 TAREFAS_PADRAO = [
-    {'id': '1', 'desc': 'Planejamento'},
-    {'id': '1.1', 'desc': 'Criar o cronograma do projeto'},
-    {'id': '1.2', 'desc': 'Validar o cronograma de projeto com equipe IBTECH'},
-    {'id': '1.3', 'desc': 'Aprovação do cronograma do projeto pelo o cliente'},
-    {'id': '2', 'desc': 'Execução'},
-    {'id': '2.1', 'desc': 'Levantamento de requisitos'},
-    {'id': '2.1.1', 'desc': 'Folha de pagamento'},
-    {'id': '2.1.2', 'desc': 'Contabilidade'},
-    {'id': '2.1.3', 'desc': 'Compras, licitações e contratos'},
-    {'id': '2.1.4', 'desc': 'Patrimônio'},
-    {'id': '2.1.5', 'desc': 'Almoxarifado'},
-    {'id': '2.1.6', 'desc': 'Frotas'},
-    {'id': '2.1.7', 'desc': 'Tributário'},
-    {'id': '2.1.8', 'desc': 'Nota Fiscal Eletrônica'},
-    {'id': '2.2', 'desc': 'Treinamento'},
-    {'id': '2.2.1', 'desc': 'Folha de pagamento'},
-    {'id': '2.2.2', 'desc': 'Contabilidade'},
-    {'id': '2.2.3', 'desc': 'Compras, licitações e contratos'},
-    {'id': '2.2.4', 'desc': 'Patrimônio'},
-    {'id': '2.2.5', 'desc': 'Almoxarifado'},
-    {'id': '2.2.6', 'desc': 'Frotas'},
-    {'id': '2.2.7', 'desc': 'Tributário'},
-    {'id': '2.2.8', 'desc': 'Nota Fiscal Eletrônica'},
-    {'id': '2.3', 'desc': 'Paralisação dos Setores para Migração'},
-    {'id': '2.3.1', 'desc': 'Suspensão temporária dos processos nos setores para realizar a migração e seus ajustes finais'},
-    {'id': '2.4', 'desc': 'Migração'},
-    {'id': '2.4.1', 'desc': 'Folha de pagamento'},
-    {'id': '2.4.2', 'desc': 'Contabilidade'},
-    {'id': '2.4.3', 'desc': 'Compras, licitações e contratos'},
-    {'id': '2.4.4', 'desc': 'Patrimônio'},
-    {'id': '2.4.5', 'desc': 'Almoxarifado'},
-    {'id': '2.4.6', 'desc': 'Frotas'},
-    {'id': '2.4.7', 'desc': 'Tributário'},
-    {'id': '2.4.8', 'desc': 'Nota Fiscal Eletrônica'},
-    {'id': '2.5', 'desc': 'Validação e Ajustes Finais'},
-    {'id': '2.5.1', 'desc': 'Folha de pagamento'},
-    {'id': '2.5.2', 'desc': 'Contabilidade'},
-    {'id': '2.5.3', 'desc': 'Compras, licitações e contratos'},
-    {'id': '2.5.4', 'desc': 'Patrimônio'},
-    {'id': '2.5.5', 'desc': 'Almoxarifado'},
-    {'id': '2.5.6', 'desc': 'Frotas'},
-    {'id': '2.5.7', 'desc': 'Tributário'},
-    {'id': '2.5.8', 'desc': 'Nota Fiscal Eletrônica'},
-    {'id': '3', 'desc': 'Go Live'},
-    {'id': '3.1', 'desc': 'Iniciar utilização do GPI'},
-    {'id': '4', 'desc': 'Operação assistida'},
-    {'id': '4.1', 'desc': 'Período onde os usuários poderão contar com suporte técnico contínuo'},
-    {'id': '4.2', 'desc': 'Envio do SICOM de agosto'},
-    {'id': '4.3', 'desc': 'Fechamento da folha de Setembro'},
-    {'id': '5', 'desc': 'Aceite da Implantação'},
-    {'id': '5.1', 'desc': 'Receber o aceite da implantação'},
+    {'id': '1', 'desc': 'Planejamento', 'tipo': 'titulo'},
+    {'id': '1.1', 'desc': 'Criar o cronograma do projeto', 'tipo': 'tarefa'},
+    {'id': '1.2', 'desc': 'Validar o cronograma de projeto com equipe IBTECH', 'tipo': 'tarefa'},
+    {'id': '1.3', 'desc': 'Aprovação do cronograma do projeto pelo o cliente', 'tipo': 'tarefa'},
+    {'id': '2', 'desc': 'Execução', 'tipo': 'titulo'},
+    {'id': '2.1', 'desc': 'Levantamento de requisitos', 'tipo': 'titulo'},
+    {'id': '2.1.1', 'desc': 'Folha de pagamento', 'tipo': 'tarefa'},
+    {'id': '2.1.2', 'desc': 'Contabilidade', 'tipo': 'tarefa'},
+    {'id': '2.1.3', 'desc': 'Compras, licitações e contratos', 'tipo': 'tarefa'},
+    {'id': '2.1.4', 'desc': 'Patrimônio', 'tipo': 'tarefa'},
+    {'id': '2.1.5', 'desc': 'Almoxarifado', 'tipo': 'tarefa'},
+    {'id': '2.1.6', 'desc': 'Frotas', 'tipo': 'tarefa'},
+    {'id': '2.1.7', 'desc': 'Tributário', 'tipo': 'tarefa'},
+    {'id': '2.1.8', 'desc': 'Nota Fiscal Eletrônica', 'tipo': 'tarefa'},
+    {'id': '2.2', 'desc': 'Treinamento', 'tipo': 'titulo'},
+    {'id': '2.2.1', 'desc': 'Folha de pagamento', 'tipo': 'tarefa'},
+    {'id': '2.2.2', 'desc': 'Contabilidade', 'tipo': 'tarefa'},
+    {'id': '2.2.3', 'desc': 'Compras, licitações e contratos', 'tipo': 'tarefa'},
+    {'id': '2.2.4', 'desc': 'Patrimônio', 'tipo': 'tarefa'},
+    {'id': '2.2.5', 'desc': 'Almoxarifado', 'tipo': 'tarefa'},
+    {'id': '2.2.6', 'desc': 'Frotas', 'tipo': 'tarefa'},
+    {'id': '2.2.7', 'desc': 'Tributário', 'tipo': 'tarefa'},
+    {'id': '2.2.8', 'desc': 'Nota Fiscal Eletrônica', 'tipo': 'tarefa'},
+    {'id': '2.3', 'desc': 'Paralisação dos Setores para Migração', 'tipo': 'titulo'},
+    {'id': '2.3.1', 'desc': 'Suspensão temporária dos processos nos setores para realizar a migração e seus ajustes finais', 'tipo': 'tarefa'},
+    {'id': '2.4', 'desc': 'Migração', 'tipo': 'titulo'},
+    {'id': '2.4.1', 'desc': 'Folha de pagamento', 'tipo': 'tarefa'},
+    {'id': '2.4.2', 'desc': 'Contabilidade', 'tipo': 'tarefa'},
+    {'id': '2.4.3', 'desc': 'Compras, licitações e contratos', 'tipo': 'tarefa'},
+    {'id': '2.4.4', 'desc': 'Patrimônio', 'tipo': 'tarefa'},
+    {'id': '2.4.5', 'desc': 'Almoxarifado', 'tipo': 'tarefa'},
+    {'id': '2.4.6', 'desc': 'Frotas', 'tipo': 'tarefa'},
+    {'id': '2.4.7', 'desc': 'Tributário', 'tipo': 'tarefa'},
+    {'id': '2.4.8', 'desc': 'Nota Fiscal Eletrônica', 'tipo': 'tarefa'},
+    {'id': '2.5', 'desc': 'Validação e Ajustes Finais', 'tipo': 'titulo'},
+    {'id': '2.5.1', 'desc': 'Folha de pagamento', 'tipo': 'tarefa'},
+    {'id': '2.5.2', 'desc': 'Contabilidade', 'tipo': 'tarefa'},
+    {'id': '2.5.3', 'desc': 'Compras, licitações e contratos', 'tipo': 'tarefa'},
+    {'id': '2.5.4', 'desc': 'Patrimônio', 'tipo': 'tarefa'},
+    {'id': '2.5.5', 'desc': 'Almoxarifado', 'tipo': 'tarefa'},
+    {'id': '2.5.6', 'desc': 'Frotas', 'tipo': 'tarefa'},
+    {'id': '2.5.7', 'desc': 'Tributário', 'tipo': 'tarefa'},
+    {'id': '2.5.8', 'desc': 'Nota Fiscal Eletrônica', 'tipo': 'tarefa'},
+    {'id': '3', 'desc': 'Go Live', 'tipo': 'titulo'},
+    {'id': '3.1', 'desc': 'Iniciar utilização do GPI', 'tipo': 'tarefa'},
+    {'id': '4', 'desc': 'Operação assistida', 'tipo': 'titulo'},
+    {'id': '4.1', 'desc': 'Período onde os usuários poderão contar com suporte técnico contínuo', 'tipo': 'tarefa'},
+    {'id': '4.2', 'desc': 'Envio do SICOM de agosto', 'tipo': 'tarefa'},
+    {'id': '4.3', 'desc': 'Fechamento da folha de Setembro', 'tipo': 'tarefa'},
+    {'id': '5', 'desc': 'Aceite da Implantação', 'tipo': 'titulo'},
+    {'id': '5.1', 'desc': 'Receber o aceite da implantação', 'tipo': 'tarefa'},
 ]
 
 # --- Filtro Jinja2 para Formatação de Data ---
@@ -199,6 +199,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS tarefas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             projeto_id INTEGER NOT NULL,
+            tipo TEXT NOT NULL,
             atividade_id TEXT,
             descricao TEXT NOT NULL,
             data_inicio DATE,
@@ -481,11 +482,10 @@ def new_projeto():
         cursor.execute('INSERT INTO projetos (nome, cliente, data_inicio_previsto, data_termino_previsto, status) VALUES (?, ?, ?, ?, ?)',
                      (nome, cliente, data_inicio, data_termino, status))
         
-        # --- LÓGICA DE POPULAÇÃO AUTOMÁTICA ---
         novo_projeto_id = cursor.lastrowid
         for tarefa in TAREFAS_PADRAO:
-            cursor.execute('INSERT INTO tarefas (projeto_id, atividade_id, descricao, status) VALUES (?, ?, ?, ?)',
-                         (novo_projeto_id, tarefa['id'], tarefa['desc'], 'Planejada'))
+            cursor.execute('INSERT INTO tarefas (projeto_id, atividade_id, descricao, tipo, status) VALUES (?, ?, ?, ?, ?)',
+                         (novo_projeto_id, tarefa['id'], tarefa['desc'], tarefa['tipo'], 'Planejada'))
 
         conn.commit()
         conn.close()
@@ -533,9 +533,9 @@ def new_tarefa(projeto_id):
     observacoes = request.form['observacoes']
     conn = get_db_connection()
     conn.execute('''
-        INSERT INTO tarefas (projeto_id, atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, status, local_execucao, observacoes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (projeto_id, atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, 'Planejada', local_execucao, observacoes))
+        INSERT INTO tarefas (projeto_id, atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, status, local_execucao, observacoes, tipo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (projeto_id, atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, 'Planejada', local_execucao, observacoes, 'tarefa'))
     conn.commit()
     conn.close()
     flash('Tarefa adicionada com sucesso!', 'success')
@@ -556,6 +556,7 @@ def edit_tarefa(tarefa_id):
         status = request.form['status']
         local_execucao = request.form['local_execucao']
         observacoes = request.form['observacoes']
+        # O campo 'tipo' não é editado, ele é definido na criação.
         conn.execute('''
             UPDATE tarefas SET
             atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, 
