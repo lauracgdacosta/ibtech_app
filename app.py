@@ -642,28 +642,349 @@ def pendencias():
 @app.route('/new_pendencia', methods=['GET', 'POST'])
 @login_required
 def new_pendencia():
-    # ... (código da rota)
+    conn = get_db_connection()
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    if request.method == 'POST':
+        processo = request.form['processo']
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        data_prioridade = request.form['data_prioridade']
+        prazo_entrega = request.form['prazo_entrega']
+        status = request.form['status']
+        conn.execute('INSERT INTO pendencias (processo, cliente, sistema, data_prioridade, prazo_entrega, status) VALUES (?, ?, ?, ?, ?, ?)',
+                     (processo, cliente, sistema, data_prioridade, prazo_entrega, status))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('pendencias'))
+    conn.close()
     return render_template('new_pendencia.html', clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_pendencia(id):
-    # ... (código da rota)
+    conn = get_db_connection()
+    pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    if request.method == 'POST':
+        processo = request.form['processo']
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        data_prioridade = request.form['data_prioridade']
+        prazo_entrega = request.form['prazo_entrega']
+        status = request.form['status']
+        conn.execute('UPDATE pendencias SET processo = ?, cliente = ?, sistema = ?, data_prioridade = ?, prazo_entrega = ?, status = ? WHERE id = ?',
+                     (processo, cliente, sistema, data_prioridade, prazo_entrega, status, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('pendencias'))
+    conn.close()
     return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
 def delete_pendencia(id):
-    # ... (código da rota)
+    conn = get_db_connection()
+    conn.execute('DELETE FROM pendencias WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
     return redirect(url_for('pendencias'))
 
 @app.route('/ferias')
 @login_required
 def ferias():
-    # ... (código da rota)
+    conn = get_db_connection()
+    ferias_data = conn.execute('SELECT * FROM ferias').fetchall()
+    conn.close()
     return render_template('ferias.html', ferias=ferias_data)
 
-# ... (todas as outras rotas de ferias, agenda, prestacao_contas, usuarios e autenticação)
+@app.route('/new_ferias', methods=['GET', 'POST'])
+@login_required
+def new_ferias():
+    conn = get_db_connection()
+    tecnicos_data = conn.execute('SELECT nome, contrato FROM tecnicos').fetchall()
+    tecnicos = [(t['nome'], t['contrato']) for t in tecnicos_data]
+    if request.method == 'POST':
+        funcionario = request.form['funcionario']
+        admissao = request.form['admissao']
+        contrato = request.form['contrato']
+        ano = request.form['ano']
+        data_inicio = request.form['data_inicio']
+        data_termino = request.form['data_termino']
+        obs = request.form['obs']
+        conn.execute('INSERT INTO ferias (funcionario, admissao, contrato, ano, data_inicio, data_termino, obs) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                     (funcionario, admissao, contrato, ano, data_inicio, data_termino, obs))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('ferias'))
+    conn.close()
+    return render_template('new_ferias.html', tecnicos=tecnicos)
+
+@app.route('/edit_ferias/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_ferias(id):
+    conn = get_db_connection()
+    ferias_item = conn.execute('SELECT * FROM ferias WHERE id = ?', (id,)).fetchone()
+    tecnicos_data = conn.execute('SELECT nome, contrato FROM tecnicos').fetchall()
+    tecnicos = [(t['nome'], t['contrato']) for t in tecnicos_data]
+    if request.method == 'POST':
+        funcionario = request.form['funcionario']
+        admissao = request.form['admissao']
+        contrato = request.form['contrato']
+        ano = request.form['ano']
+        data_inicio = request.form['data_inicio']
+        data_termino = request.form['data_termino']
+        obs = request.form['obs']
+        conn.execute('UPDATE ferias SET funcionario = ?, admissao = ?, contrato = ?, ano = ?, data_inicio = ?, data_termino = ?, obs = ? WHERE id = ?',
+                     (funcionario, admissao, contrato, ano, data_inicio, data_termino, obs, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('ferias'))
+    conn.close()
+    return render_template('edit_ferias.html', ferias_item=ferias_item, tecnicos=tecnicos)
+
+@app.route('/delete_ferias/<int:id>', methods=['POST'])
+@login_required
+def delete_ferias(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM ferias WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('ferias'))
+
+@app.route('/agenda')
+@login_required
+def agenda():
+    conn = get_db_connection()
+    agenda_data = conn.execute('SELECT * FROM agenda ORDER BY data_agendamento DESC').fetchall()
+    conn.close()
+    return render_template('agenda.html', agenda_data=agenda_data)
+
+@app.route('/new_agenda', methods=['GET', 'POST'])
+@login_required
+def new_agenda():
+    conn = get_db_connection()
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        tecnico = request.form['tecnico']
+        sistema = request.form['sistema']
+        data_agendamento = request.form['data_agendamento']
+        motivo = request.form['motivo']
+        descricao = request.form['descricao']
+        status = request.form['status']
+        conn.execute('INSERT INTO agenda (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                     (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('agenda'))
+    conn.close()
+    return render_template('new_agenda.html', clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
+
+@app.route('/edit_agenda/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_agenda(id):
+    conn = get_db_connection()
+    agendamento = conn.execute('SELECT * FROM agenda WHERE id = ?', (id,)).fetchone()
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        tecnico = request.form['tecnico']
+        sistema = request.form['sistema']
+        data_agendamento = request.form['data_agendamento']
+        motivo = request.form['motivo']
+        descricao = request.form['descricao']
+        status = request.form['status']
+        conn.execute('UPDATE agenda SET cliente = ?, tecnico = ?, sistema = ?, data_agendamento = ?, motivo = ?, descricao = ?, status = ? WHERE id = ?',
+                     (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('agenda'))
+    conn.close()
+    return render_template('edit_agenda.html', agendamento=agendamento, clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
+
+@app.route('/delete_agenda/<int:id>', methods=['POST'])
+@login_required
+def delete_agenda(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM agenda WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('agenda'))
+
+@app.route('/prestacao_contas')
+@login_required
+def prestacao_contas():
+    conn = get_db_connection()
+    dados = conn.execute('SELECT * FROM prestacao_contas ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('prestacao_contas.html', dados=dados)
+
+@app.route('/new_prestacao', methods=['GET', 'POST'])
+@login_required
+def new_prestacao():
+    conn = get_db_connection()
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        responsavel = request.form['responsavel']
+        modulo = request.form['modulo']
+        periodo = request.form['periodo']
+        competencia = request.form['competencia']
+        status = request.form['status']
+        observacao = request.form['observacao']
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {usuario_logado}"
+        conn.execute('INSERT INTO prestacao_contas (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+    conn.close()
+    return render_template('new_prestacao.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/edit_prestacao/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_prestacao(id):
+    conn = get_db_connection()
+    item = conn.execute('SELECT * FROM prestacao_contas WHERE id = ?', (id,)).fetchone()
+    if request.method == 'POST':
+        cliente = request.form['cliente']
+        sistema = request.form['sistema']
+        responsavel = request.form['responsavel']
+        modulo = request.form['modulo']
+        periodo = request.form['periodo']
+        competencia = request.form['competencia']
+        status = request.form['status']
+        observacao = request.form['observacao']
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {usuario_logado}"
+        conn.execute('UPDATE prestacao_contas SET cliente = ?, sistema = ?, responsavel = ?, modulo = ?, periodo = ?, competencia = ?, status = ?, observacao = ?, atualizado_por = ? WHERE id = ?',
+            (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    conn.close()
+    return render_template('edit_prestacao.html', item=item, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/delete_prestacao/<int:id>', methods=['POST'])
+@login_required
+def delete_prestacao(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM prestacao_contas WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('prestacao_contas'))
+
+@app.route('/usuarios')
+@login_required
+def usuarios():
+    conn = get_db_connection()
+    users_data = conn.execute('SELECT id, nome, email, nivel_acesso FROM usuarios').fetchall()
+    conn.close()
+    return render_template('usuarios.html', usuarios=users_data)
+
+@app.route('/new_usuario', methods=['GET', 'POST'])
+@login_required
+def new_usuario():
+    if request.method == 'POST':
+        nome = request.form['nome']
+        email = request.form['email']
+        senha = request.form['senha']
+        nivel_acesso = request.form['nivel_acesso']
+        hashed_senha = generate_password_hash(senha)
+        conn = get_db_connection()
+        try:
+            conn.execute('INSERT INTO usuarios (nome, email, senha, nivel_acesso) VALUES (?, ?, ?, ?)',
+                         (nome, email, hashed_senha, nivel_acesso))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            flash('Erro: O e-mail informado já existe.', 'danger')
+            return redirect(url_for('new_usuario'))
+        finally:
+            conn.close()
+        flash('Usuário criado com sucesso!', 'success')
+        return redirect(url_for('usuarios'))
+    return render_template('new_usuario.html')
+
+@app.route('/edit_usuario/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_usuario(id):
+    conn = get_db_connection()
+    usuario = conn.execute('SELECT id, nome, email, nivel_acesso FROM usuarios WHERE id = ?', (id,)).fetchone()
+    if request.method == 'POST':
+        nome = request.form['nome']
+        email = request.form['email']
+        nivel_acesso = request.form['nivel_acesso']
+        senha = request.form.get('senha')
+        if senha:
+            hashed_senha = generate_password_hash(senha)
+            conn.execute('UPDATE usuarios SET nome = ?, email = ?, nivel_acesso = ?, senha = ? WHERE id = ?',
+                         (nome, email, nivel_acesso, hashed_senha, id))
+        else:
+            conn.execute('UPDATE usuarios SET nome = ?, email = ?, nivel_acesso = ? WHERE id = ?',
+                         (nome, email, nivel_acesso, id))
+        conn.commit()
+        conn.close()
+        flash('Usuário atualizado com sucesso!', 'success')
+        return redirect(url_for('usuarios'))
+    conn.close()
+    return render_template('edit_usuario.html', usuario=usuario)
+
+@app.route('/delete_usuario/<int:id>', methods=['POST'])
+@login_required
+def delete_usuario(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM usuarios WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    flash('Usuário excluído com sucesso!', 'success')
+    return redirect(url_for('usuarios'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        email = request.form['email']
+        senha = request.form['senha']
+        conn = get_db_connection()
+        usuario = conn.execute('SELECT * FROM usuarios WHERE email = ?', (email,)).fetchone()
+        conn.close()
+        if usuario and check_password_hash(usuario['senha'], senha):
+            session['user_id'] = usuario['id']
+            session['user_name'] = usuario['nome']
+            session['user_level'] = usuario['nivel_acesso']
+            flash('Login realizado com sucesso!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Email ou senha inválidos.', 'danger')
+            return redirect(url_for('login'))
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    session.clear()
+    flash('Você saiu do sistema.', 'info')
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     init_db()
