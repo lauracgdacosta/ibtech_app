@@ -9,18 +9,10 @@
     <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Gestão de Usuários</h1>
-            <div class="actions-group">
-                <a href="{{ url_for('new_usuario') }}" class="button new">Novo Usuário</a>
-            </div>
+            <a href="{{ url_for('new_usuario') }}" class="button">Novo Usuário</a>
         </div>
         
         <table id="tabela" class="display" style="width:100%">
@@ -28,8 +20,7 @@
                 <tr>
                     <th>Nome</th>
                     <th>Email</th>
-                    <th>Nível de Acesso</th>
-                    <th class="no-sort">Ações</th>
+                    <th>Perfil (Role)</th> <th class="no-sort">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,19 +28,20 @@
                 <tr>
                     <td>{{ usuario['nome'] }}</td>
                     <td>{{ usuario['email'] }}</td>
-                    <td>{{ usuario['nivel_acesso'] }}</td>
-                    <td class="actions">
-                        <a href="{{ url_for('edit_usuario', id=usuario['id']) }}" class="button edit">Editar</a>
-                        <form action="{{ url_for('delete_usuario', id=usuario['id']) }}" method="post">
-                            <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja excluir este usuário?');">Deletar</button>
+                    <td>{{ usuario['role'] | capitalize }}</td> <td class="actions">
+                        <a href="{{ url_for('edit_usuario', id=usuario['id']) }}">Editar</a>
+                        {% if session['user_id'] != usuario['id'] %}
+                        <form action="{{ url_for('delete_usuario', id=usuario['id']) }}" method="post" style="display:inline;">
+                            <button type="submit" class="delete" onclick="return confirm('Tem certeza?');">Deletar</button>
                         </form>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         <br>
-        <a href="{{ url_for('index') }}" class="button">Voltar</a>
+        <a href="{{ url_for('index') }}" class="button">Voltar ao Painel</a>
     </div>
 
     <script>

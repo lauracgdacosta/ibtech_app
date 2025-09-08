@@ -1,34 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF--ar">
     <title>Sistema de Gestão Ibtech</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        /* Estilos adicionais para o dashboard */
+        /* Estilos adicionais para o dashboard (sem alterações) */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 25px;
             margin-bottom: 40px;
         }
-        .dashboard-widget {
-            background-color: #fdfdfd;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #f0f4f7;
-        }
-        .dashboard-widget h2 {
-            margin-top: 0;
-            font-size: 1.2em;
-        }
-        .dashboard-widget table {
-            margin-top: 15px;
-        }
-        .dashboard-widget p {
-            text-align: center;
-            color: #7f8c8d;
-        }
+        .dashboard-widget { background-color: #fdfdfd; padding: 20px; border-radius: 8px; border: 1px solid #f0f4f7; }
+        .dashboard-widget h2 { margin-top: 0; font-size: 1.2em; }
+        .dashboard-widget table { margin-top: 15px; }
+        .dashboard-widget p { text-align: center; color: #7f8c8d; }
     </style>
 </head>
 <body>
@@ -36,104 +23,32 @@
         <div class="header-actions">
             <h1 class="main-title">Painel de Controle</h1>
             <div>
-                <span>Bem-vindo(a), {{ session['user_name'] }}!</span> |
+                <span>Bem-vindo(a), {{ session['user_name'] }} ({{ session['user_role'] | capitalize }})!</span> |
                 <a href="{{ url_for('logout') }}">Sair</a>
             </div>
         </div>
         <p class="subtitle">Visão geral do sistema e acesso aos módulos.</p>
 
         <div class="dashboard-grid">
-            <div class="dashboard-widget">
-                <h2>Próximos Agendamentos</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Cliente</th>
-                            <th>Técnico</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for agendamento in proximos_agendamentos %}
-                        <tr>
-                            <td>{{ agendamento['data_agendamento'] | dateformat }}</td>
-                            <td>{{ agendamento['cliente'] }}</td>
-                            <td>{{ agendamento['tecnico'] }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="3" style="text-align: center;">Nenhum agendamento próximo.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
-
-            <div class="dashboard-widget">
-                <h2>Pendências Prioritárias (Status Aberto)</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Sistema</th>
-                            <th>Prioridade</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for pendencia in pendencias_abertas %}
-                        <tr>
-                            <td>{{ pendencia['cliente'] }}</td>
-                            <td>{{ pendencia['sistema'] }}</td>
-                            <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="3" style="text-align: center;">Nenhuma pendência aberta.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="dashboard-widget">
-                <h2>Técnicos em Férias Hoje</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Funcionário</th>
-                            <th>Início</th>
-                            <th>Término</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ferias in tecnicos_em_ferias %}
-                        <tr>
-                            <td>{{ ferias['funcionario'] }}</td>
-                            <td>{{ ferias['data_inicio'] | dateformat }}</td>
-                            <td>{{ ferias['data_termino'] | dateformat }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="3" style="text-align: center;">Nenhum técnico em férias hoje.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
 
         <hr>
         
         <h2 style="text-align: center; border: none;">Acesso aos Módulos</h2>
         <div class="module-grid">
-            <a href="{{ url_for('cadastros') }}" class="module-button">Cadastros</a>
+            
+            {% if session['user_role'] in ['admin', 'coordenacao'] %}
+                <a href="{{ url_for('cadastros') }}" class="module-button">Cadastros</a>
+                <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
+                <a href="{{ url_for('ferias') }}" class="module-button">Férias</a>
+            {% endif %}
+
             <a href="{{ url_for('agenda') }}" class="module-button">Agenda</a>
             <a href="{{ url_for('projetos') }}" class="module-button">Projetos de Implantação</a>
             <a href="{{ url_for('pendencias') }}" class="module-button">Pendências</a>
-            <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
-            <a href="{{ url_for('ferias') }}" class="module-button">Férias</a>
-            {% if session['user_level'] == 'Admin' %}
-                <a href="{{ url_for('usuarios') }}" class="module-button">Gestão de Usuários</a>
+            
+            {% if session['user_role'] == 'admin' %}
+                <a href="{{ url_for('usuarios') }}" class="module-button" style="background-color: #f39c12; color: white;">Gestão de Usuários</a>
             {% endif %}
         </div>
     </div>

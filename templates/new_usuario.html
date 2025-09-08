@@ -6,16 +6,8 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
-        <div class="header-actions">
-            <h1>Adicionar Novo Usuário</h1>
-        </div>
+        <h1>Adicionar Novo Usuário</h1>
         <form method="post">
             <label for="nome">Nome</label>
             <input type="text" id="nome" name="nome" required>
@@ -26,17 +18,16 @@
             <label for="senha">Senha</label>
             <input type="password" id="senha" name="senha" required>
 
-            <label for="nivel_acesso">Nível de Acesso</label>
-            <select id="nivel_acesso" name="nivel_acesso" required>
-                <option value="Usuario">Usuário</option>
-                <option value="Admin">Admin</option>
+            <label for="role">Perfil de Acesso</label>
+            <select id="role" name="role" required>
+                <option value="tecnico">Técnico</option>
+                <option value="coordenacao">Coordenação</option>
+                <option value="admin">Admin</option>
             </select>
 
-            <div class="actions-group" style="margin-top: 20px;">
-                <button type="submit" class="button new">Salvar Usuário</button>
-                <a href="{{ url_for('usuarios') }}" class="button">Cancelar</a>
-            </div>
+            <button type="submit">Salvar Usuário</button>
         </form>
+        <a href="{{ url_for('usuarios') }}" class="button">Cancelar</a>
     </div>
 </body>
 </html>
