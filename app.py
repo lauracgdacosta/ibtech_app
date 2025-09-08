@@ -867,7 +867,5 @@ def delete_usuario(id):
     conn.close()
     flash('Usuário excluído.', 'success')
     return redirect(url_for('usuarios'))
-
-
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
