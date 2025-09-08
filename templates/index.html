@@ -1,56 +1,32 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF--ar">
-    <title>Sistema de Gestão Ibtech</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        /* Estilos adicionais para o dashboard (sem alterações) */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-        .dashboard-widget { background-color: #fdfdfd; padding: 20px; border-radius: 8px; border: 1px solid #f0f4f7; }
-        .dashboard-widget h2 { margin-top: 0; font-size: 1.2em; }
-        .dashboard-widget table { margin-top: 15px; }
-        .dashboard-widget p { text-align: center; color: #7f8c8d; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header-actions">
-            <h1 class="main-title">Painel de Controle</h1>
-            <div>
-                <span>Bem-vindo(a), {{ session['user_name'] }} ({{ session['user_role'] | capitalize }})!</span> |
-                <a href="{{ url_for('logout') }}">Sair</a>
-            </div>
-        </div>
-        <p class="subtitle">Visão geral do sistema e acesso aos módulos.</p>
+<h2 style="text-align: center; border: none;">Acesso aos Módulos</h2>
+<div class="module-grid">
+    
+    {% if check_permission('cadastros') %}
+        <a href="{{ url_for('cadastros') }}" class="module-button">Cadastros</a>
+    {% endif %}
 
-        <div class="dashboard-grid">
-            </div>
+    {% if check_permission('agenda') %}
+        <a href="{{ url_for('agenda') }}" class="module-button">Agenda</a>
+    {% endif %}
 
-        <hr>
-        
-        <h2 style="text-align: center; border: none;">Acesso aos Módulos</h2>
-        <div class="module-grid">
-            
-            {% if session['user_role'] in ['admin', 'coordenacao'] %}
-                <a href="{{ url_for('cadastros') }}" class="module-button">Cadastros</a>
-                <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
-                <a href="{{ url_for('ferias') }}" class="module-button">Férias</a>
-            {% endif %}
+    {% if check_permission('projetos') %}
+        <a href="{{ url_for('projetos') }}" class="module-button">Projetos de Implantação</a>
+    {% endif %}
 
-            <a href="{{ url_for('agenda') }}" class="module-button">Agenda</a>
-            <a href="{{ url_for('projetos') }}" class="module-button">Projetos de Implantação</a>
-            <a href="{{ url_for('pendencias') }}" class="module-button">Pendências</a>
-            
-            {% if session['user_role'] == 'admin' %}
-                <a href="{{ url_for('usuarios') }}" class="module-button" style="background-color: #f39c12; color: white;">Gestão de Usuários</a>
-            {% endif %}
-        </div>
-    </div>
-</body>
-</html>
+    {% if check_permission('pendencias') %}
+        <a href="{{ url_for('pendencias') }}" class="module-button">Pendências</a>
+    {% endif %}
+
+    {% if check_permission('prestacao_contas') %}
+        <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
+    {% endif %}
+
+    {% if check_permission('ferias') %}
+        <a href="{{ url_for('ferias') }}" class="module-button">Férias</a>
+    {% endif %}
+    
+    {% if session['user_role'] == 'admin' %}
+        <a href="{{ url_for('usuarios') }}" class="module-button">Gestão de Usuários</a>
+        <a href="{{ url_for('gerenciar_permissoes') }}" class="module-button" style="background-color: #9b59b6; color: white;">Gerenciar Permissões</a>
+    {% endif %}
+</div>

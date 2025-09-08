@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciar Permissões</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Gerenciar Permissões de Grupos</h1>
+        <p class="subtitle">Selecione os módulos que cada grupo de usuário poderá acessar. O grupo Admin tem acesso irrestrito.</p>
+
+        <form action="{{ url_for('salvar_permissoes') }}" method="post">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Módulo</th>
+                        {% for role in roles %}
+                        <th style="text-align: center;">{{ role | capitalize }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for module_key, module_name in modules.items() %}
+                    <tr>
+                        <td>{{ module_name }}</td>
+                        {% for role in roles %}
+                        <td style="text-align: center;">
+                            <input type="checkbox" 
+                                   name="permission_{{ role }}_{{ module_key }}"
+                                   value="true"
+                                   {% if module_key in current_permissions[role] %}checked{% endif %}>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <br>
+            <button type="submit">Salvar Permissões</button>
+            <a href="{{ url_for('index') }}" class="button">Voltar</a>
+        </form>
+    </div>
+</body>
+</html>
