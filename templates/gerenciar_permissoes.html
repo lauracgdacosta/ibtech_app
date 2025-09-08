@@ -4,33 +4,42 @@
     <meta charset="UTF-8">
     <title>Gerenciar Permissões</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        th, td { text-align: center; vertical-align: middle; }
+        td.module-name { text-align: left; font-weight: 500; }
+        .permission-group { display: flex; justify-content: space-around; }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Gerenciar Permissões de Grupos</h1>
-        <p class="subtitle">Selecione os módulos que cada grupo de usuário poderá acessar. O grupo Admin tem acesso irrestrito.</p>
+        <p class="subtitle">Selecione as ações que cada grupo de usuário poderá realizar em cada módulo.</p>
 
         <form action="{{ url_for('salvar_permissoes') }}" method="post">
             <table>
                 <thead>
                     <tr>
-                        <th>Módulo</th>
+                        <th rowspan="2">Módulo</th>
                         {% for role in roles %}
-                        <th style="text-align: center;">{{ role | capitalize }}</th>
+                        <th colspan="3">{{ role | capitalize }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for role in roles %}
+                        <th>Ler</th>
+                        <th>Editar</th>
+                        <th>Excluir</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for module_key, module_name in modules.items() %}
                     <tr>
-                        <td>{{ module_name }}</td>
+                        <td class="module-name">{{ module_name }}</td>
                         {% for role in roles %}
-                        <td style="text-align: center;">
-                            <input type="checkbox" 
-                                   name="permission_{{ role }}_{{ module_key }}"
-                                   value="true"
-                                   {% if module_key in current_permissions[role] %}checked{% endif %}>
-                        </td>
+                        <td><input type="checkbox" name="permission_{{ role }}_{{ module_key }}_can_read" {% if current_permissions.get(role, {}).get(module_key, {}).can_read %}checked{% endif %}></td>
+                        <td><input type="checkbox" name="permission_{{ role }}_{{ module_key }}_can_edit" {% if current_permissions.get(role, {}).get(module_key, {}).can_edit %}checked{% endif %}></td>
+                        <td><input type="checkbox" name="permission_{{ role }}_{{ module_key }}_can_delete" {% if current_permissions.get(role, {}).get(module_key, {}).can_delete %}checked{% endif %}></td>
                         {% endfor %}
                     </tr>
                     {% endfor %}

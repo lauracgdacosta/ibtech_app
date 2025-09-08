@@ -19,8 +19,10 @@
         <div class="header-actions">
             <h1>Módulo de Técnicos</h1>
             <div class="actions-group">
-                <a href="{{ url_for('new_tecnico') }}" class="button new">Novo Técnico</a>
-                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+                {% if check_permission('cadastros', 'can_edit') %}
+                    <a href="{{ url_for('new_tecnico') }}" class="button new">Novo Técnico</a>
+                {% endif %}
+                <a href="{{ url_for('cadastros') }}" class="button">Voltar</a>
             </div>
         </div>
 
@@ -34,7 +36,9 @@
                     <th>Função</th>
                     <th>Equipe</th>
                     <th>Contrato</th>
-                    <th class="no-sort">Ações</th>
+                    {% if check_permission('cadastros', 'can_edit') or check_permission('cadastros', 'can_delete') %}
+                        <th class="no-sort">Ações</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -46,12 +50,18 @@
                     <td>{{ tecnico['funcao'] }}</td>
                     <td>{{ tecnico['equipe'] }}</td>
                     <td>{{ tecnico['contrato'] }}</td>
-                    <td class="actions">
-                        <a href="{{ url_for('edit_tecnico', id=tecnico['id']) }}" class="button edit">Editar</a>
-                        <form action="{{ url_for('delete_tecnico', id=tecnico['id']) }}" method="post">
-                            <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar este técnico?');">Deletar</button>
-                        </form>
-                    </td>
+                    {% if check_permission('cadastros', 'can_edit') or check_permission('cadastros', 'can_delete') %}
+                        <td class="actions">
+                            {% if check_permission('cadastros', 'can_edit') %}
+                                <a href="{{ url_for('edit_tecnico', id=tecnico['id']) }}" class="button edit">Editar</a>
+                            {% endif %}
+                            {% if check_permission('cadastros', 'can_delete') %}
+                                <form action="{{ url_for('delete_tecnico', id=tecnico['id']) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar este técnico?');">Deletar</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

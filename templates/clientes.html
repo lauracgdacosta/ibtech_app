@@ -19,8 +19,10 @@
         <div class="header-actions">
             <h1>Módulo de Clientes</h1>
             <div class="actions-group">
-                <a href="{{ url_for('new_cliente') }}" class="button new">Novo Cliente</a>
-                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+                {% if check_permission('cadastros', 'can_edit') %}
+                    <a href="{{ url_for('new_cliente') }}" class="button new">Novo Cliente</a>
+                {% endif %}
+                <a href="{{ url_for('cadastros') }}" class="button">Voltar</a>
             </div>
         </div>
 
@@ -32,7 +34,9 @@
                     <th>Órgão</th>
                     <th>Contrato</th>
                     <th>Sistemas Utilizados</th>
-                    <th class="no-sort">Ações</th>
+                    {% if check_permission('cadastros', 'can_edit') or check_permission('cadastros', 'can_delete') %}
+                        <th class="no-sort">Ações</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -42,12 +46,18 @@
                     <td>{{ cliente['orgao'] }}</td>
                     <td>{{ cliente['contrato'] }}</td>
                     <td>{{ cliente['sistemas'] }}</td>
-                    <td class="actions">
-                        <a href="{{ url_for('edit_cliente', id=cliente['id']) }}" class="button edit">Editar</a>
-                        <form action="{{ url_for('delete_cliente', id=cliente['id']) }}" method="post">
-                            <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar este cliente?');">Deletar</button>
-                        </form>
-                    </td>
+                    {% if check_permission('cadastros', 'can_edit') or check_permission('cadastros', 'can_delete') %}
+                        <td class="actions">
+                            {% if check_permission('cadastros', 'can_edit') %}
+                                <a href="{{ url_for('edit_cliente', id=cliente['id']) }}" class="button edit">Editar</a>
+                            {% endif %}
+                            {% if check_permission('cadastros', 'can_delete') %}
+                                <form action="{{ url_for('delete_cliente', id=cliente['id']) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar este cliente?');">Deletar</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

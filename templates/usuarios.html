@@ -12,7 +12,9 @@
     <div class="container">
         <div class="header-actions">
             <h1>Gestão de Usuários</h1>
-            <a href="{{ url_for('new_usuario') }}" class="button">Novo Usuário</a>
+            {% if check_permission('admin_only', 'can_edit') %}
+                <a href="{{ url_for('new_usuario') }}" class="button">Novo Usuário</a>
+            {% endif %}
         </div>
         
         <table id="tabela" class="display" style="width:100%">
@@ -20,7 +22,10 @@
                 <tr>
                     <th>Nome</th>
                     <th>Email</th>
-                    <th>Perfil (Role)</th> <th class="no-sort">Ações</th>
+                    <th>Perfil (Role)</th>
+                    {% if check_permission('admin_only', 'can_edit') or check_permission('admin_only', 'can_delete') %}
+                        <th class="no-sort">Ações</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -28,14 +33,22 @@
                 <tr>
                     <td>{{ usuario['nome'] }}</td>
                     <td>{{ usuario['email'] }}</td>
-                    <td>{{ usuario['role'] | capitalize }}</td> <td class="actions">
-                        <a href="{{ url_for('edit_usuario', id=usuario['id']) }}">Editar</a>
-                        {% if session['user_id'] != usuario['id'] %}
-                        <form action="{{ url_for('delete_usuario', id=usuario['id']) }}" method="post" style="display:inline;">
-                            <button type="submit" class="delete" onclick="return confirm('Tem certeza?');">Deletar</button>
-                        </form>
-                        {% endif %}
-                    </td>
+                    <td>{{ usuario['role'] | capitalize }}</td>
+                    {% if check_permission('admin_only', 'can_edit') or check_permission('admin_only', 'can_delete') %}
+                        <td class="actions">
+                            {% if check_permission('admin_only', 'can_edit') %}
+                                <a href="{{ url_for('edit_usuario', id=usuario['id']) }}">Editar</a>
+                            {% endif %}
+                            
+                            {% if check_permission('admin_only', 'can_delete') %}
+                                {% if session['user_id'] != usuario['id'] %}
+                                    <form action="{{ url_for('delete_usuario', id=usuario['id']) }}" method="post" style="display:inline;">
+                                        <button type="submit" class="delete" onclick="return confirm('Tem certeza?');">Deletar</button>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
