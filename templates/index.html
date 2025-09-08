@@ -1,32 +1,265 @@
-<h2 style="text-align: center; border: none;">Acesso aos Módulos</h2>
-<div class="module-grid">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle - Ibtech</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    {% if check_permission('cadastros') %}
-        <a href="{{ url_for('cadastros') }}" class="module-button">Cadastros</a>
-    {% endif %}
+    <style>
+        /* CSS EMBUTIDO PARA UM ESTILO MODERNO E MINIMALISTA */
+        :root {
+            --background-color: #f4f7fa;
+            --card-background: #ffffff;
+            --text-color: #334155;
+            --text-light: #64748b;
+            --border-color: #e2e8f0;
+            --primary-color: #3498db;
+            --shadow-color: rgba(149, 157, 165, 0.1);
+        }
 
-    {% if check_permission('agenda') %}
-        <a href="{{ url_for('agenda') }}" class="module-button">Agenda</a>
-    {% endif %}
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            color: var(--text-color);
+            font-size: 14px;
+        }
 
-    {% if check_permission('projetos') %}
-        <a href="{{ url_for('projetos') }}" class="module-button">Projetos de Implantação</a>
-    {% endif %}
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
-    {% if check_permission('pendencias') %}
-        <a href="{{ url_for('pendencias') }}" class="module-button">Pendências</a>
-    {% endif %}
+        @media (min-width: 1024px) {
+            .main-container {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
 
-    {% if check_permission('prestacao_contas') %}
-        <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
-    {% endif %}
+        /* --- HEADER --- */
+        .header {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
 
-    {% if check_permission('ferias') %}
-        <a href="{{ url_for('ferias') }}" class="module-button">Férias</a>
-    {% endif %}
-    
-    {% if session['user_role'] == 'admin' %}
-        <a href="{{ url_for('usuarios') }}" class="module-button">Gestão de Usuários</a>
-        <a href="{{ url_for('gerenciar_permissoes') }}" class="module-button" style="background-color: #9b59b6; color: white;">Gerenciar Permissões</a>
-    {% endif %}
-</div>
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .user-info a {
+            color: var(--text-light);
+            text-decoration: none;
+            margin-left: 8px;
+            transition: color 0.2s;
+        }
+        .user-info a:hover {
+            color: var(--primary-color);
+        }
+
+        /* --- CARDS --- */
+        .card {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0px 4px 12px var(--shadow-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border: none;
+        }
+
+        /* --- DASHBOARD --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .widget-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .widget-table th, .widget-table td {
+            padding: 12px 0;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .widget-table th {
+            font-weight: 500;
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+        .widget-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-light);
+        }
+
+        /* --- SIDEBAR DE NAVEGAÇÃO --- */
+        .navigation-sidebar h2 {
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .module-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .module-list li a {
+            display: block;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--text-color);
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        
+        .module-list li a:hover {
+            background-color: #ecf0f1;
+        }
+
+        .module-list .admin-link a {
+            background-color: #34495e;
+            color: white;
+        }
+        .module-list .admin-link a:hover {
+            background-color: #2c3e50;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        
+        <header class="header">
+            <h1>Painel de Controle</h1>
+            <div class="user-info">
+                <span>Bem-vindo(a), <strong>{{ session['user_name'] }}</strong> ({{ session['user_role'] | capitalize }})</span> |
+                <a href="{{ url_for('logout') }}">Sair</a>
+            </div>
+        </header>
+
+        <main class="content-area">
+            <div class="dashboard-grid">
+                
+                <div class="card">
+                    <h2>Próximos Agendamentos</h2>
+                    {% if proximos_agendamentos %}
+                    <table class="widget-table">
+                        <thead><tr><th>Data</th><th>Cliente</th><th>Técnico</th></tr></thead>
+                        <tbody>
+                            {% for agendamento in proximos_agendamentos %}
+                            <tr>
+                                <td>{{ agendamento['data_agendamento'] | dateformat }}</td>
+                                <td>{{ agendamento['cliente'] }}</td>
+                                <td>{{ agendamento['tecnico'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="empty-state">Nenhum agendamento próximo.</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Pendências Prioritárias</h2>
+                    {% if pendencias_abertas %}
+                    <table class="widget-table">
+                        <thead><tr><th>Cliente</th><th>Sistema</th><th>Prioridade</th></tr></thead>
+                        <tbody>
+                            {% for pendencia in pendencias_abertas %}
+                            <tr>
+                                <td>{{ pendencia['cliente'] }}</td>
+                                <td>{{ pendencia['sistema'] }}</td>
+                                <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="empty-state">Nenhuma pendência aberta.</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h2>Técnicos em Férias Hoje</h2>
+                    {% if tecnicos_em_ferias %}
+                    <table class="widget-table">
+                        <thead><tr><th>Funcionário</th><th>Término</th></tr></thead>
+                        <tbody>
+                            {% for ferias in tecnicos_em_ferias %}
+                            <tr>
+                                <td>{{ ferias['funcionario'] }}</td>
+                                <td>{{ ferias['data_termino'] | dateformat }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="empty-state">Nenhum técnico em férias hoje.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+
+        <aside class="navigation-sidebar card">
+            <h2>Módulos do Sistema</h2>
+            <ul class="module-list">
+                {% if check_permission('cadastros') %}
+                    <li><a href="{{ url_for('cadastros') }}">Cadastros</a></li>
+                {% endif %}
+                {% if check_permission('agenda') %}
+                    <li><a href="{{ url_for('agenda') }}">Agenda</a></li>
+                {% endif %}
+                {% if check_permission('projetos') %}
+                    <li><a href="{{ url_for('projetos') }}">Projetos de Implantação</a></li>
+                {% endif %}
+                {% if check_permission('pendencias') %}
+                    <li><a href="{{ url_for('pendencias') }}">Pendências</a></li>
+                {% endif %}
+                {% if check_permission('prestacao_contas') %}
+                    <li><a href="{{ url_for('prestacao_contas') }}">Prestação de Contas</a></li>
+                {% endif %}
+                {% if check_permission('ferias') %}
+                    <li><a href="{{ url_for('ferias') }}">Férias</a></li>
+                {% endif %}
+
+                {% if session['user_role'] == 'admin' %}
+                    <li class="admin-link"><a href="{{ url_for('usuarios') }}">Gestão de Usuários</a></li>
+                    <li class="admin-link"><a href="{{ url_for('gerenciar_permissoes') }}">Gerenciar Permissões</a></li>
+                {% endif %}
+            </ul>
+        </aside>
+
+    </div>
+</body>
+</html>

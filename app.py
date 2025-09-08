@@ -94,54 +94,77 @@ def init_db():
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tecnicos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL, email TEXT, telefone TEXT, funcao TEXT, equipe TEXT, contrato TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT, 
+            telefone TEXT, funcao TEXT, equipe TEXT, contrato TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            municipio TEXT NOT NULL, orgao TEXT, contrato TEXT, sistemas TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, municipio TEXT NOT NULL, orgao TEXT, 
+            contrato TEXT, sistemas TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS equipes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL, sigla TEXT, lider TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT, lider TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS pendencias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            processo TEXT, cliente TEXT, sistema TEXT, data_prioridade TEXT, prazo_entrega TEXT, status TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, processo TEXT, cliente TEXT, sistema TEXT, 
+            data_prioridade TEXT, prazo_entrega TEXT, status TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS ferias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, 
+            contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS sistemas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL, sigla TEXT NOT NULL ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS agenda (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, motivo TEXT, descricao TEXT, status TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, 
+            sistema TEXT, data_agendamento DATE NOT NULL, motivo TEXT, descricao TEXT, status TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS prestacao_contas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, periodo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, 
+            modulo TEXT, periodo TEXT, competencia TEXT, status TEXT, observacao TEXT, 
+            atualizado_por TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS projetos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL, cliente TEXT, data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cliente TEXT, 
+            data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS tarefas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE,
-            responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT,
-            FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, 
+            atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE,
+            responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, 
+            observacoes TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT, role TEXT ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, 
+            senha TEXT NOT NULL, nivel_acesso TEXT, role TEXT
+        )
+    ''')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS role_permissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            role_name TEXT NOT NULL, module_name TEXT NOT NULL, UNIQUE(role_name, module_name) ) ''')
+            id INTEGER PRIMARY KEY AUTOINCREMENT, role_name TEXT NOT NULL, 
+            module_name TEXT NOT NULL, UNIQUE(role_name, module_name)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -159,7 +182,8 @@ def migrate_db():
             WHEN nivel_acesso = 'Admin' THEN 'admin'
             WHEN nivel_acesso = 'Usuario' THEN 'tecnico'
             ELSE role
-        END WHERE role IS NULL """)
+        END WHERE role IS NULL
+    """)
     
     cursor.execute("SELECT COUNT(id) FROM usuarios")
     if cursor.fetchone()[0] == 0:
@@ -200,7 +224,7 @@ def role_required(module_name):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not check_permission(module_name):
-                flash('Você não tem permissão para acessar este recurso.', 'danger')
+                flash('Você не tem permissão para acessar este recurso.', 'danger')
                 return redirect(url_for('index'))
             return f(*args, **kwargs)
         return decorated_function
@@ -216,7 +240,11 @@ def index():
     pendencias_abertas = conn.execute("SELECT * FROM pendencias WHERE status = 'Aberto' ORDER BY data_prioridade ASC LIMIT 5").fetchall()
     tecnicos_em_ferias = conn.execute('SELECT * FROM ferias WHERE data_inicio <= ? AND data_termino >= ?', (hoje_str, hoje_str)).fetchall()
     conn.close()
-    return render_template('index.html', proximos_agendamentos=proximos_agendamentos, pendencias_abertas=pendencias_abertas, tecnicos_em_ferias=tecnicos_em_ferias, check_permission=check_permission)
+    return render_template('index.html', 
+                           proximos_agendamentos=proximos_agendamentos, 
+                           pendencias_abertas=pendencias_abertas, 
+                           tecnicos_em_ferias=tecnicos_em_ferias, 
+                           check_permission=check_permission)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -301,12 +329,8 @@ def new_tecnico():
     conn = get_db_connection()
     equipes = conn.execute('SELECT nome FROM equipes').fetchall()
     if request.method == 'POST':
-        nome = request.form['nome']
-        email = request.form['email']
-        telefone = request.form['telefone']
-        funcao = request.form['funcao']
-        equipe = request.form['equipe']
-        contrato = request.form['contrato']
+        nome, email, telefone = request.form['nome'], request.form['email'], request.form['telefone']
+        funcao, equipe, contrato = request.form['funcao'], request.form['equipe'], request.form['contrato']
         conn.execute('INSERT INTO tecnicos (nome, email, telefone, funcao, equipe, contrato) VALUES (?, ?, ?, ?, ?, ?)',
                      (nome, email, telefone, funcao, equipe, contrato))
         conn.commit()
@@ -323,12 +347,8 @@ def edit_tecnico(id):
     tecnico = conn.execute('SELECT * FROM tecnicos WHERE id = ?', (id,)).fetchone()
     equipes = conn.execute('SELECT nome FROM equipes').fetchall()
     if request.method == 'POST':
-        nome = request.form['nome']
-        email = request.form['email']
-        telefone = request.form['telefone']
-        funcao = request.form['funcao']
-        equipe = request.form['equipe']
-        contrato = request.form['contrato']
+        nome, email, telefone = request.form['nome'], request.form['email'], request.form['telefone']
+        funcao, equipe, contrato = request.form['funcao'], request.form['equipe'], request.form['contrato']
         conn.execute('UPDATE tecnicos SET nome = ?, email = ?, telefone = ?, funcao = ?, equipe = ?, contrato = ? WHERE id = ?',
                      (nome, email, telefone, funcao, equipe, contrato, id))
         conn.commit()
@@ -517,7 +537,9 @@ def new_projeto():
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     if request.method == 'POST':
-        nome, cliente, data_inicio, data_termino, status = request.form['nome'], request.form['cliente'], request.form['data_inicio_previsto'], request.form['data_termino_previsto'], request.form['status']
+        nome, cliente = request.form['nome'], request.form['cliente']
+        data_inicio, data_termino = request.form['data_inicio_previsto'], request.form['data_termino_previsto']
+        status = request.form['status']
         cursor = conn.cursor()
         cursor.execute('INSERT INTO projetos (nome, cliente, data_inicio_previsto, data_termino_previsto, status) VALUES (?, ?, ?, ?, ?)',
                      (nome, cliente, data_inicio, data_termino, status))
@@ -539,7 +561,9 @@ def edit_projeto(projeto_id):
     conn = get_db_connection()
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     if request.method == 'POST':
-        nome, cliente, data_inicio, data_termino, status = request.form['nome'], request.form['cliente'], request.form['data_inicio_previsto'], request.form['data_termino_previsto'], request.form['status']
+        nome, cliente = request.form['nome'], request.form['cliente']
+        data_inicio, data_termino = request.form['data_inicio_previsto'], request.form['data_termino_previsto']
+        status = request.form['status']
         conn.execute('UPDATE projetos SET nome = ?, cliente = ?, data_inicio_previsto = ?, data_termino_previsto = ?, status = ? WHERE id = ?',
                      (nome, cliente, data_inicio, data_termino, status, projeto_id))
         conn.commit()
@@ -575,7 +599,6 @@ def checklist_projeto(projeto_id):
         return redirect(url_for('projetos'))
     return render_template('checklist_projeto.html', projeto=projeto, tarefas=tarefas_from_db)
 
-
 @app.route('/tarefa/edit/<int:tarefa_id>', methods=['GET', 'POST'])
 @login_required
 @role_required('projetos')
@@ -583,14 +606,24 @@ def edit_tarefa(tarefa_id):
     conn = get_db_connection()
     tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
     if request.method == 'POST':
-        # ... (código original da função)
+        atividade_id, descricao = request.form['atividade_id'], request.form['descricao']
+        data_inicio, data_termino = request.form['data_inicio'] or None, request.form['data_termino'] or None
+        responsavel_pm, responsavel_cm = request.form['responsavel_pm'], request.form['responsavel_cm']
+        status, local_execucao, observacoes = request.form['status'], request.form['local_execucao'], request.form['observacoes']
+        conn.execute('''
+            UPDATE tarefas SET atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, 
+            responsavel_pm = ?, responsavel_cm = ?, status = ?, local_execucao = ?, observacoes = ?
+            WHERE id = ?
+        ''', (atividade_id, descricao, data_inicio, data_termino, responsavel_pm, responsavel_cm, status, local_execucao, observacoes, tarefa_id))
         conn.commit()
         conn.close()
         flash('Tarefa atualizada!', 'success')
         return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
-    # ... (código original da função)
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
     conn.close()
-    return render_template('edit_tarefa.html', tarefa=tarefa)
+    return render_template('edit_tarefa.html', tarefa=tarefa, tecnicos=tecnicos, locais=locais)
 
 @app.route('/tarefa/delete/<int:tarefa_id>', methods=['POST'])
 @login_required
@@ -619,109 +652,227 @@ def pendencias():
 @login_required
 @role_required('pendencias')
 def new_pendencia():
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in clientes_data]
+    sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    if request.method == 'POST':
+        processo, cliente, sistema = request.form['processo'], request.form['cliente'], request.form['sistema']
+        data_prioridade, prazo_entrega, status = request.form['data_prioridade'], request.form['prazo_entrega'], request.form['status']
+        conn.execute('INSERT INTO pendencias (processo, cliente, sistema, data_prioridade, prazo_entrega, status) VALUES (?, ?, ?, ?, ?, ?)',
+                     (processo, cliente, sistema, data_prioridade, prazo_entrega, status))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('pendencias'))
+    conn.close()
+    return render_template('new_pendencia.html', clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required('pendencias')
 def edit_pendencia(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in clientes_data]
+    sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
+    if request.method == 'POST':
+        processo, cliente, sistema = request.form['processo'], request.form['cliente'], request.form['sistema']
+        data_prioridade, prazo_entrega, status = request.form['data_prioridade'], request.form['prazo_entrega'], request.form['status']
+        conn.execute('UPDATE pendencias SET processo = ?, cliente = ?, sistema = ?, data_prioridade = ?, prazo_entrega = ?, status = ? WHERE id = ?',
+                     (processo, cliente, sistema, data_prioridade, prazo_entrega, status, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('pendencias'))
+    conn.close()
+    return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas_para_selecao)
 
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
 @role_required('pendencias')
 def delete_pendencia(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    conn.execute('DELETE FROM pendencias WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('pendencias'))
 
 # --- MÓDULO DE FÉRIAS ---
 @app.route('/ferias')
 @login_required
 @role_required('ferias')
 def ferias():
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    ferias_data = conn.execute('SELECT * FROM ferias').fetchall()
+    conn.close()
+    return render_template('ferias.html', ferias=ferias_data)
 
 @app.route('/new_ferias', methods=['GET', 'POST'])
 @login_required
 @role_required('ferias')
 def new_ferias():
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    tecnicos_data = conn.execute('SELECT nome, contrato FROM tecnicos').fetchall()
+    tecnicos = [(t['nome'], t['contrato']) for t in tecnicos_data]
+    if request.method == 'POST':
+        funcionario, admissao, contrato = request.form['funcionario'], request.form['admissao'], request.form['contrato']
+        ano, data_inicio, data_termino, obs = request.form['ano'], request.form['data_inicio'], request.form['data_termino'], request.form['obs']
+        conn.execute('INSERT INTO ferias (funcionario, admissao, contrato, ano, data_inicio, data_termino, obs) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                     (funcionario, admissao, contrato, ano, data_inicio, data_termino, obs))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('ferias'))
+    conn.close()
+    return render_template('new_ferias.html', tecnicos=tecnicos)
 
 @app.route('/edit_ferias/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required('ferias')
 def edit_ferias(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    ferias_item = conn.execute('SELECT * FROM ferias WHERE id = ?', (id,)).fetchone()
+    tecnicos_data = conn.execute('SELECT nome, contrato FROM tecnicos').fetchall()
+    tecnicos = [(t['nome'], t['contrato']) for t in tecnicos_data]
+    if request.method == 'POST':
+        funcionario, admissao, contrato = request.form['funcionario'], request.form['admissao'], request.form['contrato']
+        ano, data_inicio, data_termino, obs = request.form['ano'], request.form['data_inicio'], request.form['data_termino'], request.form['obs']
+        conn.execute('UPDATE ferias SET funcionario=?, admissao=?, contrato=?, ano=?, data_inicio=?, data_termino=?, obs=? WHERE id=?',
+                     (funcionario, admissao, contrato, ano, data_inicio, data_termino, obs, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('ferias'))
+    conn.close()
+    return render_template('edit_ferias.html', ferias_item=ferias_item, tecnicos=tecnicos)
 
 @app.route('/delete_ferias/<int:id>', methods=['POST'])
 @login_required
 @role_required('ferias')
 def delete_ferias(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    conn.execute('DELETE FROM ferias WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('ferias'))
 
 # --- MÓDULO DE AGENDA ---
 @app.route('/agenda')
 @login_required
 @role_required('agenda')
 def agenda():
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    agenda_data = conn.execute('SELECT * FROM agenda ORDER BY data_agendamento DESC').fetchall()
+    conn.close()
+    return render_template('agenda.html', agenda_data=agenda_data)
 
 @app.route('/new_agenda', methods=['GET', 'POST'])
 @login_required
 @role_required('agenda')
 def new_agenda():
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    if request.method == 'POST':
+        cliente, tecnico, sistema = request.form['cliente'], request.form['tecnico'], request.form['sistema']
+        data_agendamento, motivo, descricao, status = request.form['data_agendamento'], request.form['motivo'], request.form['descricao'], request.form['status']
+        conn.execute('INSERT INTO agenda (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                     (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('agenda'))
+    conn.close()
+    return render_template('new_agenda.html', clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
 
 @app.route('/edit_agenda/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required('agenda')
 def edit_agenda(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    agendamento = conn.execute('SELECT * FROM agenda WHERE id = ?', (id,)).fetchone()
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    if request.method == 'POST':
+        cliente, tecnico, sistema = request.form['cliente'], request.form['tecnico'], request.form['sistema']
+        data_agendamento, motivo, descricao, status = request.form['data_agendamento'], request.form['motivo'], request.form['descricao'], request.form['status']
+        conn.execute('UPDATE agenda SET cliente=?, tecnico=?, sistema=?, data_agendamento=?, motivo=?, descricao=?, status=? WHERE id=?',
+                     (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('agenda'))
+    conn.close()
+    return render_template('edit_agenda.html', agendamento=agendamento, clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
 
 @app.route('/delete_agenda/<int:id>', methods=['POST'])
 @login_required
 @role_required('agenda')
 def delete_agenda(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    conn.execute('DELETE FROM agenda WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('agenda'))
 
 # --- MÓDULO DE PRESTAÇÃO DE CONTAS ---
 @app.route('/prestacao_contas')
 @login_required
 @role_required('prestacao_contas')
 def prestacao_contas():
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    dados = conn.execute('SELECT * FROM prestacao_contas ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('prestacao_contas.html', dados=dados)
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
 @login_required
 @role_required('prestacao_contas')
 def new_prestacao():
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    if request.method == 'POST':
+        form = request.form
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {usuario_logado}"
+        conn.execute('INSERT INTO prestacao_contas (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+    conn.close()
+    return render_template('new_prestacao.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
 
 @app.route('/edit_prestacao/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required('prestacao_contas')
 def edit_prestacao(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    item = conn.execute('SELECT * FROM prestacao_contas WHERE id = ?', (id,)).fetchone()
+    if request.method == 'POST':
+        form = request.form
+        usuario_logado = session.get('user_name', 'Desconhecido')
+        atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {usuario_logado}"
+        conn.execute('UPDATE prestacao_contas SET cliente=?, sistema=?, responsavel=?, modulo=?, periodo=?, competencia=?, status=?, observacao=?, atualizado_por=? WHERE id=?',
+            (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por, id))
+        conn.commit()
+        conn.close()
+        return redirect(url_for('prestacao_contas'))
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    conn.close()
+    return render_template('edit_prestacao.html', item=item, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
 
 @app.route('/delete_prestacao/<int:id>', methods=['POST'])
 @login_required
 @role_required('prestacao_contas')
 def delete_prestacao(id):
-    # ... (código original da função)
-    pass
+    conn = get_db_connection()
+    conn.execute('DELETE FROM prestacao_contas WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('prestacao_contas'))
 
 # --- GESTÃO DE USUÁRIOS (Admin) ---
 @app.route('/usuarios')
