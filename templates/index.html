@@ -234,22 +234,22 @@
         <aside class="navigation-sidebar card">
             <h2>Módulos do Sistema</h2>
             <ul class="module-list">
-                {% if check_permission('cadastros') %}
+                {% if check_permission('cadastros', 'can_read') %}
                     <li><a href="{{ url_for('cadastros') }}">Cadastros</a></li>
                 {% endif %}
-                {% if check_permission('agenda') %}
+                {% if check_permission('agenda', 'can_read') %}
                     <li><a href="{{ url_for('agenda') }}">Agenda</a></li>
                 {% endif %}
-                {% if check_permission('projetos') %}
+                {% if check_permission('projetos', 'can_read') %}
                     <li><a href="{{ url_for('projetos') }}">Projetos de Implantação</a></li>
                 {% endif %}
-                {% if check_permission('pendencias') %}
+                {% if check_permission('pendencias', 'can_read') %}
                     <li><a href="{{ url_for('pendencias') }}">Pendências</a></li>
                 {% endif %}
-                {% if check_permission('prestacao_contas') %}
+                {% if check_permission('prestacao_contas', 'can_read') %}
                     <li><a href="{{ url_for('prestacao_contas') }}">Prestação de Contas</a></li>
                 {% endif %}
-                {% if check_permission('ferias') %}
+                {% if check_permission('ferias', 'can_read') %}
                     <li><a href="{{ url_for('ferias') }}">Férias</a></li>
                 {% endif %}
 
