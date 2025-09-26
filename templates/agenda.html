@@ -8,11 +8,18 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
     
     <style>
+        /* --- CORREÇÃO DEFINITIVA APLICADA AQUI --- */
+        /* Alarga o container principal APENAS nesta página */
+        .container {
+            max-width: 95%; /* Aumenta a largura máxima de 90% para 95% */
+        }
+        /* --- FIM DA CORREÇÃO --- */
+
         .fc {
             max-width: 100%;
             margin: 20px auto;
         }
-        /* Adiciona um cursor de ponteiro para indicar que os eventos são clicáveis */
+        
         .fc-event-main {
             cursor: pointer;
         }
@@ -60,19 +67,14 @@
             },
             events: '/api/agendamentos',
 
-            // --- LÓGICA DE EDIÇÃO E EXCLUSÃO APLICADA AQUI ---
             eventClick: function(info) {
-                info.jsEvent.preventDefault(); // Previne qualquer ação padrão
+                info.jsEvent.preventDefault(); 
                 var eventId = info.event.id;
 
-                // Pergunta ao usuário qual ação ele deseja realizar
                 if (confirm("Deseja editar este agendamento?")) {
-                    // Se sim, redireciona para a página de edição
                     window.location.href = `/edit_agenda/${eventId}`;
                 } else {
-                    // Se não, pergunta se ele deseja excluir
                     if (confirm("ATENÇÃO: Deseja EXCLUIR este agendamento? A ação não pode ser desfeita.")) {
-                        // Envia uma requisição POST para a rota de exclusão
                         fetch(`/delete_agenda/${eventId}`, {
                             method: 'POST',
                             headers: {
@@ -80,7 +82,6 @@
                             }
                         }).then(response => {
                             if (response.ok) {
-                                // Se a exclusão no servidor for bem-sucedida, remove o evento do calendário
                                 info.event.remove();
                                 alert('Agendamento excluído com sucesso!');
                             } else {
