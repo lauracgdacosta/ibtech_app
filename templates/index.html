@@ -64,7 +64,7 @@
             padding: 24px;
             box-shadow: 0px 4px 12px var(--shadow-color);
             border: 1px solid var(--border-color);
-            overflow: hidden; /* Garante que nada vaze do card */
+            overflow: hidden; 
         }
 
         .card h2 {
@@ -73,7 +73,18 @@
             margin-top: 0;
             margin-bottom: 20px;
             border: none;
+            transition: color 0.2s; /* Adicionado para o efeito hover */
         }
+        
+        /* --- ESTILO PARA OS TÍTULOS CLICÁVEIS --- */
+        .card-title-link {
+            text-decoration: none;
+            color: inherit;
+        }
+        .card-title-link:hover h2 {
+            color: var(--primary-color);
+        }
+        /* --- FIM DO NOVO ESTILO --- */
 
         .dashboard-grid {
             display: grid;
@@ -82,19 +93,18 @@
             margin-bottom: 30px;
         }
 
-        /* --- AJUSTES NA TABELA PARA CORRIGIR OVERFLOW --- */
         .widget-table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* Força o respeito às larguras das colunas */
+            table-layout: fixed; 
         }
 
         .widget-table th, .widget-table td {
-            padding: 12px 8px; /* Aumenta o espaçamento lateral */
+            padding: 12px 8px; 
             text-align: left;
             border-bottom: 1px solid var(--border-color);
-            white-space: normal; /* Permite a quebra de linha */
-            word-wrap: break-word; /* Garante a quebra de palavras longas */
+            white-space: normal; 
+            word-wrap: break-word; 
         }
 
         .widget-table th {
@@ -106,7 +116,6 @@
         .widget-table tr:last-child td {
             border-bottom: none;
         }
-        /* FIM DOS AJUSTES */
 
         .empty-state {
             text-align: center;
@@ -138,22 +147,21 @@
             justify-content: center;
             padding: 20px;
             text-decoration: none;
-            color: white; /* Cor do texto padrão para os botões coloridos */
+            color: white; 
             background-color: var(--card-background);
             border-radius: 10px;
-            font-weight: 600; /* Dando mais destaque ao texto */
+            font-weight: 600; 
             text-align: center;
-            border: none; /* Removendo borda padrão */
+            border: none; 
             transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
         }
 
         .module-button:hover {
             transform: translateY(-4px);
             box-shadow: 0px 8px 16px var(--shadow-color);
-            filter: brightness(1.1); /* Efeito de brilho ao passar o mouse */
+            filter: brightness(1.1); 
         }
 
-        /* --- NOVAS CORES DOS BOTÕES --- */
         .module-button.cadastros { background-color: #3498db; }
         .module-button.agenda { background-color: #2ecc71; }
         .module-button.projetos { background-color: #9b59b6; }
@@ -186,7 +194,9 @@
             <div class="dashboard-grid">
                 
                 <div class="card">
-                    <h2>Próximos Agendamentos</h2>
+                    <a href="{{ url_for('agenda') }}" class="card-title-link">
+                        <h2>Próximos Agendamentos</h2>
+                    </a>
                     {% if proximos_agendamentos %}
                     <table class="widget-table">
                         <thead><tr><th style="width: 30%;">Cliente</th><th style="width: 25%;">Técnico</th><th style="width: 25%;">Motivo</th><th style="width: 20%;">Data</th></tr></thead>
@@ -207,7 +217,9 @@
                 </div>
 
                 <div class="card">
-                    <h2>Pendências Prioritárias</h2>
+                    <a href="{{ url_for('pendencias') }}" class="card-title-link">
+                        <h2>Pendências Prioritárias</h2>
+                    </a>
                     {% if pendencias_abertas %}
                     <table class="widget-table">
                         <thead><tr><th style="width: 40%;">Cliente</th><th style="width: 35%;">Sistema</th><th style="width: 25%;">Prioridade</th></tr></thead>
@@ -227,7 +239,9 @@
                 </div>
 
                 <div class="card">
-                    <h2>Técnicos em Férias Hoje</h2>
+                    <a href="{{ url_for('ferias') }}" class="card-title-link">
+                        <h2>Técnicos em Férias Hoje</h2>
+                    </a>
                     {% if tecnicos_em_ferias %}
                     <table class="widget-table">
                         <thead><tr><th style="width: 50%;">Funcionário</th><th style="width: 25%;">Início</th><th style="width: 25%;">Término</th></tr></thead>
