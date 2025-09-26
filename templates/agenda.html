@@ -4,81 +4,87 @@
     <meta charset="UTF-8">
     <title>Módulo de Agenda</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css">
-    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/datetime-moment.js"></script>
+    
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
+    
+    <style>
+        /* Ajustes para o calendário preencher o container */
+        .fc {
+            max-width: 1100px;
+            margin: 20px auto;
+        }
+    </style>
 </head>
 <body>
-<div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-{% if session.user_name %}
-    <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-    <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-{% endif %}
-</div>
-<div class="container">
-    <div class="header-actions">
-        <h1>Módulo de Agenda</h1>
-        <div class="actions-group">
-            {% if check_permission('agenda', 'can_edit') %}
-                <a href="{{ url_for('new_agenda') }}" class="button new">Novo Agendamento</a>
-            {% endif %}
-            <a href="{{ url_for('pendencias') }}" class="button">Ver Pendências</a>
-        </div>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+        {% if session.user_name %}
+            <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+            <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+        {% endif %}
     </div>
-    <table id="tabela" class="display" style="width:100%">
-        <thead>
-            <tr>
-                <th>Cliente</th>
-                <th>Técnico</th>
-                <th>Data</th>
-                <th>Motivo</th>
-                <th>Status</th>
-                <th>Descrição</th>
-                {% if check_permission('agenda', 'can_edit') or check_permission('agenda', 'can_delete') %}
-                    <th class="no-sort">Ações</th>
+
+    <div class="container">
+        <div class="header-actions">
+            <h1>Módulo de Agenda</h1>
+            <div class="actions-group">
+                {% if check_permission('agenda', 'can_edit') %}
+                    <a href="{{ url_for('new_agenda') }}" class="button new">Novo Agendamento</a>
                 {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in agenda_data %}
-            <tr>
-                <td>{{ item['cliente'] }}</td>
-                <td>{{ item['tecnico'] }}</td>
-                <td>{{ item['data_agendamento'] | dateformat }}</td>
-                <td>{{ item['motivo'] }}</td>
-                <td>{{ item['status'] }}</td>
-                <td>{{ item['descricao'] }}</td>
-                {% if check_permission('agenda', 'can_edit') or check_permission('agenda', 'can_delete') %}
-                    <td class="actions">
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            {% if check_permission('agenda', 'can_edit') %}
-                                <a href="{{ url_for('edit_agenda', id=item['id']) }}" class="button edit">Editar</a>
-                            {% endif %}
-                            {% if check_permission('agenda', 'can_delete') %}
-                                <form action="{{ url_for('delete_agenda', id=item['id']) }}" method="post" style="margin: 0;">
-                                    <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja excluir?');">Deletar</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <br>
-    <a href="{{ url_for('index') }}" class="button">Voltar</a>
-</div>
-<script>
-$(document).ready(function() {
-    DataTable.moment('DD/MM/YYYY');
-    $('#tabela').DataTable({
-        "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
-        "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
+                <a href="{{ url_for('index') }}" class="button">Voltar ao Painel</a>
+            </div>
+        </div>
+        
+        <div id='calendar'></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Seleciona o elemento onde o calendário será renderizado
+        var calendarEl = document.getElementById('calendar');
+
+        // Cria e configura a instância do FullCalendar
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            // Define a visualização inicial como mês
+            initialView: 'dayGridMonth',
+            
+            // Configura os botões do cabeçalho (anterior, próximo, hoje, etc.)
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            
+            // Define o idioma para Português do Brasil
+            locale: 'pt-br',
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                day: 'Dia'
+            },
+
+            // O mais importante: define a fonte de eventos como nossa nova API
+            events: '/api/agendamentos',
+
+            // (Opcional) Ação ao clicar em um evento
+            eventClick: function(info) {
+                // Monta uma mensagem com os detalhes do evento
+                let detalhes = `Cliente: ${info.event.title}\n` +
+                               `Data: ${info.event.start.toLocaleDateString()}\n` +
+                               `Motivo: ${info.event.extendedProps.motivo}\n` +
+                               `Status: ${info.event.extendedProps.status}\n\n` +
+                               `${info.event.extendedProps.descricao || ''}`;
+                
+                alert(detalhes);
+
+                // Previne o navegador de seguir um link (se houver)
+                info.jsEvent.preventDefault();
+            }
+        });
+
+        // Renderiza o calendário
+        calendar.render();
     });
-});
-</script>
+    </script>
 </body>
 </html>

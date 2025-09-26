@@ -867,5 +867,37 @@ def delete_usuario(id):
     conn.close()
     flash('Usuário excluído.', 'success')
     return redirect(url_for('usuarios'))
+
+
+# --- NOVA ROTA DE API PARA O CALENDÁRIO ---
+from flask import jsonify # Adicione 'jsonify' aos imports do Flask no topo do arquivo
+
+@app.route('/api/agendamentos')
+@login_required
+def api_agendamentos():
+    conn = get_db_connection()
+    # Busca todos os agendamentos, não apenas os futuros
+    agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
+    conn.close()
+
+    eventos = []
+    for agendamento in agendamentos_db:
+        # Formata os dados para o padrão que o FullCalendar espera
+        eventos.append({
+            'id': agendamento['id'],
+            'title': f"{agendamento['cliente']} ({agendamento['tecnico']})", # Título do evento
+            'start': agendamento['data_agendamento'], # Data de início do evento
+            # Você pode adicionar mais campos aqui para usar depois, como 'description'
+            'extendedProps': {
+                'motivo': agendamento['motivo'],
+                'descricao': agendamento['descricao'],
+                'status': agendamento['status']
+            }
+        })
+
+    return jsonify(eventos)
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
