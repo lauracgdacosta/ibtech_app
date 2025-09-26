@@ -8,10 +8,13 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
     
     <style>
-        /* Ajustes para o calendário preencher o container */
         .fc {
-            max-width: 1100px;
+            max-width: 100%;
             margin: 20px auto;
+        }
+        /* Adiciona um cursor de ponteiro para indicar que os eventos são clicáveis */
+        .fc-event-main {
+            cursor: pointer;
         }
     </style>
 </head>
@@ -39,22 +42,15 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Seleciona o elemento onde o calendário será renderizado
         var calendarEl = document.getElementById('calendar');
 
-        // Cria e configura a instância do FullCalendar
         var calendar = new FullCalendar.Calendar(calendarEl, {
-            // Define a visualização inicial como mês
             initialView: 'dayGridMonth',
-            
-            // Configura os botões do cabeçalho (anterior, próximo, hoje, etc.)
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
-            
-            // Define o idioma para Português do Brasil
             locale: 'pt-br',
             buttonText: {
                 today: 'Hoje',
@@ -62,27 +58,22 @@
                 week: 'Semana',
                 day: 'Dia'
             },
-
-            // O mais importante: define a fonte de eventos como nossa nova API
             events: '/api/agendamentos',
 
-            // (Opcional) Ação ao clicar em um evento
+            // --- ALTERAÇÃO APLICADA AQUI ---
+            // Ação ao clicar em um evento: redireciona para a página de edição
             eventClick: function(info) {
-                // Monta uma mensagem com os detalhes do evento
-                let detalhes = `Cliente: ${info.event.title}\n` +
-                               `Data: ${info.event.start.toLocaleDateString()}\n` +
-                               `Motivo: ${info.event.extendedProps.motivo}\n` +
-                               `Status: ${info.event.extendedProps.status}\n\n` +
-                               `${info.event.extendedProps.descricao || ''}`;
-                
-                alert(detalhes);
-
-                // Previne o navegador de seguir um link (se houver)
+                // Previne o comportamento padrão do clique
                 info.jsEvent.preventDefault();
+                
+                // Obtém o ID do evento clicado
+                var eventId = info.event.id;
+                
+                // Constrói a URL de edição e redireciona o usuário
+                window.location.href = `/edit_agenda/${eventId}`;
             }
         });
 
-        // Renderiza o calendário
         calendar.render();
     });
     </script>
