@@ -898,7 +898,7 @@ def api_agendamentos():
             }
         })
 
-    return jsonify(eventos)v
+    return jsonify(eventos)
 
 
 
