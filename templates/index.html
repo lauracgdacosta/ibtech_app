@@ -64,6 +64,7 @@
             padding: 24px;
             box-shadow: 0px 4px 12px var(--shadow-color);
             border: 1px solid var(--border-color);
+            overflow: hidden; /* Garante que nada vaze do card */
         }
 
         .card h2 {
@@ -81,18 +82,21 @@
             margin-bottom: 30px;
         }
 
+        /* --- AJUSTES NA TABELA PARA CORRIGIR OVERFLOW --- */
         .widget-table {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed; /* Força o respeito às larguras das colunas */
         }
 
         .widget-table th, .widget-table td {
-            padding: 12px 4px;
+            padding: 12px 8px; /* Aumenta o espaçamento lateral */
             text-align: left;
             border-bottom: 1px solid var(--border-color);
-            white-space: nowrap;
+            white-space: normal; /* Permite a quebra de linha */
+            word-wrap: break-word; /* Garante a quebra de palavras longas */
         }
-        
+
         .widget-table th {
             font-weight: 500;
             color: var(--text-light);
@@ -102,6 +106,7 @@
         .widget-table tr:last-child td {
             border-bottom: none;
         }
+        /* FIM DOS AJUSTES */
 
         .empty-state {
             text-align: center;
@@ -109,7 +114,6 @@
             color: var(--text-light);
         }
 
-        /* --- NOVA SEÇÃO DE MÓDULOS --- */
         .modules-section {
             margin-top: 40px;
         }
@@ -134,29 +138,35 @@
             justify-content: center;
             padding: 20px;
             text-decoration: none;
-            color: var(--text-color);
+            color: white; /* Cor do texto padrão para os botões coloridos */
             background-color: var(--card-background);
             border-radius: 10px;
-            font-weight: 500;
+            font-weight: 600; /* Dando mais destaque ao texto */
             text-align: center;
-            border: 1px solid var(--border-color);
-            transition: transform 0.2s, box-shadow 0.2s, color 0.2s;
+            border: none; /* Removendo borda padrão */
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
         }
 
         .module-button:hover {
             transform: translateY(-4px);
             box-shadow: 0px 8px 16px var(--shadow-color);
-            color: var(--primary-color);
+            filter: brightness(1.1); /* Efeito de brilho ao passar o mouse */
         }
+
+        /* --- NOVAS CORES DOS BOTÕES --- */
+        .module-button.cadastros { background-color: #3498db; }
+        .module-button.agenda { background-color: #2ecc71; }
+        .module-button.projetos { background-color: #9b59b6; }
+        .module-button.pendencias { background-color: #f39c12; }
+        .module-button.prestacao { background-color: #1abc9c; }
+        .module-button.ferias { background-color: #e67e22; }
         
         .module-button.admin-link {
             background-color: #34495e;
             color: white;
-            border-color: #34495e;
         }
         .module-button.admin-link:hover {
             background-color: #2c3e50;
-            color: white;
         }
 
     </style>
@@ -179,7 +189,7 @@
                     <h2>Próximos Agendamentos</h2>
                     {% if proximos_agendamentos %}
                     <table class="widget-table">
-                        <thead><tr><th>Cliente</th><th>Técnico</th><th>Motivo</th><th>Data</th></tr></thead>
+                        <thead><tr><th style="width: 30%;">Cliente</th><th style="width: 25%;">Técnico</th><th style="width: 25%;">Motivo</th><th style="width: 20%;">Data</th></tr></thead>
                         <tbody>
                             {% for agendamento in proximos_agendamentos %}
                             <tr>
@@ -200,7 +210,7 @@
                     <h2>Pendências Prioritárias</h2>
                     {% if pendencias_abertas %}
                     <table class="widget-table">
-                        <thead><tr><th>Cliente</th><th>Sistema</th><th>Prioridade</th></tr></thead>
+                        <thead><tr><th style="width: 40%;">Cliente</th><th style="width: 35%;">Sistema</th><th style="width: 25%;">Prioridade</th></tr></thead>
                         <tbody>
                             {% for pendencia in pendencias_abertas %}
                             <tr>
@@ -220,7 +230,7 @@
                     <h2>Técnicos em Férias Hoje</h2>
                     {% if tecnicos_em_ferias %}
                     <table class="widget-table">
-                        <thead><tr><th>Funcionário</th><th>Início</th><th>Término</th></tr></thead>
+                        <thead><tr><th style="width: 50%;">Funcionário</th><th style="width: 25%;">Início</th><th style="width: 25%;">Término</th></tr></thead>
                         <tbody>
                             {% for ferias in tecnicos_em_ferias %}
                             <tr>
@@ -241,22 +251,22 @@
                 <h2>Módulos do Sistema</h2>
                 <div class="module-buttons-grid">
                     {% if check_permission('cadastros', 'can_read') %}
-                        <a href="{{ url_for('cadastros') }}" class="module-button">Cadastros</a>
+                        <a href="{{ url_for('cadastros') }}" class="module-button cadastros">Cadastros</a>
                     {% endif %}
                     {% if check_permission('agenda', 'can_read') %}
-                        <a href="{{ url_for('agenda') }}" class="module-button">Agenda</a>
+                        <a href="{{ url_for('agenda') }}" class="module-button agenda">Agenda</a>
                     {% endif %}
                     {% if check_permission('projetos', 'can_read') %}
-                        <a href="{{ url_for('projetos') }}" class="module-button">Projetos de Implantação</a>
+                        <a href="{{ url_for('projetos') }}" class="module-button projetos">Projetos de Implantação</a>
                     {% endif %}
                     {% if check_permission('pendencias', 'can_read') %}
-                        <a href="{{ url_for('pendencias') }}" class="module-button">Pendências</a>
+                        <a href="{{ url_for('pendencias') }}" class="module-button pendencias">Pendências</a>
                     {% endif %}
                     {% if check_permission('prestacao_contas', 'can_read') %}
-                        <a href="{{ url_for('prestacao_contas') }}" class="module-button">Prestação de Contas</a>
+                        <a href="{{ url_for('prestacao_contas') }}" class="module-button prestacao">Prestação de Contas</a>
                     {% endif %}
                     {% if check_permission('ferias', 'can_read') %}
-                        <a href="{{ url_for('ferias') }}" class="module-button">Férias</a>
+                        <a href="{{ url_for('ferias') }}" class="module-button ferias">Férias</a>
                     {% endif %}
     
                     {% if session['user_role'] == 'admin' %}
