@@ -60,17 +60,35 @@
             },
             events: '/api/agendamentos',
 
-            // --- ALTERAÇÃO APLICADA AQUI ---
-            // Ação ao clicar em um evento: redireciona para a página de edição
+            // --- LÓGICA DE EDIÇÃO E EXCLUSÃO APLICADA AQUI ---
             eventClick: function(info) {
-                // Previne o comportamento padrão do clique
-                info.jsEvent.preventDefault();
-                
-                // Obtém o ID do evento clicado
+                info.jsEvent.preventDefault(); // Previne qualquer ação padrão
                 var eventId = info.event.id;
-                
-                // Constrói a URL de edição e redireciona o usuário
-                window.location.href = `/edit_agenda/${eventId}`;
+
+                // Pergunta ao usuário qual ação ele deseja realizar
+                if (confirm("Deseja editar este agendamento?")) {
+                    // Se sim, redireciona para a página de edição
+                    window.location.href = `/edit_agenda/${eventId}`;
+                } else {
+                    // Se não, pergunta se ele deseja excluir
+                    if (confirm("ATENÇÃO: Deseja EXCLUIR este agendamento? A ação não pode ser desfeita.")) {
+                        // Envia uma requisição POST para a rota de exclusão
+                        fetch(`/delete_agenda/${eventId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        }).then(response => {
+                            if (response.ok) {
+                                // Se a exclusão no servidor for bem-sucedida, remove o evento do calendário
+                                info.event.remove();
+                                alert('Agendamento excluído com sucesso!');
+                            } else {
+                                alert('Ocorreu um erro ao excluir o agendamento.');
+                            }
+                        });
+                    }
+                }
             }
         });
 

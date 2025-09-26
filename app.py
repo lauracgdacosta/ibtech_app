@@ -869,25 +869,28 @@ def delete_usuario(id):
     return redirect(url_for('usuarios'))
 
 
-# --- NOVA ROTA DE API PARA O CALENDÁRIO ---
-from flask import jsonify # Adicione 'jsonify' aos imports do Flask no topo do arquivo
-
+# --- ROTA DE API ATUALIZADA PARA O CALENDÁRIO COM CORES ---
 @app.route('/api/agendamentos')
 @login_required
 def api_agendamentos():
     conn = get_db_connection()
-    # Busca todos os agendamentos, não apenas os futuros
     agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
     conn.close()
 
+    # Mapeamento de status para cores
+    color_map = {
+        'Planejada': '#3498db',  # Azul
+        'Realizada': '#2ecc71',  # Verde
+        'Cancelada': '#f1c40f'   # Amarelo
+    }
+
     eventos = []
     for agendamento in agendamentos_db:
-        # Formata os dados para o padrão que o FullCalendar espera
         eventos.append({
             'id': agendamento['id'],
-            'title': f"{agendamento['cliente']} ({agendamento['tecnico']})", # Título do evento
-            'start': agendamento['data_agendamento'], # Data de início do evento
-            # Você pode adicionar mais campos aqui para usar depois, como 'description'
+            'title': f"{agendamento['cliente']} ({agendamento['tecnico']})",
+            'start': agendamento['data_agendamento'],
+            'color': color_map.get(agendamento['status'], '#808080'), # Usa a cor do mapa ou um cinza padrão
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
@@ -895,7 +898,7 @@ def api_agendamentos():
             }
         })
 
-    return jsonify(eventos)
+    return jsonify(eventos)v
 
 
 
