@@ -754,35 +754,31 @@ def delete_agenda(id):
 
 # --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
 
+# Em app.py, substitua a função inteira:
 @app.route('/prestacao_contas')
 @login_required
 @role_required(module='prestacao_contas', action='can_read')
 def prestacao_contas():
     conn = get_db_connection()
     
-    # --- Captura de parâmetros da URL para filtros, ordenação e paginação ---
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'id', type=str)
     order = request.args.get('order', 'desc', type=str)
     
-    # Filtros
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
 
-    # Validação para evitar SQL Injection nos nomes de colunas
     allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'periodo', 'competencia', 'status']
     if sort_by not in allowed_sort_columns:
         sort_by = 'id'
     if order.lower() not in ['asc', 'desc']:
         order = 'desc'
 
-    # --- Lógica de Paginação ---
-    per_page = 20  # Itens por página
+    per_page = 20
     offset = (page - 1) * per_page
 
-    # --- Construção dinâmica da query SQL ---
     base_query = "FROM prestacao_contas WHERE 1=1"
     params = []
 
@@ -799,23 +795,24 @@ def prestacao_contas():
         base_query += " AND status = ?"
         params.append(search_status)
     
-    # Contagem do total de registros para a paginação
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
 
-    # Query final com ordenação e paginação
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     
     dados = conn.execute(data_query, tuple(params)).fetchall()
     
-    # Obtém listas para os filtros
     clientes_filtro = [row['cliente'] for row in conn.execute('SELECT DISTINCT cliente FROM prestacao_contas ORDER BY cliente').fetchall()]
     sistemas_filtro = [row['sistema'] for row in conn.execute('SELECT DISTINCT sistema FROM prestacao_contas ORDER BY sistema').fetchall()]
     responsaveis_filtro = [row['responsavel'] for row in conn.execute('SELECT DISTINCT responsavel FROM prestacao_contas ORDER BY responsavel').fetchall()]
 
     conn.close()
+
+    # --- NOVA LINHA ADICIONADA AQUI ---
+    # Copia os argumentos da URL para um dicionário padrão do Python
+    url_args = request.args.to_dict()
 
     return render_template('prestacao_contas.html', 
                            dados=dados,
@@ -827,20 +824,8 @@ def prestacao_contas():
                            search_status=search_status,
                            clientes_filtro=clientes_filtro,
                            sistemas_filtro=sistemas_filtro,
-                           responsaveis_filtro=responsaveis_filtro)
-
-def build_redirect_url(**kwargs):
-    """Função auxiliar para construir a URL de redirecionamento com os filtros."""
-    args = {}
-    search_keys = ['search_cliente', 'search_sistema', 'search_responsavel', 'search_status', 'page', 'sort_by', 'order']
-    
-    source = request.form if request.form else kwargs
-
-    for key in search_keys:
-        value = source.get(key)
-        if value:
-            args[key] = value
-    return url_for('prestacao_contas', **args)
+                           responsaveis_filtro=responsaveis_filtro,
+                           url_args=url_args) # <-- E AQUI
 
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
