@@ -16,17 +16,19 @@
         <div class="header-actions">
             <h1>Editar Prestação de Contas</h1>
             <div class="actions-group">
-                <a href="{{ url_for('prestacao_contas') }}" class="button">Voltar para a Lista</a>
+                <a href="{{ url_for('prestacao_contas', **args) }}" class="button">Voltar para a Lista</a>
             </div>
         </div>
         <p><strong>Última atualização:</strong> {{ item['atualizado_por'] }}</p>
 
         <form method="post">
+            {% for key, value in args.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
                 <option value="" disabled {% if not item['cliente'] %}selected{% endif %}>Selecione um Cliente</option>
                 {% for cliente in clientes %}
-                    {# A correção está aqui: .strip() remove espaços extras no início e no fim #}
                     <option value="{{ cliente }}" {% if cliente.strip() == item['cliente'].strip() %}selected{% endif %}>{{ cliente }}</option>
                 {% endfor %}
             </select>

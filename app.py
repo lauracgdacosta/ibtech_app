@@ -84,7 +84,9 @@ app.jinja_env.filters['dateformat'] = format_date
 
 # --- Configuração do Banco de Dados ---
 def get_db_connection():
-    conn = sqlite3.connect('/tmp/database.db')
+    # O caminho '/tmp/database.db' foi substituído por 'database.db' para funcionar localmente
+    # Se você precisar que seja no /tmp, pode reverter a alteração.
+    conn = sqlite3.connect('database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -114,11 +116,19 @@ def migrate_db_roles():
     except sqlite3.OperationalError:
         print("MIGRATE: Adicionando coluna 'role' à tabela 'usuarios'.")
         cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT")
+    
+    # Atualiza a coluna 'role' com base em 'nivel_acesso' para usuários existentes
     cursor.execute("UPDATE usuarios SET role = CASE WHEN nivel_acesso = 'Admin' THEN 'admin' WHEN nivel_acesso = 'Usuario' THEN 'tecnico' ELSE role END WHERE role IS NULL")
+    
+    # Verifica se há algum usuário no banco de dados
     cursor.execute("SELECT COUNT(id) FROM usuarios")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (nome, email, senha, role) VALUES (?, ?, ?, ?)", ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin'))
-        print("MIGRATE: Nenhum usuário encontrado. Criado usuário admin padrão.")
+        print("MIGRATE: Nenhum usuário encontrado. Criando usuário admin padrão.")
+        # CORREÇÃO APLICADA AQUI: Adicionado 'nivel_acesso' ao INSERT
+        cursor.execute(
+            "INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)", 
+            ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin', 'Admin')
+        )
     conn.commit()
     conn.close()
 
@@ -744,41 +754,130 @@ def delete_agenda(id):
     conn.close()
     return redirect(url_for('agenda'))
 
-# --- MÓDULO DE PRESTAÇÃO DE CONTAS ---
+# --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
+
 @app.route('/prestacao_contas')
 @login_required
 @role_required(module='prestacao_contas', action='can_read')
 def prestacao_contas():
     conn = get_db_connection()
-    dados = conn.execute('SELECT * FROM prestacao_contas ORDER BY id DESC').fetchall()
+    
+    # --- Captura de parâmetros da URL para filtros, ordenação e paginação ---
+    page = request.args.get('page', 1, type=int)
+    sort_by = request.args.get('sort_by', 'id', type=str)
+    order = request.args.get('order', 'desc', type=str)
+    
+    # Filtros
+    search_cliente = request.args.get('search_cliente', '', type=str)
+    search_sistema = request.args.get('search_sistema', '', type=str)
+    search_responsavel = request.args.get('search_responsavel', '', type=str)
+    search_status = request.args.get('search_status', '', type=str)
+
+    # Validação para evitar SQL Injection nos nomes de colunas
+    allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'periodo', 'competencia', 'status']
+    if sort_by not in allowed_sort_columns:
+        sort_by = 'id'
+    if order.lower() not in ['asc', 'desc']:
+        order = 'desc'
+
+    # --- Lógica de Paginação ---
+    per_page = 20  # Itens por página
+    offset = (page - 1) * per_page
+
+    # --- Construção dinâmica da query SQL ---
+    base_query = "FROM prestacao_contas WHERE 1=1"
+    params = []
+
+    if search_cliente:
+        base_query += " AND cliente LIKE ?"
+        params.append(f"%{search_cliente}%")
+    if search_sistema:
+        base_query += " AND sistema LIKE ?"
+        params.append(f"%{search_sistema}%")
+    if search_responsavel:
+        base_query += " AND responsavel LIKE ?"
+        params.append(f"%{search_responsavel}%")
+    if search_status:
+        base_query += " AND status = ?"
+        params.append(search_status)
+    
+    # Contagem do total de registros para a paginação
+    total_query = "SELECT COUNT(id) " + base_query
+    total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
+    total_pages = (total_results + per_page - 1) // per_page
+
+    # Query final com ordenação e paginação
+    data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
+    params.extend([per_page, offset])
+    
+    dados = conn.execute(data_query, tuple(params)).fetchall()
+    
+    # Obtém listas para os filtros
+    clientes_filtro = [row['cliente'] for row in conn.execute('SELECT DISTINCT cliente FROM prestacao_contas ORDER BY cliente').fetchall()]
+    sistemas_filtro = [row['sistema'] for row in conn.execute('SELECT DISTINCT sistema FROM prestacao_contas ORDER BY sistema').fetchall()]
+    responsaveis_filtro = [row['responsavel'] for row in conn.execute('SELECT DISTINCT responsavel FROM prestacao_contas ORDER BY responsavel').fetchall()]
+
     conn.close()
-    return render_template('prestacao_contas.html', dados=dados)
+
+    return render_template('prestacao_contas.html', 
+                           dados=dados,
+                           page=page, total_pages=total_pages,
+                           sort_by=sort_by, order=order,
+                           search_cliente=search_cliente,
+                           search_sistema=search_sistema,
+                           search_responsavel=search_responsavel,
+                           search_status=search_status,
+                           clientes_filtro=clientes_filtro,
+                           sistemas_filtro=sistemas_filtro,
+                           responsaveis_filtro=responsaveis_filtro)
+
+def build_redirect_url(**kwargs):
+    """Função auxiliar para construir a URL de redirecionamento com os filtros."""
+    args = {}
+    search_keys = ['search_cliente', 'search_sistema', 'search_responsavel', 'search_status', 'page', 'sort_by', 'order']
+    
+    source = request.form if request.form else kwargs
+
+    for key in search_keys:
+        value = source.get(key)
+        if value:
+            args[key] = value
+    return url_for('prestacao_contas', **args)
+
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
 @login_required
 @role_required(module='prestacao_contas', action='can_edit')
 def new_prestacao():
-    conn = get_db_connection()
-    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
-    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
-    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    args = request.args.to_dict()
+
     if request.method == 'POST':
+        conn = get_db_connection()
         form = request.form
         atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {session.get('user_name', 'Desconhecido')}"
         conn.execute('INSERT INTO prestacao_contas (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por))
         conn.commit()
         conn.close()
-        return redirect(url_for('prestacao_contas'))
+        flash('Registro criado com sucesso!', 'success')
+        return redirect(build_redirect_url())
+    
+    conn = get_db_connection()
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('new_prestacao.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+    return render_template('new_prestacao.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args)
 
 @app.route('/edit_prestacao/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(module='prestacao_contas', action='can_edit')
 def edit_prestacao(id):
+    args = request.args.to_dict()
+    
     conn = get_db_connection()
     item = conn.execute('SELECT * FROM prestacao_contas WHERE id = ?', (id,)).fetchone()
+
     if request.method == 'POST':
         form = request.form
         atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {session.get('user_name', 'Desconhecido')}"
@@ -786,12 +885,14 @@ def edit_prestacao(id):
             (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por, id))
         conn.commit()
         conn.close()
-        return redirect(url_for('prestacao_contas'))
+        flash('Registro atualizado com sucesso!', 'success')
+        return redirect(build_redirect_url())
+        
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('edit_prestacao.html', item=item, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+    return render_template('edit_prestacao.html', item=item, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args)
 
 @app.route('/delete_prestacao/<int:id>', methods=['POST'])
 @login_required
@@ -801,7 +902,11 @@ def delete_prestacao(id):
     conn.execute('DELETE FROM prestacao_contas WHERE id = ?', (id,))
     conn.commit()
     conn.close()
-    return redirect(url_for('prestacao_contas'))
+    flash('Registro excluído com sucesso!', 'success')
+    return redirect(build_redirect_url())
+
+# --- FIM DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
+
 
 # --- GESTÃO DE USUÁRIOS (Admin) ---
 @app.route('/usuarios')
@@ -859,7 +964,7 @@ def edit_usuario(id):
 @role_required(module='admin_only', action='can_delete')
 def delete_usuario(id):
     if id == session.get('user_id'):
-        flash('Você не pode excluir seu próprio usuário.', 'danger')
+        flash('Você não pode excluir seu próprio usuário.', 'danger')
         return redirect(url_for('usuarios'))
     conn = get_db_connection()
     conn.execute('DELETE FROM usuarios WHERE id = ?', (id,))
@@ -877,11 +982,10 @@ def api_agendamentos():
     agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
     conn.close()
 
-    # Mapeamento de status para cores
     color_map = {
-        'Planejada': '#3498db',  # Azul
-        'Realizada': '#2ecc71',  # Verde
-        'Cancelada': '#f1c40f'   # Amarelo
+        'Planejada': '#3498db',
+        'Realizada': '#2ecc71',
+        'Cancelada': '#f1c40f'
     }
 
     eventos = []
@@ -890,7 +994,7 @@ def api_agendamentos():
             'id': agendamento['id'],
             'title': f"{agendamento['cliente']} ({agendamento['tecnico']})",
             'start': agendamento['data_agendamento'],
-            'color': color_map.get(agendamento['status'], '#808080'), # Usa a cor do mapa ou um cinza padrão
+            'color': color_map.get(agendamento['status'], '#808080'),
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
@@ -903,4 +1007,5 @@ def api_agendamentos():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # O host='0.0.0.0' permite acesso de outros dispositivos na mesma rede.
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -16,11 +16,14 @@
         <div class="header-actions">
             <h1>Nova Prestação de Contas</h1>
             <div class="actions-group">
-                <a href="{{ url_for('prestacao_contas') }}" class="button">Voltar para a Lista</a>
+                <a href="{{ url_for('prestacao_contas', **args) }}" class="button">Voltar para a Lista</a>
             </div>
         </div>
 
         <form method="post">
+            {% for key, value in args.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
                 <option value="" disabled selected>Selecione um Cliente</option>
