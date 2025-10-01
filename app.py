@@ -753,8 +753,8 @@ def delete_agenda(id):
     return redirect(url_for('agenda'))
 
 # --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
+# --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
 
-# Em app.py, substitua a função inteira:
 @app.route('/prestacao_contas')
 @login_required
 @role_required(module='prestacao_contas', action='can_read')
@@ -810,8 +810,6 @@ def prestacao_contas():
 
     conn.close()
 
-    # --- NOVA LINHA ADICIONADA AQUI ---
-    # Copia os argumentos da URL para um dicionário padrão do Python
     url_args = request.args.to_dict()
 
     return render_template('prestacao_contas.html', 
@@ -825,8 +823,23 @@ def prestacao_contas():
                            clientes_filtro=clientes_filtro,
                            sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
-                           url_args=url_args) # <-- E AQUI
+                           url_args=url_args)
 
+# ---- FUNÇÃO AUXILIAR QUE ESTAVA EM FALTA ----
+def build_redirect_url(**kwargs):
+    """Função auxiliar para construir a URL de redirecionamento com os filtros."""
+    args = {}
+    search_keys = ['search_cliente', 'search_sistema', 'search_responsavel', 'search_status', 'page', 'sort_by', 'order']
+    
+    # Coleta os argumentos do formulário enviado (POST) ou dos argumentos da URL (GET)
+    source = request.form if request.form else kwargs
+
+    for key in search_keys:
+        value = source.get(key)
+        if value:
+            args[key] = value
+    return url_for('prestacao_contas', **args)
+# ---------------------------------------------
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
 @login_required
@@ -842,7 +855,7 @@ def new_prestacao():
             (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por))
         conn.commit()
         conn.close()
-        flash('Registro criado com sucesso!', 'success')
+        flash('Registo criado com sucesso!', 'success')
         return redirect(build_redirect_url())
     
     conn = get_db_connection()
@@ -868,7 +881,7 @@ def edit_prestacao(id):
             (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por, id))
         conn.commit()
         conn.close()
-        flash('Registro atualizado com sucesso!', 'success')
+        flash('Registo atualizado com sucesso!', 'success')
         return redirect(build_redirect_url())
         
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
@@ -885,11 +898,10 @@ def delete_prestacao(id):
     conn.execute('DELETE FROM prestacao_contas WHERE id = ?', (id,))
     conn.commit()
     conn.close()
-    flash('Registro excluído com sucesso!', 'success')
+    flash('Registo excluído com sucesso!', 'success')
     return redirect(build_redirect_url())
 
 # --- FIM DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
-
 
 # --- GESTÃO DE USUÁRIOS (Admin) ---
 @app.route('/usuarios')
