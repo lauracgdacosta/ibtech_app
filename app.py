@@ -116,11 +116,19 @@ def migrate_db_roles():
     except sqlite3.OperationalError:
         print("MIGRATE: Adicionando coluna 'role' à tabela 'usuarios'.")
         cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT")
+    
+    # Atualiza a coluna 'role' com base em 'nivel_acesso' para usuários existentes
     cursor.execute("UPDATE usuarios SET role = CASE WHEN nivel_acesso = 'Admin' THEN 'admin' WHEN nivel_acesso = 'Usuario' THEN 'tecnico' ELSE role END WHERE role IS NULL")
+    
+    # Verifica se há algum usuário no banco de dados
     cursor.execute("SELECT COUNT(id) FROM usuarios")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (nome, email, senha, role) VALUES (?, ?, ?, ?)", ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin'))
-        print("MIGRATE: Nenhum usuário encontrado. Criado usuário admin padrão.")
+        print("MIGRATE: Nenhum usuário encontrado. Criando usuário admin padrão.")
+        # CORREÇÃO APLICADA AQUI: Adicionado 'nivel_acesso' ao INSERT
+        cursor.execute(
+            "INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)", 
+            ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin', 'Admin')
+        )
     conn.commit()
     conn.close()
 
