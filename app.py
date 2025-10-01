@@ -84,9 +84,7 @@ app.jinja_env.filters['dateformat'] = format_date
 
 # --- Configuração do Banco de Dados ---
 def get_db_connection():
-    # O caminho '/tmp/database.db' foi substituído por 'database.db' para funcionar localmente
-    # Se você precisar que seja no /tmp, pode reverter a alteração.
-    conn = sqlite3.connect('database.db')
+    conn = sqlite3.connect('/tmp/database.db')
     conn.row_factory = sqlite3.Row
     return conn
 
