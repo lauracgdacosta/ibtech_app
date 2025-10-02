@@ -10,6 +10,8 @@
         .pagination a { background-color: #f1f1f1; color: #333; }
         .pagination a:hover { background-color: #ddd; }
         .pagination .current { background-color: #007bff; color: white; font-weight: bold; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; text-align: center; }
+        .alert-success { background-color: #d4edda; color: #155724; }
         th a { color: inherit; text-decoration: none; display: block; }
         th a:hover { text-decoration: underline; }
         .sort-indicator { display: inline-block; margin-left: 5px; }
@@ -17,7 +19,35 @@
         .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         .filter-actions { display: flex; gap: 5px; align-items: center; }
         .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
-        table th, table td { white-space: nowrap; }
+        
+        table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* --- CORREÇÃO PARA OS BOTÕES DE AÇÃO --- */
+        td.actions {
+            /* Garante que os botões não quebrem a linha */
+            white-space: nowrap;
+            /* Define uma largura mínima para a coluna de ações, garantindo espaço */
+            width: 135px; 
+        }
+
+        td.actions form {
+            /* Remove estilos de formulário que podem quebrar o layout */
+            display: inline-block;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: none;
+            box-shadow: none;
+        }
     </style>
 </head>
 <body>
