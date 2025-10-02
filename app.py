@@ -764,19 +764,16 @@ def prestacao_contas():
     sort_by = request.args.get('sort_by', 'id', type=str)
     order = request.args.get('order', 'desc', type=str)
     
-    # Filtros existentes
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
-    # --- NOVOS FILTROS ADICIONADOS AQUI ---
     search_modulo = request.args.get('search_modulo', '', type=str)
     search_periodo = request.args.get('search_periodo', '', type=str)
     search_competencia = request.args.get('search_competencia', '', type=str)
     search_observacao = request.args.get('search_observacao', '', type=str)
     search_atualizado_por = request.args.get('search_atualizado_por', '', type=str)
 
-    # --- NOVAS COLUNAS ADICIONADAS À LISTA DE ORDENAÇÃO SEGURA ---
     allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'periodo', 'competencia', 'status', 'observacao', 'atualizado_por']
     if sort_by not in allowed_sort_columns:
         sort_by = 'id'
@@ -801,7 +798,6 @@ def prestacao_contas():
     if search_status:
         base_query += " AND status = ?"
         params.append(search_status)
-    # --- LÓGICA PARA OS NOVOS FILTROS ---
     if search_modulo:
         base_query += " AND modulo LIKE ?"
         params.append(f"%{search_modulo}%")
@@ -833,14 +829,19 @@ def prestacao_contas():
 
     conn.close()
 
-    url_args = request.args.to_dict()
+    # --- INÍCIO DA CORREÇÃO ---
+    # Dicionário para os links de PAGINAÇÃO (preserva filtros e ordenação)
+    pagination_args = request.args.to_dict()
+    if 'page' in pagination_args:
+        del pagination_args['page']
 
-    if 'sort_by' in url_args:
-        del url_args['sort_by']
-    if 'order' in url_args:
-        del url_args['order']
-    if 'page' in url_args:
-        del url_args['page']
+    # Dicionário para os links de ORDENAÇÃO (preserva filtros)
+    sorting_args = request.args.to_dict()
+    if 'sort_by' in sorting_args:
+        del sorting_args['sort_by']
+    if 'order' in sorting_args:
+        del sorting_args['order']
+    # --- FIM DA CORREÇÃO ---
 
     return render_template('prestacao_contas.html', 
                            dados=dados,
@@ -850,7 +851,6 @@ def prestacao_contas():
                            search_sistema=search_sistema,
                            search_responsavel=search_responsavel,
                            search_status=search_status,
-                           # --- NOVAS VARIÁVEIS PASSADAS PARA O TEMPLATE ---
                            search_modulo=search_modulo,
                            search_periodo=search_periodo,
                            search_competencia=search_competencia,
@@ -859,7 +859,8 @@ def prestacao_contas():
                            clientes_filtro=clientes_filtro,
                            sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
-                           url_args=url_args)
+                           pagination_args=pagination_args, # Novo
+                           sorting_args=sorting_args)       # Novo
 # ---- FUNÇÃO AUXILIAR QUE ESTAVA EM FALTA ----
 def build_redirect_url(**kwargs):
     """Função auxiliar para construir a URL de redirecionamento com os filtros."""
