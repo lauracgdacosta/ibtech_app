@@ -759,12 +759,12 @@ def delete_agenda(id):
 @role_required(module='prestacao_contas', action='can_read')
 def prestacao_contas():
     conn = get_db_connection()
-    
+
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'id', type=str)
     order = request.args.get('order', 'desc', type=str)
-    
+
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
@@ -808,18 +808,19 @@ def prestacao_contas():
     if search_atualizado_por:
         base_query += " AND atualizado_por LIKE ?"
         params.append(f"%{search_atualizado_por}%")
-    
+
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     dados = conn.execute(data_query, tuple(params)).fetchall()
-    
-    # Lógica para o dashboard
+
+    # --- LÓGICA DO DASHBOARD ADICIONADA AQUI ---
     status_counts_data = conn.execute("SELECT status, COUNT(id) as count FROM prestacao_contas GROUP BY status").fetchall()
     status_counts = {row['status']: row['count'] for row in status_counts_data}
-    
+    # --- FIM DA LÓGICA DO DASHBOARD ---
+
     clientes_filtro = [row['cliente'] for row in conn.execute('SELECT DISTINCT cliente FROM prestacao_contas ORDER BY cliente').fetchall()]
     sistemas_filtro = [row['sistema'] for row in conn.execute('SELECT DISTINCT sistema FROM prestacao_contas ORDER BY sistema').fetchall()]
     responsaveis_filtro = [row['responsavel'] for row in conn.execute('SELECT DISTINCT responsavel FROM prestacao_contas ORDER BY responsavel').fetchall()]
@@ -840,7 +841,7 @@ def prestacao_contas():
                            dados=dados,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
-                           status_counts=status_counts,
+                           status_counts=status_counts, # <-- Variável agora a ser enviada
                            search_cliente=search_cliente,
                            search_sistema=search_sistema,
                            search_responsavel=search_responsavel,
