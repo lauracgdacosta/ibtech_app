@@ -6,6 +6,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         .filter-form { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; align-items: end; }
+        .view-toggle { margin-bottom: 20px; }
+        .view-toggle .button { background-color: #6c757d; }
+        .view-toggle .button.active { background-color: #007bff; }
+        .matrix-table { border-collapse: collapse; width: 100%; }
+        .matrix-table th, .matrix-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .matrix-table th { background-color: #f2f2f2; }
+        .matrix-table td.client-header { text-align: left; font-weight: bold; }
+        .gap { background-color: #fdd; color: #a00; }
     </style>
 </head>
 <body>
@@ -18,73 +26,112 @@
             </div>
         </div>
 
-        <form method="get" class="filter-form">
-            <div>
-                <label for="search_cliente">Filtrar por Cliente</label>
-                <select name="search_cliente" id="search_cliente">
-                    <option value="">Todos os Clientes</option>
-                    {% for cliente in clientes %}
-                    <option value="{{ cliente }}" {% if cliente == search_cliente %}selected{% endif %}>{{ cliente }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="search_sistema">Filtrar por Sistema</label>
-                <select name="search_sistema" id="search_sistema">
-                    <option value="">Todos os Sistemas</option>
-                    {% for sistema in sistemas %}
-                    <option value="{{ sistema }}" {% if sistema == search_sistema %}selected{% endif %}>{{ sistema }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="search_responsavel">Filtrar por Responsável</label>
-                <select name="search_responsavel" id="search_responsavel">
-                    <option value="">Todos os Responsáveis</option>
-                    {% for responsavel in responsaveis %}
-                    <option value="{{ responsavel }}" {% if responsavel == search_responsavel %}selected{% endif %}>{{ responsavel }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <button type="submit" class="button">Filtrar</button>
-                <a href="{{ url_for('matriz_responsabilidades') }}" class="button">Limpar</a>
-            </div>
-        </form>
+        <div class="view-toggle">
+            <a href="{{ url_for('matriz_responsabilidades', view='list') }}" class="button {{ 'active' if view == 'list' else '' }}">Visão de Lista</a>
+            <a href="{{ url_for('matriz_responsabilidades', view='matrix') }}" class="button {{ 'active' if view == 'matrix' else '' }}">Visão Matricial</a>
+        </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Cliente</th>
-                    <th>Sistema</th>
-                    <th>1º Responsável</th>
-                    <th>2º Responsável</th>
-                    <th>Observações</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for registo in registos %}
-                <tr>
-                    <td>{{ registo['cliente'] }}</td>
-                    <td>{{ registo['sistema'] }}</td>
-                    <td>{{ registo['responsavel1'] }}</td>
-                    <td>{{ registo['responsavel2'] or '---' }}</td>
-                    <td>{{ registo['observacoes'] }}</td>
-                    <td class="actions">
-                        <a href="{{ url_for('edit_matriz_responsabilidade', id=registo['id']) }}" class="button edit">Editar</a>
-                        <form action="{{ url_for('delete_matriz_responsabilidade', id=registo['id']) }}" method="post" onsubmit="return confirm('Tem certeza?');">
-                            <button type="submit" class="button delete">Deletar</button>
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" style="text-align: center;">Nenhum registo encontrado.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if view == 'matrix' %}
+        
+            <h2>Visão Matricial (Cliente x Sistema)</h2>
+            <div style="overflow-x: auto;">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            {% for sistema in all_sistemas %}
+                            <th>{{ sistema.nome }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in all_clientes %}
+                        <tr>
+                            <td class="client-header">{{ cliente.nome }}</td>
+                            {% for sistema in all_sistemas %}
+                                {% set responsaveis = matriz_data.get(cliente.nome, {}).get(sistema.nome) %}
+                                {% if responsaveis %}
+                                    <td>{{ responsaveis }}</td>
+                                {% else %}
+                                    <td class="gap">---</td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+
+            <form method="get" class="filter-form">
+                <div>
+                    <label for="search_cliente">Filtrar por Cliente</label>
+                    <select name="search_cliente" id="search_cliente">
+                        <option value="">Todos os Clientes</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente }}" {% if cliente == search_cliente %}selected{% endif %}>{{ cliente }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="search_sistema">Filtrar por Sistema</label>
+                    <select name="search_sistema" id="search_sistema">
+                        <option value="">Todos os Sistemas</option>
+                        {% for sistema in sistemas %}
+                        <option value="{{ sistema }}" {% if sistema == search_sistema %}selected{% endif %}>{{ sistema }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="search_responsavel">Filtrar por Responsável</label>
+                    <select name="search_responsavel" id="search_responsavel">
+                        <option value="">Todos os Responsáveis</option>
+                        {% for responsavel in responsaveis %}
+                        <option value="{{ responsavel }}" {% if responsavel == search_responsavel %}selected{% endif %}>{{ responsavel }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="button">Filtrar</button>
+                    <a href="{{ url_for('matriz_responsabilidades') }}" class="button">Limpar</a>
+                </div>
+            </form>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Sistema</th>
+                        <th>1º Responsável</th>
+                        <th>2º Responsável</th>
+                        <th>Observações</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registo in registos %}
+                    <tr>
+                        <td>{{ registo['cliente'] }}</td>
+                        <td>{{ registo['sistema'] }}</td>
+                        <td>{{ registo['responsavel1'] }}</td>
+                        <td>{{ registo['responsavel2'] or '---' }}</td>
+                        <td>{{ registo['observacoes'] }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('edit_matriz_responsabilidade', id=registo['id']) }}" class="button edit">Editar</a>
+                            <form action="{{ url_for('delete_matriz_responsabilidade', id=registo['id']) }}" method="post" onsubmit="return confirm('Tem certeza?');">
+                                <button type="submit" class="button delete">Deletar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center;">Nenhum registo encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+
     </div>
 </body>
 </html>
