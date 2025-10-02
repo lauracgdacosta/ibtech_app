@@ -19,35 +19,10 @@
         .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         .filter-actions { display: flex; gap: 5px; align-items: center; }
         .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
-        
-        table {
-            table-layout: fixed;
-            width: 100%;
-        }
-
-        .truncate {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        /* --- CORREÇÃO PARA OS BOTÕES DE AÇÃO --- */
-        td.actions {
-            /* Garante que os botões não quebrem a linha */
-            white-space: nowrap;
-            /* Define uma largura mínima para a coluna de ações, garantindo espaço */
-            width: 135px; 
-        }
-
-        td.actions form {
-            /* Remove estilos de formulário que podem quebrar o layout */
-            display: inline-block;
-            padding: 0;
-            margin: 0;
-            border: none;
-            background: none;
-            box-shadow: none;
-        }
+        table { table-layout: fixed; width: 100%; }
+        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        td.actions { white-space: nowrap; width: 135px; }
+        td.actions form { display: inline-block; padding: 0; margin: 0; border: none; background: none; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -63,73 +38,68 @@
         <form method="get" action="{{ url_for('prestacao_contas') }}">
             <input type="hidden" name="sort_by" value="{{ sort_by }}">
             <input type="hidden" name="order" value="{{ order }}">
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='periodo', order=sort_order, **sorting_args) }}">Período <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação <span class="sort-indicator">...</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por <span class="sort-indicator">...</span></a></th>
-                            <th>Ações</th>
-                        </tr>
-                        <tr class="filter-row">
-                            <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_modulo" value="{{ search_modulo }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_periodo" value="{{ search_periodo }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_competencia" value="{{ search_competencia }}" placeholder="Filtrar..."></th>
-                            <th>
-                                <select name="search_status">
-                                    <option value="">Todos</option>
-                                    <option value="Finalizado" {% if search_status == 'Finalizado' %}selected{% endif %}>Finalizado</option>
-                                    <option value="Atrasado" {% if search_status == 'Atrasado' %}selected{% endif %}>Atrasado</option>
-                                    <option value="Reenvio Necessário" {% if search_status == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
-                                </select>
-                            </th>
-                            <th><input type="text" name="search_observacao" value="{{ search_observacao }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_atualizado_por" value="{{ search_atualizado_por }}" placeholder="Filtrar..."></th>
-                            <th class="filter-actions">
-                                <button type="submit" class="button">Filtrar</button>
-                                <a href="{{ url_for('prestacao_contas') }}" class="button" style="background-color: #6c757d;">Limpar</a>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in dados %}
-                        <tr>
-                            <td>{{ item['cliente'] }}</td>
-                            <td>{{ item['sistema'] }}</td>
-                            <td>{{ item['responsavel'] }}</td>
-                            <td>{{ item['modulo'] }}</td>
-                            <td>{{ item['periodo'] }}</td>
-                            <td>{{ item['competencia'] }}</td>
-                            <td>{{ item['status'] }}</td>
-                            <td>{{ item['observacao'] }}</td>
-                            <td>{{ item['atualizado_por'] }}</td>
-                            <td class="actions">
-                                <a href="{{ url_for('edit_prestacao', id=item['id'], **pagination_args) }}" class="button edit">Editar</a>
-                                <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
-                                    {% for key, value in pagination_args.items() %}
-                                        <input type="hidden" name="{{ key }}" value="{{ value }}">
-                                    {% endfor %}
-                                    <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="10" style="text-align: center;">Nenhum registo encontrado.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por <span class="sort-indicator">...</span></a></th>
+                        <th>Ações</th>
+                    </tr>
+                    <tr class="filter-row">
+                        <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_modulo" value="{{ search_modulo }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_competencia" value="{{ search_competencia }}" placeholder="Filtrar..."></th>
+                        <th>
+                            <select name="search_status">
+                                <option value="">Todos</option>
+                                <option value="Finalizado" {% if search_status == 'Finalizado' %}selected{% endif %}>Finalizado</option>
+                                <option value="Atrasado" {% if search_status == 'Atrasado' %}selected{% endif %}>Atrasado</option>
+                                <option value="Reenvio Necessário" {% if search_status == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
+                            </select>
+                        </th>
+                        <th><input type="text" name="search_observacao" value="{{ search_observacao }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_atualizado_por" value="{{ search_atualizado_por }}" placeholder="Filtrar..."></th>
+                        <th class="filter-actions">
+                            <button type="submit" class="button">Filtrar</button>
+                            <a href="{{ url_for('prestacao_contas') }}" class="button" style="background-color: #6c757d;">Limpar</a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dados %}
+                    <tr>
+                        <td class="truncate" title="{{ item['cliente'] }}">{{ item['cliente'] }}</td>
+                        <td class="truncate" title="{{ item['sistema'] }}">{{ item['sistema'] }}</td>
+                        <td class="truncate" title="{{ item['responsavel'] }}">{{ item['responsavel'] }}</td>
+                        <td>{{ item['modulo'] }}</td>
+                        <td>{{ item['competencia'] }}</td>
+                        <td>{{ item['status'] }}</td>
+                        <td class="truncate" title="{{ item['observacao'] }}">{{ item['observacao'] }}</td>
+                        <td class="truncate" title="{{ item['atualizado_por'] }}">{{ item['atualizado_por'] }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('edit_prestacao', id=item['id'], **pagination_args) }}" class="button edit">Editar</a>
+                            <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
+                                {% for key, value in pagination_args.items() %}
+                                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                {% endfor %}
+                                <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="9" style="text-align: center;">Nenhum registo encontrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </form>
 
         {% if total_pages > 1 %}

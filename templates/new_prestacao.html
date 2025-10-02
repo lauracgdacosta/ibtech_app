@@ -6,12 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Nova Prestação de Contas</h1>
@@ -24,6 +18,7 @@
             {% for key, value in args.items() %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
             {% endfor %}
+
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
                 <option value="" disabled selected>Selecione um Cliente</option>
@@ -67,17 +62,6 @@
                 <option value="DCASP CON">DCASP CON</option>
                 <option value="MSC">MSC</option>
                 <option value="Rateio">Rateio</option>
-            </select>
-
-            <label for="periodo">Período:</label>
-            <select id="periodo" name="periodo" required>
-                <option value="" disabled selected>Selecione um Período</option>
-                <option value="Diário">Diário</option>
-                <option value="Mensal">Mensal</option>
-                <option value="Bimestral">Bimestral</option>
-                <option value="Quadrimestral">Quadrimestral</option>
-                <option value="Semestral">Semestral</option>
-                <option value="Anual">Anual</option>
             </select>
             
             <label for="competencia">Competência (Último Envio):</label>
