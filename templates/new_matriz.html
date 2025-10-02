@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Novo Registo de Responsabilidade</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Novo Registo de Responsabilidade</h1>
+        <form method="post">
+            <label for="cliente">Cliente</label>
+            <select id="cliente" name="cliente" required>
+                <option value="" disabled selected>Selecione um Cliente</option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente }}">{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="sistema">Sistema</label>
+            <select id="sistema" name="sistema" required>
+                <option value="" disabled selected>Selecione um Sistema</option>
+                {% for sistema in sistemas %}
+                <option value="{{ sistema }}">{{ sistema }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="responsavel1">1º Responsável (Obrigatório)</label>
+            <select id="responsavel1" name="responsavel1" required>
+                <option value="" disabled selected>Selecione um Responsável</option>
+                {% for r in responsaveis %}
+                <option value="{{ r }}">{{ r }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="responsavel2">2º Responsável (Opcional)</label>
+            <select id="responsavel2" name="responsavel2">
+                <option value="">Nenhum</option>
+                {% for r in responsaveis %}
+                <option value="{{ r }}">{{ r }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="observacoes">Observações</label>
+            <textarea id="observacoes" name="observacoes" rows="4"></textarea>
+
+            <button type="submit" class="button new">Salvar</button>
+            <a href="{{ url_for('matriz_responsabilidades') }}" class="button">Cancelar</a>
+        </form>
+    </div>
+</body>
+</html>

@@ -103,6 +103,7 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT, role TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, role_name TEXT NOT NULL, module_name TEXT NOT NULL, can_read BOOLEAN DEFAULT 0, can_edit BOOLEAN DEFAULT 0, can_delete BOOLEAN DEFAULT 0, UNIQUE(role_name, module_name))''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS matriz_responsabilidades (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, sistema TEXT NOT NULL, responsavel1 TEXT NOT NULL, responsavel2 TEXT, observacoes TEXT)''')
     conn.commit()
     conn.close()
 

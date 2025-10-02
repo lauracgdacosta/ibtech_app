@@ -283,6 +283,8 @@
                         <a href="{{ url_for('ferias') }}" class="module-button ferias">Férias</a>
                     {% endif %}
     
+                    <a href="{{ url_for('matriz_responsabilidades') }}" class="module-button" style="background-color: #e74c3c;">Matriz de Responsabilidades</a>
+    
                     {% if session['user_role'] == 'admin' %}
                         <a href="{{ url_for('usuarios') }}" class="module-button admin-link">Gestão de Usuários</a>
                         <a href="{{ url_for('gerenciar_permissoes') }}" class="module-button admin-link">Gerenciar Permissões</a>

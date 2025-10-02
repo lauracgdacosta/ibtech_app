@@ -6,12 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Editar Prestação de Contas</h1>
@@ -25,9 +19,10 @@
             {% for key, value in args.items() %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
             {% endfor %}
+
             <label for="cliente">Cliente:</label>
             <select id="cliente" name="cliente" required>
-                <option value="" disabled {% if not item['cliente'] %}selected{% endif %}>Selecione um Cliente</option>
+                <option value="" disabled>Selecione um Cliente</option>
                 {% for cliente in clientes %}
                     <option value="{{ cliente }}" {% if cliente.strip() == item['cliente'].strip() %}selected{% endif %}>{{ cliente }}</option>
                 {% endfor %}
@@ -35,7 +30,7 @@
 
             <label for="sistema">Sistema:</label>
             <select id="sistema" name="sistema" required>
-                <option value="" disabled {% if not item['sistema'] %}selected{% endif %}>Selecione um Sistema</option>
+                <option value="" disabled>Selecione um Sistema</option>
                 {% for sistema in sistemas %}
                     <option value="{{ sistema }}" {% if sistema.strip() == item['sistema'].strip() %}selected{% endif %}>{{ sistema }}</option>
                 {% endfor %}
@@ -43,7 +38,7 @@
 
             <label for="responsavel">Responsável:</label>
             <select id="responsavel" name="responsavel" required>
-                <option value="" disabled {% if not item['responsavel'] %}selected{% endif %}>Selecione um Responsável</option>
+                <option value="" disabled>Selecione um Responsável</option>
                 {% for responsavel in responsaveis %}
                     <option value="{{ responsavel }}" {% if responsavel.strip() == item['responsavel'].strip() %}selected{% endif %}>{{ responsavel }}</option>
                 {% endfor %}
@@ -51,7 +46,7 @@
             
             <label for="modulo">Módulo:</label>
             <select id="modulo" name="modulo" required>
-                <option value="" disabled {% if not item['modulo'] %}selected{% endif %}>Selecione um Módulo</option>
+                <option value="" disabled>Selecione um Módulo</option>
                 <option value="SICOM AM" {% if item['modulo'] == 'SICOM AM' %}selected{% endif %}>SICOM AM</option>
                 <option value="SICOM BLC" {% if item['modulo'] == 'SICOM BLC' %}selected{% endif %}>SICOM BLC</option>
                 <option value="SICOM RH" {% if item['modulo'] == 'SICOM RH' %}selected{% endif %}>SICOM RH</option>
@@ -69,24 +64,13 @@
 				<option value="MSC" {% if item['modulo'] == 'MSC' %}selected{% endif %}>MSC</option>
 				<option value="Rateio" {% if item['modulo'] == 'Rateio' %}selected{% endif %}>Rateio</option>
             </select>
-
-            <label for="periodo">Período:</label>
-            <select id="periodo" name="periodo" required>
-                <option value="" disabled {% if not item['periodo'] %}selected{% endif %}>Selecione um Período</option>
-                <option value="Diário" {% if item['periodo'] == 'Diário' %}selected{% endif %}>Diário</option>
-                <option value="Mensal" {% if item['periodo'] == 'Mensal' %}selected{% endif %}>Mensal</option>
-                <option value="Bimestral" {% if item['periodo'] == 'Bimestral' %}selected{% endif %}>Bimestral</option>
-                <option value="Quadrimestral" {% if item['periodo'] == 'Quadrimestral' %}selected{% endif %}>Quadrimestral</option>
-                <option value="Semestral" {% if item['periodo'] == 'Semestral' %}selected{% endif %}>Semestral</option>
-                <option value="Anual" {% if item['periodo'] == 'Anual' %}selected{% endif %}>Anual</option>
-            </select>
             
             <label for="competencia">Competência (Último Envio):</label>
             <input type="text" id="competencia" name="competencia" value="{{ item['competencia'] }}" required>
             
             <label for="status">Status:</label>
             <select id="status" name="status" required>
-                <option value="" disabled {% if not item['status'] %}selected{% endif %}>Selecione um Status</option>
+                <option value="" disabled>Selecione um Status</option>
                 <option value="Finalizado" {% if item['status'] == 'Finalizado' %}selected{% endif %}>Finalizado</option>
                 <option value="Atrasado" {% if item['status'] == 'Atrasado' %}selected{% endif %}>Atrasado</option>
                 <option value="Reenvio Necessário" {% if item['status'] == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
