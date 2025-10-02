@@ -22,13 +22,6 @@
     </style>
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
-
     <div class="container">
         <div class="header-actions">
             <h1>Módulo de Prestação de Contas</h1>
@@ -37,15 +30,6 @@
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
         <form method="get" action="{{ url_for('prestacao_contas') }}" class="filter-form">
             <div>
                 <label for="search_cliente">Cliente</label>
@@ -82,75 +66,60 @@
                 <a href="{{ url_for('prestacao_contas') }}" class="button">Limpar Filtros</a>
             </div>
         </form>
-        
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
-                        <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='cliente', order=sort_order) }}">Cliente <span class="sort-indicator">{% if sort_by == 'cliente' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='sistema', order=sort_order) }}">Sistema <span class="sort-indicator">{% if sort_by == 'sistema' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='responsavel', order=sort_order) }}">Responsável <span class="sort-indicator">{% if sort_by == 'responsavel' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th>Módulo</th>
-                        <th>Período</th>
-                        <th>Competência</th>
-                        <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='status', order=sort_order) }}">Status <span class="sort-indicator">{% if sort_by == 'status' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th>Observação</th>
-                        <th>Atualizado Por</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in dados %}
-                    <tr>
-                        <td>{{ item['cliente'] }}</td>
-                        <td>{{ item['sistema'] }}</td>
-                        <td>{{ item['responsavel'] }}</td>
-                        <td>{{ item['modulo'] }}</td>
-                        <td>{{ item['periodo'] }}</td>
-                        <td>{{ item['competencia'] }}</td>
-                        <td>{{ item['status'] }}</td>
-                        <td>{{ item['observacao'] }}</td>
-                        <td>{{ item['atualizado_por'] }}</td>
-                        <td class="actions">
-                            <a href="{{ url_for('edit_prestacao', id=item['id'], **url_args) }}" class="button edit">Editar</a>
-                            <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
-                                {% for key, value in url_args.items() %}
-                                    <input type="hidden" name="{{ key }}" value="{{ value }}">
-                                {% endfor %}
-                                <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="10" style="text-align: center;">Nenhum registro encontrado.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
+        <table>
+            <thead>
+                <tr>
+                    {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
+                    <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='cliente', order=sort_order) }}">Cliente <span class="sort-indicator">{% if sort_by == 'cliente' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                    <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='sistema', order=sort_order) }}">Sistema <span class="sort-indicator">{% if sort_by == 'sistema' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                    <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='responsavel', order=sort_order) }}">Responsável <span class="sort-indicator">{% if sort_by == 'responsavel' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                    <th>Módulo</th>
+                    <th>Período</th>
+                    <th>Competência</th>
+                    <th><a href="{{ url_for('prestacao_contas', **url_args, sort_by='status', order=sort_order) }}">Status <span class="sort-indicator">{% if sort_by == 'status' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                    <th>Observação</th>
+                    <th>Atualizado Por</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in dados %}
+                <tr>
+                    <td>{{ item['cliente'] }}</td>
+                    <td>{{ item['sistema'] }}</td>
+                    <td>{{ item['responsavel'] }}</td>
+                    <td>{{ item['modulo'] }}</td>
+                    <td>{{ item['periodo'] }}</td>
+                    <td>{{ item['competencia'] }}</td>
+                    <td>{{ item['status'] }}</td>
+                    <td>{{ item['observacao'] }}</td>
+                    <td>{{ item['atualizado_por'] }}</td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit_prestacao', id=item['id'], **url_args) }}" class="button edit">Editar</a>
+                        <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
+                            {% for key, value in url_args.items() %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endfor %}
+                            <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" style="text-align: center;">Nenhum registro encontrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% if total_pages > 1 %}
         <div class="pagination">
-            {% if page > 1 %}
-                <a href="{{ url_for('prestacao_contas', **url_args, page=page-1) }}">&laquo; Anterior</a>
-            {% endif %}
-
+            {% if page > 1 %}<a href="{{ url_for('prestacao_contas', **url_args, page=page-1) }}">&laquo; Anterior</a>{% endif %}
             {% for p in range(1, total_pages + 1) %}
-                {% if p == page %}
-                    <span class="current">{{ p }}</span>
-                {% elif p > page - 3 and p < page + 3 %}
-                    <a href="{{ url_for('prestacao_contas', **url_args, page=p) }}">{{ p }}</a>
+                {% if p == page %}<span class="current">{{ p }}</span>
+                {% elif p > page - 3 and p < page + 3 %}<a href="{{ url_for('prestacao_contas', **url_args, page=p) }}">{{ p }}</a>
                 {% endif %}
             {% endfor %}
-
-            {% if page < total_pages %}
-                <a href="{{ url_for('prestacao_contas', **url_args, page=page+1) }}">Próximo &raquo;</a>
-            {% endif %}
+            {% if page < total_pages %}<a href="{{ url_for('prestacao_contas', **url_args, page=page+1) }}">Próximo &raquo;</a>{% endif %}
         </div>
         {% endif %}
-
     </div>
 </body>
 </html>

@@ -756,6 +756,7 @@ def delete_agenda(id):
 # --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
 
 # Em app.py, substitua a função inteira:
+# Em app.py, substitua a função inteira:
 @app.route('/prestacao_contas')
 @login_required
 @role_required(module='prestacao_contas', action='can_read')
@@ -825,7 +826,7 @@ def prestacao_contas():
                            clientes_filtro=clientes_filtro,
                            sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
-                           url_args=url_args) # Passa a nova variável para o template
+                           url_args=url_args)
 
 # ---- FUNÇÃO AUXILIAR QUE ESTAVA EM FALTA ----
 def build_redirect_url(**kwargs):
