@@ -42,14 +42,14 @@
                 <thead>
                     <tr>
                         {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente <span class="sort-indicator">...</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema <span class="sort-indicator">...</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável <span class="sort-indicator">...</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo <span class="sort-indicator">...</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência <span class="sort-indicator">...</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status <span class="sort-indicator">...</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação <span class="sort-indicator">...</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por <span class="sort-indicator">...</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente <span class="sort-indicator">{% if sort_by == 'cliente' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema <span class="sort-indicator">{% if sort_by == 'sistema' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável <span class="sort-indicator">{% if sort_by == 'responsavel' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo <span class="sort-indicator">{% if sort_by == 'modulo' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência <span class="sort-indicator">{% if sort_by == 'competencia' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status <span class="sort-indicator">{% if sort_by == 'status' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação <span class="sort-indicator">{% if sort_by == 'observacao' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por <span class="sort-indicator">{% if sort_by == 'atualizado_por' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
                         <th>Ações</th>
                     </tr>
                     <tr class="filter-row">
