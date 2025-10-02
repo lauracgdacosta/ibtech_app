@@ -23,7 +23,6 @@
         .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         td.actions { white-space: nowrap; width: 135px; }
         td.actions form { display: inline-block; padding: 0; margin: 0; border: none; background: none; box-shadow: none; }
-        
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
         .dashboard-card { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); text-align: center; border-left: 5px solid; }
         .dashboard-card h3 { margin: 0; font-size: 1.1em; color: #555; }
@@ -31,10 +30,6 @@
         .card-finalizado { border-color: #28a745; }
         .card-atrasado { border-color: #dc3545; }
         .card-reenvio { border-color: #ffc107; }
-        .card-total { border-color: #17a2b8; }
-        .view-toggle { margin-bottom: 20px; }
-        .view-toggle .button { background-color: #6c757d; }
-        .view-toggle .button.active { background-color: #007bff; }
     </style>
 </head>
 <body>
@@ -42,76 +37,104 @@
         <div class="header-actions">
             <h1>Módulo de Prestação de Contas</h1>
             <div class="actions-group">
-                <a href="{{ url_for('new_prestacao') }}" class="button new">Nova Prestação</a>
+                <a href="{{ url_for('new_prestacao', **pagination_args) }}" class="button new">Nova Prestação</a>
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
 
-        <div class="view-toggle">
-            <a href="{{ url_for('prestacao_contas', view='default') }}" class="button {{ 'active' if view == 'default' else '' }}">Visão Padrão (Filtros)</a>
-            <a href="{{ url_for('prestacao_contas', view='dynamic') }}" class="button {{ 'active' if view == 'dynamic' else '' }}">Visão Dinâmica (Análise)</a>
+        <div class="dashboard-grid">
+            <div class="dashboard-card card-finalizado">
+                <h3>Finalizado</h3>
+                <p class="count">{{ status_counts.get('Finalizado', 0) }}</p>
+            </div>
+            <div class="dashboard-card card-atrasado">
+                <h3>Atrasado</h3>
+                <p class="count">{{ status_counts.get('Atrasado', 0) }}</p>
+            </div>
+            <div class="dashboard-card card-reenvio">
+                <h3>Reenvio Necessário</h3>
+                <p class="count">{{ status_counts.get('Reenvio Necessário', 0) }}</p>
+            </div>
         </div>
 
-        {% if view == 'dynamic' %}
-            <div class="dashboard-grid">
-                <div class="dashboard-card card-total">
-                    <h3>Total no Mês</h3>
-                    <p class="count">{{ card_indicadores.total }}</p>
-                </div>
-                <div class="dashboard-card card-finalizado">
-                    <h3>Dentro do Prazo</h3>
-                    <p class="count">{{ card_indicadores.dentro_prazo }}</p>
-                </div>
-                <div class="dashboard-card card-atrasado">
-                    <h3>Pendentes/Atrasadas</h3>
-                    <p class="count">{{ card_indicadores.pendentes }}</p>
-                </div>
-            </div>
-
+        <form method="get" action="{{ url_for('prestacao_contas') }}">
+            <input type="hidden" name="sort_by" value="{{ sort_by }}">
+            <input type="hidden" name="order" value="{{ order }}">
             <table>
                 <thead>
                     <tr>
-                        <th>Cliente</th>
-                        <th>Módulo</th>
-                        <th>Sistema</th>
-                        <th>Competência</th>
-                        <th>Status</th>
-                        <th>Responsável</th>
+                        {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por</a></th>
+                        <th>Ações</th>
+                    </tr>
+                    <tr class="filter-row">
+                        <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_modulo" value="{{ search_modulo }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_competencia" value="{{ search_competencia }}" placeholder="Filtrar..."></th>
+                        <th>
+                            <select name="search_status">
+                                <option value="">Todos</option>
+                                <option value="Finalizado" {% if search_status == 'Finalizado' %}selected{% endif %}>Finalizado</option>
+                                <option value="Atrasado" {% if search_status == 'Atrasado' %}selected{% endif %}>Atrasado</option>
+                                <option value="Reenvio Necessário" {% if search_status == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
+                            </select>
+                        </th>
+                        <th><input type="text" name="search_observacao" value="{{ search_observacao }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_atualizado_por" value="{{ search_atualizado_por }}" placeholder="Filtrar..."></th>
+                        <th class="filter-actions">
+                            <button type="submit" class="button">Filtrar</button>
+                            <a href="{{ url_for('prestacao_contas') }}" class="button" style="background-color: #6c757d;">Limpar</a>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in dados_dinamicos %}
+                    {% for item in dados %}
                     <tr>
-                        <td>{{ item.cliente }}</td>
-                        <td>{{ item.modulo }}</td>
-                        <td>{{ item.sistema }}</td>
-                        <td>{{ item.competencia }}</td>
-                        <td>{{ item.status }}</td>
-                        <td>{{ item.responsavel }}</td>
+                        <td class="truncate" title="{{ item['cliente'] }}">{{ item['cliente'] }}</td>
+                        <td class="truncate" title="{{ item['sistema'] }}">{{ item['sistema'] }}</td>
+                        <td class="truncate" title="{{ item['responsavel'] }}">{{ item['responsavel'] }}</td>
+                        <td>{{ item['modulo'] }}</td>
+                        <td>{{ item['competencia'] }}</td>
+                        <td>{{ item['status'] }}</td>
+                        <td class="truncate" title="{{ item['observacao'] }}">{{ item['observacao'] }}</td>
+                        <td class="truncate" title="{{ item['atualizado_por'] }}">{{ item['atualizado_por'] }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('edit_prestacao', id=item['id'], **pagination_args) }}" class="button edit">Editar</a>
+                            <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
+                                {% for key, value in pagination_args.items() %}
+                                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                {% endfor %}
+                                <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
+                            </form>
+                        </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6" style="text-align:center;">Nenhum registo encontrado.</td></tr>
+                    <tr><td colspan="9" style="text-align: center;">Nenhum registo encontrado.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
-            {% else %}
-            <div class="dashboard-grid">
-                <div class="dashboard-card card-finalizado"><h3>Finalizado</h3><p class="count">{{ status_counts.get('Finalizado', 0) }}</p></div>
-                <div class="dashboard-card card-atrasado"><h3>Atrasado</h3><p class="count">{{ status_counts.get('Atrasado', 0) }}</p></div>
-                <div class="dashboard-card card-reenvio"><h3>Reenvio Necessário</h3><p class="count">{{ status_counts.get('Reenvio Necessário', 0) }}</p></div>
-            </div>
+        </form>
 
-            <form method="get" action="{{ url_for('prestacao_contas') }}">
-                <input type="hidden" name="sort_by" value="{{ sort_by }}">
-                <input type="hidden" name="order" value="{{ order }}">
-                <table>
-                    </table>
-            </form>
-            {% if total_pages > 1 %}
-            <div class="pagination">
-                </div>
-            {% endif %}
-            {% endif %}
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}<a href="{{ url_for('prestacao_contas', page=page-1, **pagination_args) }}">&laquo; Anterior</a>{% endif %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}<span class="current">{{ p }}</span>
+                {% elif p > page - 3 and p < page + 3 %}<a href="{{ url_for('prestacao_contas', page=p, **pagination_args) }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page < total_pages %}<a href="{{ url_for('prestacao_contas', page=page+1, **pagination_args) }}">Próximo &raquo;</a>{% endif %}
+        </div>
+        {% endif %}
     </div>
 </body>
 </html>
