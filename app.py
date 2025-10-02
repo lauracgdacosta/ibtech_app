@@ -857,18 +857,22 @@ def prestacao_contas():
                            sorting_args=sorting_args)
 
 # ---- FUNÇÃO AUXILIAR QUE ESTAVA EM FALTA ----
-def build_redirect_url(**kwargs):
+def build_redirect_url():
     """Função auxiliar para construir a URL de redirecionamento com os filtros."""
     args = {}
-    search_keys = ['search_cliente', 'search_sistema', 'search_responsavel', 'search_status', 'page', 'sort_by', 'order']
-    
-    # Coleta os argumentos do formulário enviado (POST) ou dos argumentos da URL (GET)
-    source = request.form if request.form else kwargs
+    # Lista de todos os parâmetros que controlam o estado da visualização
+    valid_state_keys = [
+        'search_cliente', 'search_sistema', 'search_responsavel', 'search_status',
+        'search_modulo', 'search_competencia', 'search_observacao', 
+        'search_atualizado_por', 'page', 'sort_by', 'order'
+    ]
 
-    for key in search_keys:
-        value = source.get(key)
+    # O 'request.form' contém todos os dados enviados pelo formulário (incluindo os campos ocultos)
+    for key in valid_state_keys:
+        value = request.form.get(key)
         if value:
             args[key] = value
+
     return url_for('prestacao_contas', **args)
 # ---------------------------------------------
 
