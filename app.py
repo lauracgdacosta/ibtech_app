@@ -770,12 +770,11 @@ def prestacao_contas():
     search_responsavel = request.args.get('search_responsavel', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
     search_modulo = request.args.get('search_modulo', '', type=str)
-    search_periodo = request.args.get('search_periodo', '', type=str)
     search_competencia = request.args.get('search_competencia', '', type=str)
     search_observacao = request.args.get('search_observacao', '', type=str)
     search_atualizado_por = request.args.get('search_atualizado_por', '', type=str)
 
-    allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'periodo', 'competencia', 'status', 'observacao', 'atualizado_por']
+    allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'competencia', 'status', 'observacao', 'atualizado_por']
     if sort_by not in allowed_sort_columns:
         sort_by = 'id'
     if order.lower() not in ['asc', 'desc']:
@@ -785,7 +784,6 @@ def prestacao_contas():
     base_query = "FROM prestacao_contas WHERE 1=1"
     params = []
 
-    # ... (lógica de filtros continua igual) ...
     if search_cliente:
         base_query += " AND cliente LIKE ?"
         params.append(f"%{search_cliente}%")
@@ -801,9 +799,6 @@ def prestacao_contas():
     if search_modulo:
         base_query += " AND modulo LIKE ?"
         params.append(f"%{search_modulo}%")
-    if search_periodo:
-        base_query += " AND periodo LIKE ?"
-        params.append(f"%{search_periodo}%")
     if search_competencia:
         base_query += " AND competencia LIKE ?"
         params.append(f"%{search_competencia}%")
@@ -821,18 +816,20 @@ def prestacao_contas():
     params.extend([per_page, offset])
     dados = conn.execute(data_query, tuple(params)).fetchall()
     
+    # Lógica para o dashboard
+    status_counts_data = conn.execute("SELECT status, COUNT(id) as count FROM prestacao_contas GROUP BY status").fetchall()
+    status_counts = {row['status']: row['count'] for row in status_counts_data}
+    
     clientes_filtro = [row['cliente'] for row in conn.execute('SELECT DISTINCT cliente FROM prestacao_contas ORDER BY cliente').fetchall()]
     sistemas_filtro = [row['sistema'] for row in conn.execute('SELECT DISTINCT sistema FROM prestacao_contas ORDER BY sistema').fetchall()]
     responsaveis_filtro = [row['responsavel'] for row in conn.execute('SELECT DISTINCT responsavel FROM prestacao_contas ORDER BY responsavel').fetchall()]
 
     conn.close()
 
-    # Dicionário para os links de PAGINAÇÃO (preserva filtros e ordenação)
     pagination_args = request.args.to_dict()
     if 'page' in pagination_args:
         del pagination_args['page']
 
-    # Dicionário para os links de ORDENAÇÃO (preserva filtros e paginação)
     sorting_args = request.args.to_dict()
     if 'sort_by' in sorting_args:
         del sorting_args['sort_by']
@@ -843,12 +840,12 @@ def prestacao_contas():
                            dados=dados,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
+                           status_counts=status_counts,
                            search_cliente=search_cliente,
                            search_sistema=search_sistema,
                            search_responsavel=search_responsavel,
                            search_status=search_status,
                            search_modulo=search_modulo,
-                           search_periodo=search_periodo,
                            search_competencia=search_competencia,
                            search_observacao=search_observacao,
                            search_atualizado_por=search_atualizado_por,
@@ -857,6 +854,8 @@ def prestacao_contas():
                            responsaveis_filtro=responsaveis_filtro,
                            pagination_args=pagination_args,
                            sorting_args=sorting_args)
+
+
 # ---- FUNÇÃO AUXILIAR QUE ESTAVA EM FALTA ----
 def build_redirect_url(**kwargs):
     """Função auxiliar para construir a URL de redirecionamento com os filtros."""
