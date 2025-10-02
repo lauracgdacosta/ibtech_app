@@ -760,10 +760,17 @@ def delete_agenda(id):
 def prestacao_contas():
     conn = get_db_connection()
     
+    # --- ALTERAÇÃO AQUI: Lê o 'per_page' da URL, com um padrão de 20 ---
+    per_page = request.args.get('per_page', 20, type=int)
+    # Garante que o valor de per_page seja um dos valores permitidos
+    if per_page not in [10, 20, 50, 100]:
+        per_page = 20
+        
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'id', type=str)
     order = request.args.get('order', 'desc', type=str)
     
+    # (O resto dos seus filtros continua igual...)
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
@@ -780,12 +787,11 @@ def prestacao_contas():
     if order.lower() not in ['asc', 'desc']:
         order = 'desc'
 
-    per_page = 20
     offset = (page - 1) * per_page
-
     base_query = "FROM prestacao_contas WHERE 1=1"
     params = []
 
+    # (A lógica de construção da query com os filtros continua igual...)
     if search_cliente:
         base_query += " AND cliente LIKE ?"
         params.append(f"%{search_cliente}%")
@@ -817,36 +823,35 @@ def prestacao_contas():
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
-
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     
     dados = conn.execute(data_query, tuple(params)).fetchall()
     
+    # (A busca por filtros distintos continua igual...)
     clientes_filtro = [row['cliente'] for row in conn.execute('SELECT DISTINCT cliente FROM prestacao_contas ORDER BY cliente').fetchall()]
     sistemas_filtro = [row['sistema'] for row in conn.execute('SELECT DISTINCT sistema FROM prestacao_contas ORDER BY sistema').fetchall()]
     responsaveis_filtro = [row['responsavel'] for row in conn.execute('SELECT DISTINCT responsavel FROM prestacao_contas ORDER BY responsavel').fetchall()]
 
     conn.close()
 
-    # --- INÍCIO DA CORREÇÃO ---
-    # Dicionário para os links de PAGINAÇÃO (preserva filtros e ordenação)
     pagination_args = request.args.to_dict()
     if 'page' in pagination_args:
         del pagination_args['page']
 
-    # Dicionário para os links de ORDENAÇÃO (preserva filtros)
     sorting_args = request.args.to_dict()
     if 'sort_by' in sorting_args:
         del sorting_args['sort_by']
     if 'order' in sorting_args:
         del sorting_args['order']
-    # --- FIM DA CORREÇÃO ---
 
     return render_template('prestacao_contas.html', 
                            dados=dados,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
+                           per_page=per_page, # <-- Passa o per_page para o template
+                           total_results=total_results, # Passa o total para o template
+                           # (O resto das variáveis continua igual...)
                            search_cliente=search_cliente,
                            search_sistema=search_sistema,
                            search_responsavel=search_responsavel,
@@ -859,8 +864,8 @@ def prestacao_contas():
                            clientes_filtro=clientes_filtro,
                            sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
-                           pagination_args=pagination_args, # Novo
-                           sorting_args=sorting_args)       # Novo
+                           pagination_args=pagination_args,
+                           sorting_args=sorting_args)
 # ---- FUNÇÃO AUXILIAR QUE ESTAVA EM FALTA ----
 def build_redirect_url(**kwargs):
     """Função auxiliar para construir a URL de redirecionamento com os filtros."""

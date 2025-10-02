@@ -5,11 +5,6 @@
     <title>Módulo de Prestação de Contas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        .pagination { display: flex; justify-content: center; align-items: center; margin-top: 25px; gap: 5px; }
-        .pagination a, .pagination span { padding: 8px 12px; border-radius: 5px; text-decoration: none; }
-        .pagination a { background-color: #f1f1f1; color: #333; }
-        .pagination a:hover { background-color: #ddd; }
-        .pagination .current { background-color: #007bff; color: white; font-weight: bold; }
         .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; text-align: center; }
         .alert-success { background-color: #d4edda; color: #155724; }
         th a { color: inherit; text-decoration: none; display: block; }
@@ -19,6 +14,25 @@
         .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         .filter-actions { display: flex; gap: 5px; align-items: center; }
         .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
+        
+        /* --- NOVOS ESTILOS PARA A PAGINAÇÃO --- */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 25px;
+            padding: 10px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .pagination-controls { display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .pagination-controls a, .pagination-controls span { padding: 8px 12px; border-radius: 5px; text-decoration: none; }
+        .pagination-controls a { background-color: #f1f1f1; color: #333; }
+        .pagination-controls a:hover { background-color: #ddd; }
+        .pagination-controls .current { background-color: #007bff; color: white; font-weight: bold; }
+        .per-page-selector { display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
+        .per-page-selector a { color: #007bff; text-decoration: none; font-weight: bold; }
+        .per-page-selector a.current { color: #333; font-weight: normal; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -30,91 +44,43 @@
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
-
         <form method="get" action="{{ url_for('prestacao_contas') }}">
-            <input type="hidden" name="sort_by" value="{{ sort_by }}">
-            <input type="hidden" name="order" value="{{ order }}">
+            </form>
 
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente <span class="sort-indicator">{% if sort_by == 'cliente' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema <span class="sort-indicator">{% if sort_by == 'sistema' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável <span class="sort-indicator">{% if sort_by == 'responsavel' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo <span class="sort-indicator">{% if sort_by == 'modulo' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='periodo', order=sort_order, **sorting_args) }}">Período <span class="sort-indicator">{% if sort_by == 'periodo' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência <span class="sort-indicator">{% if sort_by == 'competencia' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status <span class="sort-indicator">{% if sort_by == 'status' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação <span class="sort-indicator">{% if sort_by == 'observacao' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por <span class="sort-indicator">{% if sort_by == 'atualizado_por' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th>Ações</th>
-                        </tr>
-                        <tr class="filter-row">
-                            <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_modulo" value="{{ search_modulo }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_periodo" value="{{ search_periodo }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_competencia" value="{{ search_competencia }}" placeholder="Filtrar..."></th>
-                            <th>
-                                <select name="search_status">
-                                    <option value="">Todos</option>
-                                    <option value="Finalizado" {% if search_status == 'Finalizado' %}selected{% endif %}>Finalizado</option>
-                                    <option value="Atrasado" {% if search_status == 'Atrasado' %}selected{% endif %}>Atrasado</option>
-                                    <option value="Reenvio Necessário" {% if search_status == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
-                                </select>
-                            </th>
-                            <th><input type="text" name="search_observacao" value="{{ search_observacao }}" placeholder="Filtrar..."></th>
-                            <th><input type="text" name="search_atualizado_por" value="{{ search_atualizado_por }}" placeholder="Filtrar..."></th>
-                            <th class="filter-actions">
-                                <button type="submit" class="button">Filtrar</button>
-                                <a href="{{ url_for('prestacao_contas') }}" class="button" style="background-color: #6c757d;">Limpar</a>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in dados %}
-                        <tr>
-                            <td>{{ item['cliente'] }}</td>
-                            <td>{{ item['sistema'] }}</td>
-                            <td>{{ item['responsavel'] }}</td>
-                            <td>{{ item['modulo'] }}</td>
-                            <td>{{ item['periodo'] }}</td>
-                            <td>{{ item['competencia'] }}</td>
-                            <td>{{ item['status'] }}</td>
-                            <td>{{ item['observacao'] }}</td>
-                            <td>{{ item['atualizado_por'] }}</td>
-                            <td class="actions">
-                                <a href="{{ url_for('edit_prestacao', id=item['id'], **pagination_args) }}" class="button edit">Editar</a>
-                                <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
-                                    {% for key, value in pagination_args.items() %}
-                                        <input type="hidden" name="{{ key }}" value="{{ value }}">
-                                    {% endfor %}
-                                    <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="10" style="text-align: center;">Nenhum registo encontrado.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        {% if total_pages > 0 %}
+        <div class="pagination-container">
+            <div class="per-page-selector">
+                <span>Registos por página:</span>
+                {% for num in [10, 20, 50, 100] %}
+                    <a href="{{ url_for('prestacao_contas', **pagination_args, per_page=num) }}" 
+                       class="{{ 'current' if per_page == num else '' }}">{{ num }}</a>
+                {% endfor %}
             </div>
-        </form>
 
-        {% if total_pages > 1 %}
-        <div class="pagination">
-            {% if page > 1 %}<a href="{{ url_for('prestacao_contas', page=page-1, **pagination_args) }}">&laquo; Anterior</a>{% endif %}
-            {% for p in range(1, total_pages + 1) %}
-                {% if p == page %}<span class="current">{{ p }}</span>
-                {% elif p > page - 3 and p < page + 3 %}<a href="{{ url_for('prestacao_contas', page=p, **pagination_args) }}">{{ p }}</a>
-                {% endif %}
-            {% endfor %}
-            {% if page < total_pages %}<a href="{{ url_for('prestacao_contas', page=page+1, **pagination_args) }}">Próximo &raquo;</a>{% endif %}
+            <div class="pagination-info">
+                <span>Exibindo {{ dados|length }} de {{ total_results }} registos.</span>
+            </div>
+
+            {% if total_pages > 1 %}
+            <div class="pagination-controls">
+                {% if page > 1 %}<a href="{{ url_for('prestacao_contas', page=page-1, **pagination_args) }}">&laquo; Anterior</a>{% endif %}
+                
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page %}
+                        <span class="current">{{ p }}</span>
+                    {% elif p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                        <a href="{{ url_for('prestacao_contas', page=p, **pagination_args) }}">{{ p }}</a>
+                    {% elif p == page - 3 or p == page + 3 %}
+                        <span>...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page < total_pages %}<a href="{{ url_for('prestacao_contas', page=page+1, **pagination_args) }}">Próximo &raquo;</a>{% endif %}
+            </div>
+            {% endif %}
         </div>
         {% endif %}
+
     </div>
 </body>
 </html>
