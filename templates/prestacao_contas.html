@@ -23,6 +23,36 @@
         .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         td.actions { white-space: nowrap; width: 135px; }
         td.actions form { display: inline-block; padding: 0; margin: 0; border: none; background: none; box-shadow: none; }
+
+        /* --- NOVOS ESTILOS PARA O DASHBOARD --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .dashboard-card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            text-align: center;
+            border-left: 5px solid;
+        }
+        .dashboard-card h3 {
+            margin: 0;
+            font-size: 1.1em;
+            color: #555;
+        }
+        .dashboard-card .count {
+            font-size: 2.5em;
+            font-weight: 600;
+            color: #333;
+            margin: 10px 0 0 0;
+        }
+        .card-finalizado { border-color: #28a745; } /* Verde */
+        .card-atrasado { border-color: #dc3545; } /* Vermelho */
+        .card-reenvio { border-color: #ffc107; } /* Amarelo */
     </style>
 </head>
 <body>
@@ -35,21 +65,36 @@
             </div>
         </div>
 
+        <div class="dashboard-grid">
+            <div class="dashboard-card card-finalizado">
+                <h3>Finalizado</h3>
+                <p class="count">{{ status_counts.get('Finalizado', 0) }}</p>
+            </div>
+            <div class="dashboard-card card-atrasado">
+                <h3>Atrasado</h3>
+                <p class="count">{{ status_counts.get('Atrasado', 0) }}</p>
+            </div>
+            <div class="dashboard-card card-reenvio">
+                <h3>Reenvio Necessário</h3>
+                <p class="count">{{ status_counts.get('Reenvio Necessário', 0) }}</p>
+            </div>
+        </div>
         <form method="get" action="{{ url_for('prestacao_contas') }}">
             <input type="hidden" name="sort_by" value="{{ sort_by }}">
             <input type="hidden" name="order" value="{{ order }}">
+
             <table>
                 <thead>
                     <tr>
                         {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente <span class="sort-indicator">{% if sort_by == 'cliente' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema <span class="sort-indicator">{% if sort_by == 'sistema' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável <span class="sort-indicator">{% if sort_by == 'responsavel' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo <span class="sort-indicator">{% if sort_by == 'modulo' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência <span class="sort-indicator">{% if sort_by == 'competencia' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status <span class="sort-indicator">{% if sort_by == 'status' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação <span class="sort-indicator">{% if sort_by == 'observacao' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por <span class="sort-indicator">{% if sort_by == 'atualizado_por' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **sorting_args) }}">Competência</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **sorting_args) }}">Status</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **sorting_args) }}">Observação</a></th>
+                        <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **sorting_args) }}">Atualizado Por</a></th>
                         <th>Ações</th>
                     </tr>
                     <tr class="filter-row">
