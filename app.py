@@ -1031,20 +1031,16 @@ def api_agendamentos():
 
     return jsonify(eventos)
 
-# Em app.py, substitua a função inteira:
+# --- MÓDULO DE MATRIZ DE RESPONSABILIDADES ---
 
 @app.route('/matriz')
 @login_required
 def matriz_responsabilidades():
     conn = get_db_connection()
-    view = request.args.get('view', 'list') # Para alternar entre 'list' e 'matrix'
+    view = request.args.get('view', 'list')
 
     if view == 'matrix':
-        # --- LÓGICA PARA A VISÃO MATRICIAL ---
         all_clientes = conn.execute("SELECT municipio || ' - ' || orgao as nome FROM clientes ORDER BY nome").fetchall()
-        
-        # --- ALTERAÇÃO APLICADA AQUI ---
-        # Lista de sistemas a serem excluídos da visualização foi expandida
         sistemas_a_excluir = (
             'Compras, Licitações e Contratos', 
             'Frotas', 
@@ -1054,29 +1050,19 @@ def matriz_responsabilidades():
             'Portal da Transparência',
             'Portal do Servidor'
         )
-        # --- FIM DA ALTERAÇÃO ---
-
         placeholders = ','.join('?' for _ in sistemas_a_excluir)
         query_sistemas = f"SELECT nome FROM sistemas WHERE nome NOT IN ({placeholders}) ORDER BY nome"
         all_sistemas = conn.execute(query_sistemas, sistemas_a_excluir).fetchall()
-        
         registos = conn.execute("SELECT cliente, sistema, responsavel1, responsavel2 FROM matriz_responsabilidades").fetchall()
 
         matriz_data = {}
         for reg in registos:
-            cliente = reg['cliente']
-            sistema = reg['sistema']
-            resp1 = reg['responsavel1']
-            resp2 = reg['responsavel2']
-
-            if cliente not in matriz_data:
-                matriz_data[cliente] = {}
-            
-            responsaveis_str = resp1
-            if resp2:
-                responsaveis_str += f" / {resp2}"
-            
-            matriz_data[cliente][sistema] = responsaveis_str
+            if reg['cliente'] not in matriz_data:
+                matriz_data[reg['cliente']] = {}
+            responsaveis_str = reg['responsavel1']
+            if reg['responsavel2']:
+                responsaveis_str += f" / {reg['responsavel2']}"
+            matriz_data[reg['cliente']][reg['sistema']] = responsaveis_str
 
         conn.close()
         return render_template('matriz_responsabilidades.html', 
@@ -1084,13 +1070,10 @@ def matriz_responsabilidades():
                                all_clientes=all_clientes,
                                all_sistemas=all_sistemas,
                                matriz_data=matriz_data)
-
     else:
-        # --- LÓGICA PARA A VISÃO DE LISTA (sem alterações) ---
         search_cliente = request.args.get('search_cliente', '', type=str)
         search_sistema = request.args.get('search_sistema', '', type=str)
         search_responsavel = request.args.get('search_responsavel', '', type=str)
-
         base_query = "SELECT * FROM matriz_responsabilidades WHERE 1=1"
         params = []
 
@@ -1103,25 +1086,67 @@ def matriz_responsabilidades():
         if search_responsavel:
             base_query += " AND (responsavel1 = ? OR responsavel2 = ?)"
             params.extend([search_responsavel, search_responsavel])
-        
+
         base_query += " ORDER BY cliente, sistema"
         registos = conn.execute(base_query, tuple(params)).fetchall()
-
         clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
         sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
         responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
-        
         conn.close()
-        
+
         return render_template('matriz_responsabilidades.html', 
-                               view=view,
-                               registos=registos, 
-                               clientes=clientes, 
-                               sistemas=sistemas, 
-                               responsaveis=responsaveis,
-                               search_cliente=search_cliente,
-                               search_sistema=search_sistema,
+                               view=view, registos=registos, 
+                               clientes=clientes, sistemas=sistemas, responsaveis=responsaveis,
+                               search_cliente=search_cliente, search_sistema=search_sistema,
                                search_responsavel=search_responsavel)
+
+@app.route('/matriz/new', methods=['GET', 'POST'])
+@login_required
+def new_matriz_responsabilidade():
+    if request.method == 'POST':
+        form = request.form
+        conn = get_db_connection()
+        conn.execute('INSERT INTO matriz_responsabilidades (cliente, sistema, responsavel1, responsavel2, observacoes) VALUES (?, ?, ?, ?, ?)',
+                     (form['cliente'], form['sistema'], form['responsavel1'], form.get('responsavel2'), form['observacoes']))
+        conn.commit()
+        conn.close()
+        flash('Registo de responsabilidade criado com sucesso!', 'success')
+        return redirect(url_for('matriz_responsabilidades'))
+    conn = get_db_connection()
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    conn.close()
+    return render_template('new_matriz.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/matriz/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_matriz_responsabilidade(id):
+    conn = get_db_connection()
+    registo = conn.execute('SELECT * FROM matriz_responsabilidades WHERE id = ?', (id,)).fetchone()
+    if request.method == 'POST':
+        form = request.form
+        conn.execute('UPDATE matriz_responsabilidades SET cliente=?, sistema=?, responsavel1=?, responsavel2=?, observacoes=? WHERE id=?',
+                     (form['cliente'], form['sistema'], form['responsavel1'], form.get('responsavel2'), form['observacoes'], id))
+        conn.commit()
+        conn.close()
+        flash('Registo de responsabilidade atualizado com sucesso!', 'success')
+        return redirect(url_for('matriz_responsabilidades'))
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    conn.close()
+    return render_template('edit_matriz.html', registo=registo, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
+
+@app.route('/matriz/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_matriz_responsabilidade(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM matriz_responsabilidades WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    flash('Registo de responsabilidade excluído com sucesso.', 'success')
+    return redirect(url_for('matriz_responsabilidades'))
 
 if __name__ == '__main__':
     # O host='0.0.0.0' permite acesso de outros dispositivos na mesma rede.
