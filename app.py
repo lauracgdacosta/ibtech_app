@@ -764,12 +764,20 @@ def prestacao_contas():
     sort_by = request.args.get('sort_by', 'id', type=str)
     order = request.args.get('order', 'desc', type=str)
     
+    # Filtros existentes
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
+    # --- NOVOS FILTROS ADICIONADOS AQUI ---
+    search_modulo = request.args.get('search_modulo', '', type=str)
+    search_periodo = request.args.get('search_periodo', '', type=str)
+    search_competencia = request.args.get('search_competencia', '', type=str)
+    search_observacao = request.args.get('search_observacao', '', type=str)
+    search_atualizado_por = request.args.get('search_atualizado_por', '', type=str)
 
-    allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'periodo', 'competencia', 'status']
+    # --- NOVAS COLUNAS ADICIONADAS À LISTA DE ORDENAÇÃO SEGURA ---
+    allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'periodo', 'competencia', 'status', 'observacao', 'atualizado_por']
     if sort_by not in allowed_sort_columns:
         sort_by = 'id'
     if order.lower() not in ['asc', 'desc']:
@@ -793,6 +801,22 @@ def prestacao_contas():
     if search_status:
         base_query += " AND status = ?"
         params.append(search_status)
+    # --- LÓGICA PARA OS NOVOS FILTROS ---
+    if search_modulo:
+        base_query += " AND modulo LIKE ?"
+        params.append(f"%{search_modulo}%")
+    if search_periodo:
+        base_query += " AND periodo LIKE ?"
+        params.append(f"%{search_periodo}%")
+    if search_competencia:
+        base_query += " AND competencia LIKE ?"
+        params.append(f"%{search_competencia}%")
+    if search_observacao:
+        base_query += " AND observacao LIKE ?"
+        params.append(f"%{search_observacao}%")
+    if search_atualizado_por:
+        base_query += " AND atualizado_por LIKE ?"
+        params.append(f"%{search_atualizado_por}%")
     
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
@@ -811,16 +835,12 @@ def prestacao_contas():
 
     url_args = request.args.to_dict()
 
-    # --- CORREÇÃO FINAL AQUI ---
-    # Limpa TODOS os parâmetros que serão definidos dinamicamente no template
-    # para evitar conflitos.
     if 'sort_by' in url_args:
         del url_args['sort_by']
     if 'order' in url_args:
         del url_args['order']
-    if 'page' in url_args: # <-- A LINHA QUE FALTAVA FOI ADICIONADA AQUI
+    if 'page' in url_args:
         del url_args['page']
-    # --- FIM DA CORREÇÃO ---
 
     return render_template('prestacao_contas.html', 
                            dados=dados,
@@ -830,6 +850,12 @@ def prestacao_contas():
                            search_sistema=search_sistema,
                            search_responsavel=search_responsavel,
                            search_status=search_status,
+                           # --- NOVAS VARIÁVEIS PASSADAS PARA O TEMPLATE ---
+                           search_modulo=search_modulo,
+                           search_periodo=search_periodo,
+                           search_competencia=search_competencia,
+                           search_observacao=search_observacao,
+                           search_atualizado_por=search_atualizado_por,
                            clientes_filtro=clientes_filtro,
                            sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,

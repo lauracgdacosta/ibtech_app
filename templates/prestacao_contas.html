@@ -5,7 +5,6 @@
     <title>Módulo de Prestação de Contas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        /* Estilos gerais da página (sem alterações) */
         .pagination { display: flex; justify-content: center; align-items: center; margin-top: 25px; gap: 5px; }
         .pagination a, .pagination span { padding: 8px 12px; border-radius: 5px; text-decoration: none; }
         .pagination a { background-color: #f1f1f1; color: #333; }
@@ -13,33 +12,13 @@
         .pagination .current { background-color: #007bff; color: white; font-weight: bold; }
         .alert { padding: 15px; margin-bottom: 20px; border-radius: 5px; text-align: center; }
         .alert-success { background-color: #d4edda; color: #155724; }
-
-        /* Novos estilos para o cabeçalho do grid */
         th a { color: inherit; text-decoration: none; display: block; }
         th a:hover { text-decoration: underline; }
         .sort-indicator { display: inline-block; margin-left: 5px; }
-        
-        .filter-row th {
-            padding: 8px;
-            background-color: #f8f9fa;
-        }
-        .filter-row input, .filter-row select {
-            width: 100%;
-            padding: 6px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .filter-actions {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
-        .filter-actions .button {
-            padding: 6px 10px;
-            font-size: 0.9em;
-            width: 100%;
-        }
+        .filter-row th { padding: 8px; background-color: #f8f9fa; }
+        .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .filter-actions { display: flex; gap: 5px; align-items: center; }
+        .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
     </style>
 </head>
 <body>
@@ -64,19 +43,22 @@
                             <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **url_args) }}">Cliente <span class="sort-indicator">{% if sort_by == 'cliente' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
                             <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **url_args) }}">Sistema <span class="sort-indicator">{% if sort_by == 'sistema' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
                             <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **url_args) }}">Responsável <span class="sort-indicator">{% if sort_by == 'responsavel' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th>Módulo</th>
-                            <th>Período</th>
-                            <th>Competência</th>
+                            <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **url_args) }}">Módulo <span class="sort-indicator">{% if sort_by == 'modulo' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                            <th><a href="{{ url_for('prestacao_contas', sort_by='periodo', order=sort_order, **url_args) }}">Período <span class="sort-indicator">{% if sort_by == 'periodo' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                            <th><a href="{{ url_for('prestacao_contas', sort_by='competencia', order=sort_order, **url_args) }}">Competência <span class="sort-indicator">{% if sort_by == 'competencia' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
                             <th><a href="{{ url_for('prestacao_contas', sort_by='status', order=sort_order, **url_args) }}">Status <span class="sort-indicator">{% if sort_by == 'status' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
-                            <th>Observação</th>
-                            <th>Atualizado Por</th>
+                            <th><a href="{{ url_for('prestacao_contas', sort_by='observacao', order=sort_order, **url_args) }}">Observação <span class="sort-indicator">{% if sort_by == 'observacao' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
+                            <th><a href="{{ url_for('prestacao_contas', sort_by='atualizado_por', order=sort_order, **url_args) }}">Atualizado Por <span class="sort-indicator">{% if sort_by == 'atualizado_por' %}{{ '&#9660;' if order == 'desc' else '&#9650;' }}{% endif %}</span></a></th>
                             <th>Ações</th>
                         </tr>
                         <tr class="filter-row">
-                            <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar cliente..."></th>
-                            <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar sistema..."></th>
-                            <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar responsável..."></th>
-                            <th></th> <th></th> <th></th> <th>
+                            <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_modulo" value="{{ search_modulo }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_periodo" value="{{ search_periodo }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_competencia" value="{{ search_competencia }}" placeholder="Filtrar..."></th>
+                            <th>
                                 <select name="search_status">
                                     <option value="">Todos</option>
                                     <option value="Finalizado" {% if search_status == 'Finalizado' %}selected{% endif %}>Finalizado</option>
@@ -84,7 +66,9 @@
                                     <option value="Reenvio Necessário" {% if search_status == 'Reenvio Necessário' %}selected{% endif %}>Reenvio Necessário</option>
                                 </select>
                             </th>
-                            <th></th> <th></th> <th class="filter-actions">
+                            <th><input type="text" name="search_observacao" value="{{ search_observacao }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_atualizado_por" value="{{ search_atualizado_por }}" placeholder="Filtrar..."></th>
+                            <th class="filter-actions">
                                 <button type="submit" class="button">Filtrar</button>
                                 <a href="{{ url_for('prestacao_contas') }}" class="button" style="background-color: #6c757d;">Limpar</a>
                             </th>
@@ -118,7 +102,9 @@
                     </tbody>
                 </table>
             </div>
-        </form> {% if total_pages > 1 %}
+        </form>
+
+        {% if total_pages > 1 %}
         <div class="pagination">
             {% if page > 1 %}<a href="{{ url_for('prestacao_contas', page=page-1, **url_args) }}">&laquo; Anterior</a>{% endif %}
             {% for p in range(1, total_pages + 1) %}
@@ -129,7 +115,6 @@
             {% if page < total_pages %}<a href="{{ url_for('prestacao_contas', page=page+1, **url_args) }}">Próximo &raquo;</a>{% endif %}
         </div>
         {% endif %}
-
     </div>
 </body>
 </html>
