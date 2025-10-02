@@ -812,11 +812,14 @@ def prestacao_contas():
     url_args = request.args.to_dict()
 
     # --- CORREÇÃO FINAL AQUI ---
-    # Remove os parâmetros de ordenação antigos do dicionário para evitar o conflito no template.
+    # Limpa TODOS os parâmetros que serão definidos dinamicamente no template
+    # para evitar conflitos.
     if 'sort_by' in url_args:
         del url_args['sort_by']
     if 'order' in url_args:
         del url_args['order']
+    if 'page' in url_args: # <-- A LINHA QUE FALTAVA FOI ADICIONADA AQUI
+        del url_args['page']
     # --- FIM DA CORREÇÃO ---
 
     return render_template('prestacao_contas.html', 
