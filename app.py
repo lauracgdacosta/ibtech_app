@@ -816,7 +816,7 @@ def prestacao_contas():
     params.extend([per_page, offset])
     dados = conn.execute(data_query, tuple(params)).fetchall()
 
-    # --- LÓGICA DO DASHBOARD QUE ESTAVA EM FALTA ---
+    # --- LÓGICA DO DASHBOARD ADICIONADA AQUI ---
     status_counts_data = conn.execute("SELECT status, COUNT(id) as count FROM prestacao_contas GROUP BY status").fetchall()
     status_counts = {row['status']: row['count'] for row in status_counts_data}
     # --- FIM DA LÓGICA DO DASHBOARD ---
