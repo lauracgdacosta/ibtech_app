@@ -753,10 +753,6 @@ def delete_agenda(id):
     return redirect(url_for('agenda'))
 
 # --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
-# --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
-
-# Em app.py, substitua a função inteira:
-# Em app.py, substitua a função inteira:
 @app.route('/prestacao_contas')
 @login_required
 @role_required(module='prestacao_contas', action='can_read')
@@ -812,8 +808,15 @@ def prestacao_contas():
 
     conn.close()
 
-    # Copia os argumentos da URL para um dicionário que o template pode usar
     url_args = request.args.to_dict()
+
+    # --- INÍCIO DA CORREÇÃO ---
+    # Remove os parâmetros de ordenação antigos de url_args para evitar conflitos no template.
+    if 'sort_by' in url_args:
+        del url_args['sort_by']
+    if 'order' in url_args:
+        del url_args['order']
+    # --- FIM DA CORREÇÃO ---
 
     return render_template('prestacao_contas.html', 
                            dados=dados,
