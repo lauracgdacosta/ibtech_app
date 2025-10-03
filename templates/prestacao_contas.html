@@ -35,10 +35,12 @@
         .status-finalizado { background-color: #28a745; }
         .status-atrasado { background-color: #dc3545; }
         .status-reenvio { background-color: #007bff; }
+        
+        .col-status { width: 170px; }
 
-        /* --- NOVA REGRA DE CSS ADICIONADA AQUI --- */
-        .col-status {
-            width: 170px; /* Largura mínima para a coluna Status */
+        /* --- NOVA REGRA DE CSS PARA A LARGURA DO CLIENTE --- */
+        .col-cliente {
+            width: 250px; /* Aumenta a largura da coluna Cliente */
         }
     </style>
 </head>
@@ -65,7 +67,7 @@
                 <thead>
                     <tr>
                         {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
-                        <th><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente</a></th>
+                        <th class="col-cliente"><a href="{{ url_for('prestacao_contas', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente</a></th>
                         <th><a href="{{ url_for('prestacao_contas', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema</a></th>
                         <th><a href="{{ url_for('prestacao_contas', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável</a></th>
                         <th><a href="{{ url_for('prestacao_contas', sort_by='modulo', order=sort_order, **sorting_args) }}">Módulo</a></th>
@@ -76,7 +78,7 @@
                         <th>Ações</th>
                     </tr>
                     <tr class="filter-row">
-                        <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
+                        <th class="col-cliente"><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
                         <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
                         <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar..."></th>
                         <th><input type="text" name="search_modulo" value="{{ search_modulo }}" placeholder="Filtrar..."></th>
@@ -100,7 +102,7 @@
                 <tbody>
                     {% for item in dados %}
                     <tr>
-                        <td class="truncate" title="{{ item['cliente'] }}">{{ item['cliente'] }}</td>
+                        <td class="truncate col-cliente" title="{{ item['cliente'] }}">{{ item['cliente'] }}</td>
                         <td class="truncate" title="{{ item['sistema'] }}">{{ item['sistema'] }}</td>
                         <td class="truncate" title="{{ item['responsavel'] }}">{{ item['responsavel'] }}</td>
                         <td>{{ item['modulo'] }}</td>
