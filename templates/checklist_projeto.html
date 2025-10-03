@@ -15,6 +15,10 @@
         .task-header td {
             border-bottom: 2px solid #3498db;
         }
+        /* Estilo para alinhar as ações do título à direita */
+        .task-header .actions {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
@@ -86,12 +90,21 @@
                                 {% endif %}
                             </td>
                         </tr>
-                    {% else %}
-                        <tr class="task-header">
-                            <td colspan="8">
+                    {% else %} <tr class="task-header">
+                            <td colspan="7">
                                 {{ tarefa['atividade_id'] }} {{ tarefa['descricao'] }}
                             </td>
-                        </tr>
+                            <td class="actions">
+                                {% if check_permission('projetos', 'can_edit') %}
+                                    <a href="{{ url_for('edit_titulo', tarefa_id=tarefa['id']) }}" class="button edit">Editar</a>
+                                {% endif %}
+                                {% if check_permission('projetos', 'can_delete') %}
+                                    <form action="{{ url_for('delete_tarefa', tarefa_id=tarefa['id']) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este título?');" style="display:inline;">
+                                         <button type="submit" class="button delete">Excluir</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                            </tr>
                     {% endif %}
                 {% else %}
                 <tr><td colspan="8" style="text-align:center;">Nenhuma tarefa adicionada.</td></tr>
@@ -100,4 +113,4 @@
         </table>
     </div>
 </body>
-</html>.
+</html>

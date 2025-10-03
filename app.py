@@ -609,6 +609,27 @@ def edit_tarefa(tarefa_id):
     locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
     conn.close()
     return render_template('edit_tarefa.html', tarefa=tarefa, tecnicos=tecnicos, locais=locais)
+@app.route('/titulo/edit/<int:tarefa_id>', methods=['GET', 'POST'])
+@login_required
+@role_required(module='projetos', action='can_edit')
+def edit_titulo(tarefa_id):
+    conn = get_db_connection()
+    tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
+
+    if request.method == 'POST':
+        form = request.form
+        conn.execute('UPDATE tarefas SET atividade_id = ?, descricao = ? WHERE id = ?',
+                     (form['atividade_id'], form['descricao'], tarefa_id))
+        conn.commit()
+        conn.close()
+        flash('Título atualizado com sucesso!', 'success')
+        return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
+
+    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (tarefa['projeto_id'],)).fetchone()
+    conn.close()
+    
+    return render_template('edit_titulo.html', projeto=projeto, tarefa=tarefa)
+
 
 @app.route('/tarefa/delete/<int:tarefa_id>', methods=['POST'])
 @login_required
