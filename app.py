@@ -613,6 +613,30 @@ def delete_tarefa(tarefa_id):
     flash('Tarefa excluída.', 'success')
     return redirect(url_for('checklist_projeto', projeto_id=projeto_id)) if projeto_id else redirect(url_for('projetos'))
 
+@app.route('/projeto/<int:projeto_id>/new_tarefa', methods=['GET', 'POST'])
+@login_required
+@role_required(module='projetos', action='can_edit')
+def new_tarefa(projeto_id):
+    conn = get_db_connection()
+    
+    if request.method == 'POST':
+        form = request.form
+        # Define o tipo como 'tarefa' e o status inicial como 'Planejada'
+        conn.execute(
+            'INSERT INTO tarefas (projeto_id, tipo, status, atividade_id, descricao, responsavel_pm, responsavel_cm) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            (projeto_id, 'tarefa', 'Planejada', form['atividade_id'], form['descricao'], form['responsavel_pm'], form['responsavel_cm'])
+        )
+        conn.commit()
+        conn.close()
+        flash('Nova tarefa adicionada com sucesso!', 'success')
+        return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
+
+    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    conn.close()
+    
+    return render_template('new_tarefa.html', projeto=projeto, tecnicos=tecnicos)
+
 @app.route('/tarefa/toggle_status/<int:tarefa_id>', methods=['POST'])
 @login_required
 @role_required(module='projetos', action='can_edit')

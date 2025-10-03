@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Checklist do Projeto</title>
+    <title>Checklist do Projeto: {{ projeto['nome'] }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         .task-completed { text-decoration: line-through; color: #95a5a6; }
@@ -15,24 +15,19 @@
         .task-header td {
             border-bottom: 2px solid #3498db;
         }
-        .add-task-form {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            align-items: flex-end;
-            margin-bottom: 30px;
-            padding: 20px;
-            background-color: #fdfdfd;
-            border: 1px solid #f0f4f7;
-            border-radius: 8px;
-        }
-        .form-full-width { grid-column: 1 / -1; }
-        .form-button { align-self: end; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Tarefas do Projeto</h2>
+        <div class="header-actions">
+            <h1>Checklist: {{ projeto['nome'] }}</h1>
+            <div class="actions-group">
+                {% if check_permission('projetos', 'can_edit') %}
+                    <a href="{{ url_for('new_tarefa', projeto_id=projeto.id) }}" class="button new">Adicionar Nova Tarefa</a>
+                {% endif %}
+                <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista de Projetos</a>
+            </div>
+        </div>
         <table>
             <thead>
                 <tr>
@@ -59,8 +54,8 @@
                             </td>
                             <td>{{ tarefa['data_inicio'] | dateformat }} - {{ tarefa['data_termino'] | dateformat }}</td>
                             <td>{{ tarefa['duracao_calculada'] }}</td>
-                            <td><b>PM:</b> {{ tarefa['responsavel_pm'] }}<br><b>CM:</b> {{ tarefa['responsavel_cm'] }}</td>
-                            <td>{{ tarefa['local_execucao'] }}</td>
+                            <td><b>PM:</b> {{ tarefa['responsavel_pm'] or '---' }}<br><b>CM:</b> {{ tarefa['responsavel_cm'] or '---' }}</td>
+                            <td>{{ tarefa['local_execucao'] or '---' }}</td>
                             <td>
                                 <form action="{{ url_for('toggle_tarefa_status', tarefa_id=tarefa['id']) }}" method="post" style="margin:0;">
                                      <button type="submit" class="button" style="padding: 8px 12px; width: 100%; background-color: {% if tarefa['status'] == 'Concluída' %}#2ecc71{% else %}#bdc3c7{% endif %};">
@@ -69,10 +64,14 @@
                                 </form>
                             </td>
                             <td class="actions">
-                                <a href="{{ url_for('edit_tarefa', tarefa_id=tarefa['id']) }}">Editar</a>
-                                <form action="{{ url_for('delete_tarefa', tarefa_id=tarefa['id']) }}" method="post" onsubmit="return confirm('Tem certeza?');" style="display:inline;">
-                                     <button type="submit">Excluir</button>
-                                </form>
+                                {% if check_permission('projetos', 'can_edit') %}
+                                    <a href="{{ url_for('edit_tarefa', tarefa_id=tarefa['id']) }}" class="button edit">Editar</a>
+                                {% endif %}
+                                {% if check_permission('projetos', 'can_delete') %}
+                                    <form action="{{ url_for('delete_tarefa', tarefa_id=tarefa['id']) }}" method="post" onsubmit="return confirm('Tem certeza?');" style="display:inline;">
+                                         <button type="submit" class="button delete">Excluir</button>
+                                    </form>
+                                {% endif %}
                             </td>
                         </tr>
                     {% else %}
