@@ -647,6 +647,29 @@ def new_tarefa(projeto_id):
     
     return render_template('new_tarefa.html', projeto=projeto, tecnicos=tecnicos)
 
+@app.route('/projeto/<int:projeto_id>/new_titulo', methods=['GET', 'POST'])
+@login_required
+@role_required(module='projetos', action='can_edit')
+def new_titulo(projeto_id):
+    conn = get_db_connection()
+
+    if request.method == 'POST':
+        form = request.form
+        # Insere uma nova tarefa do tipo 'titulo'
+        conn.execute(
+            'INSERT INTO tarefas (projeto_id, tipo, status, atividade_id, descricao) VALUES (?, ?, ?, ?, ?)',
+            (projeto_id, 'titulo', 'N/A', form['atividade_id'], form['descricao'])
+        )
+        conn.commit()
+        conn.close()
+        flash('Novo título adicionado com sucesso!', 'success')
+        return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
+
+    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
+    conn.close()
+    
+    return render_template('new_titulo.html', projeto=projeto)
+
 @app.route('/tarefa/toggle_status/<int:tarefa_id>', methods=['POST'])
 @login_required
 @role_required(module='projetos', action='can_edit')

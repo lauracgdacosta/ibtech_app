@@ -23,7 +23,8 @@
             <h1>Checklist: {{ projeto['nome'] }}</h1>
             <div class="actions-group">
                 {% if check_permission('projetos', 'can_edit') %}
-                    <a href="{{ url_for('new_tarefa', projeto_id=projeto.id) }}" class="button new">Adicionar Nova Tarefa</a>
+                    <a href="{{ url_for('new_titulo', projeto_id=projeto.id) }}" class="button new" style="background-color: #5bc0de;">Adicionar Título</a>
+                    <a href="{{ url_for('new_tarefa', projeto_id=projeto.id) }}" class="button new">Adicionar Tarefa</a>
                 {% endif %}
                 <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista de Projetos</a>
             </div>
@@ -55,7 +56,6 @@
                             </td>
                             <td>{{ tarefa['data_inicio'] | dateformat }} - {{ tarefa['data_termino'] | dateformat }}</td>
                             <td>{{ tarefa['duracao_calculada'] }}</td>
-                            
                             <td>
                                 {% if tarefa.responsavel_pm and tarefa.responsavel_cm %}
                                     <b>PM:</b> {{ tarefa.responsavel_pm }}<br><b>CM:</b> {{ tarefa.responsavel_cm }}
@@ -100,4 +100,4 @@
         </table>
     </div>
 </body>
-</html>
+</html>.

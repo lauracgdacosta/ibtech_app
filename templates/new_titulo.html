@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Novo Título</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Adicionar Título ao Projeto: {{ projeto['nome'] }}</h1>
+    <form method="post">
+        <label for="atividade_id">ID do Título (ex: 2.2, 3.1)</label>
+        <input type="text" name="atividade_id" id="atividade_id" required>
+
+        <label for="descricao">Descrição do Título</label>
+        <textarea name="descricao" id="descricao" required></textarea>
+        
+        <button type="submit" class="button new">Salvar Título</button>
+        <a href="{{ url_for('checklist_projeto', projeto_id=projeto['id']) }}" class="button">Cancelar</a>
+    </form>
+</div>
+</body>
+</html>
