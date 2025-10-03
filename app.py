@@ -553,22 +553,32 @@ def checklist_projeto(projeto_id):
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
     
-    # --- NOVA LÓGICA PARA CALCULAR A DURAÇÃO ---
     tarefas_processadas = []
     for tarefa_row in tarefas_from_db:
-        tarefa = dict(tarefa_row) # Converte a linha do banco para um dicionário mutável
+        tarefa = dict(tarefa_row)
         duracao = "N/D"
         if tarefa['data_inicio'] and tarefa['data_termino']:
             try:
                 inicio = datetime.datetime.strptime(tarefa['data_inicio'], '%Y-%m-%d')
                 termino = datetime.datetime.strptime(tarefa['data_termino'], '%Y-%m-%d')
+                
+                # --- ALTERAÇÃO APLICADA AQUI ---
+                # Calcula a diferença de dias e adiciona 1 para tornar a contagem inclusiva.
                 delta = (termino - inicio).days
-                duracao = f"{delta} dias"
+                
+                if delta < 0:
+                    duracao = "Inválido"
+                else:
+                    dias_totais = delta + 1
+                    # Adiciona 's' a 'dia' apenas se for maior que 1
+                    sufixo = 's' if dias_totais > 1 else ''
+                    duracao = f"{dias_totais} dia{sufixo}"
+                # --- FIM DA ALTERAÇÃO ---
+
             except (ValueError, TypeError):
                 duracao = "Inválido"
         tarefa['duracao_calculada'] = duracao
         tarefas_processadas.append(tarefa)
-    # --- FIM DA NOVA LÓGICA ---
 
     conn.close()
     if not projeto:
