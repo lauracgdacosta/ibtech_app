@@ -42,16 +42,20 @@
         <label for="status">Status</label>
         <select name="status" required>
             <option value="Planejada" {% if tarefa['status'] == 'Planejada' %}selected{% endif %}>Planejada</option>
-            <option value="Concluída" {% if tarefa['status'] == 'Concluída' %}selected{% endif %}>Concluída</option>
             <option value="Em Andamento" {% if tarefa['status'] == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+            
+            <option value="Atrasada" {% if tarefa['status'] == 'Atrasada' %}selected{% endif %}>Atrasada</option>
+            <option value="Suspensa" {% if tarefa['status'] == 'Suspensa' %}selected{% endif %}>Suspensa</option>
+            <option value="Concluída" {% if tarefa['status'] == 'Concluída' %}selected{% endif %}>Concluída</option>
             <option value="Cancelada" {% if tarefa['status'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
         </select>
         
         <label for="observacoes">Observações</label>
         <textarea name="observacoes">{{ tarefa['observacoes'] | default('', true) }}</textarea>
+
         <button type="submit">Salvar Alterações</button>
+        <a href="{{ url_for('checklist_projeto', projeto_id=tarefa['projeto_id']) }}" class="button">Cancelar</a>
     </form>
-    <a href="{{ url_for('checklist_projeto', projeto_id=tarefa['projeto_id']) }}" class="button">Cancelar</a>
 </div>
 </body>
 </html>
