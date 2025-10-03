@@ -476,6 +476,8 @@ def delete_sistema(id):
     conn.close()
     return redirect(url_for('sistemas'))
 
+
+
 # --- MÓDULO DE PROJETOS ---
 @app.route('/projetos')
 @login_required
@@ -550,11 +552,30 @@ def checklist_projeto(projeto_id):
     conn = get_db_connection()
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
+    
+    # --- NOVA LÓGICA PARA CALCULAR A DURAÇÃO ---
+    tarefas_processadas = []
+    for tarefa_row in tarefas_from_db:
+        tarefa = dict(tarefa_row) # Converte a linha do banco para um dicionário mutável
+        duracao = "N/D"
+        if tarefa['data_inicio'] and tarefa['data_termino']:
+            try:
+                inicio = datetime.datetime.strptime(tarefa['data_inicio'], '%Y-%m-%d')
+                termino = datetime.datetime.strptime(tarefa['data_termino'], '%Y-%m-%d')
+                delta = (termino - inicio).days
+                duracao = f"{delta} dias"
+            except (ValueError, TypeError):
+                duracao = "Inválido"
+        tarefa['duracao_calculada'] = duracao
+        tarefas_processadas.append(tarefa)
+    # --- FIM DA NOVA LÓGICA ---
+
     conn.close()
     if not projeto:
         flash('Projeto não encontrado.', 'danger')
         return redirect(url_for('projetos'))
-    return render_template('checklist_projeto.html', projeto=projeto, tarefas=tarefas_from_db)
+    
+    return render_template('checklist_projeto.html', projeto=projeto, tarefas=tarefas_processadas)
 
 @app.route('/tarefa/edit/<int:tarefa_id>', methods=['GET', 'POST'])
 @login_required
@@ -591,6 +612,28 @@ def delete_tarefa(tarefa_id):
     conn.close()
     flash('Tarefa excluída.', 'success')
     return redirect(url_for('checklist_projeto', projeto_id=projeto_id)) if projeto_id else redirect(url_for('projetos'))
+
+@app.route('/tarefa/toggle_status/<int:tarefa_id>', methods=['POST'])
+@login_required
+@role_required(module='projetos', action='can_edit')
+def toggle_tarefa_status(tarefa_id):
+    conn = get_db_connection()
+    tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
+    
+    if tarefa:
+        # Lógica simples para alternar o status
+        if tarefa['status'] == 'Concluída':
+            novo_status = 'Em Andamento'
+        else:
+            novo_status = 'Concluída'
+            
+        conn.execute('UPDATE tarefas SET status = ? WHERE id = ?', (novo_status, tarefa_id))
+        conn.commit()
+    
+    conn.close()
+    
+    # Redireciona de volta para a página do checklist
+    return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
 
 # --- MÓDULO DE PENDÊNCIAS ---
 @app.route('/pendencias')
