@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Checklist do Projeto: {{ projeto['nome'] }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
         .task-completed { text-decoration: line-through; color: #95a5a6; }
         .task-completed td { background-color: #f8f9f9; }
@@ -15,9 +16,16 @@
         .task-header td {
             border-bottom: 2px solid #3498db;
         }
-        /* Estilo para alinhar as ações do título à direita */
         .task-header .actions {
             text-align: right;
+        }
+
+        /* --- NOVOS ESTILOS PARA EXPANDIR/RECOLHER --- */
+        .task-header {
+            cursor: pointer; /* Muda o cursor para indicar que o título é clicável */
+        }
+        .task-header:hover {
+            background-color: #e1e9f0; /* Efeito visual ao passar o rato */
         }
     </style>
 </head>
@@ -50,7 +58,7 @@
             <tbody>
                 {% for tarefa in tarefas %}
                     {% if tarefa['tipo'] == 'tarefa' %}
-                        <tr class="{% if tarefa['status'] == 'Concluída' %}task-completed{% endif %}">
+                        <tr class="task-item {% if tarefa['status'] == 'Concluída' %}task-completed{% endif %}">
                             <td>{{ tarefa['atividade_id'] }}</td>
                             <td>
                                 {{ tarefa['descricao'] }}
@@ -90,7 +98,8 @@
                                 {% endif %}
                             </td>
                         </tr>
-                    {% else %} <tr class="task-header">
+                    {% else %}
+                        <tr class="task-header">
                             <td colspan="7">
                                 {{ tarefa['atividade_id'] }} {{ tarefa['descricao'] }}
                             </td>
@@ -104,7 +113,7 @@
                                     </form>
                                 {% endif %}
                             </td>
-                            </tr>
+                        </tr>
                     {% endif %}
                 {% else %}
                 <tr><td colspan="8" style="text-align:center;">Nenhuma tarefa adicionada.</td></tr>
@@ -112,5 +121,18 @@
             </tbody>
         </table>
     </div>
+
+    <script>
+        $(document).ready(function() {
+            // Esconde inicialmente todas as tarefas (linhas que não são cabeçalhos)
+            $('tbody tr').not('.task-header').hide();
+
+            // Adiciona um evento de clique a cada linha de título
+            $('.task-header').on('click', function() {
+                // Seleciona todas as próximas linhas de tarefa até encontrar o próximo título
+                $(this).nextUntil('.task-header').slideToggle('fast');
+            });
+        });
+    </script>
 </body>
 </html>
