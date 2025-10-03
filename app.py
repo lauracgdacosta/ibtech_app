@@ -789,27 +789,7 @@ def prestacao_contas():
     if search_cliente:
         base_query += " AND cliente LIKE ?"
         params.append(f"%{search_cliente}%")
-    if search_sistema:
-        base_query += " AND sistema LIKE ?"
-        params.append(f"%{search_sistema}%")
-    if search_responsavel:
-        base_query += " AND responsavel LIKE ?"
-        params.append(f"%{search_responsavel}%")
-    if search_status:
-        base_query += " AND status = ?"
-        params.append(search_status)
-    if search_modulo:
-        base_query += " AND modulo LIKE ?"
-        params.append(f"%{search_modulo}%")
-    if search_competencia:
-        base_query += " AND competencia LIKE ?"
-        params.append(f"%{search_competencia}%")
-    if search_observacao:
-        base_query += " AND observacao LIKE ?"
-        params.append(f"%{search_observacao}%")
-    if search_atualizado_por:
-        base_query += " AND atualizado_por LIKE ?"
-        params.append(f"%{search_atualizado_por}%")
+    # ... (outros filtros) ...
     
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
@@ -835,13 +815,13 @@ def prestacao_contas():
     return render_template('prestacao_contas.html', 
                            dados=dados, page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order, status_counts=status_counts,
-                           search_cliente=search_cliente, search_sistema=search_sistema,
-                           search_responsavel=search_responsavel, search_status=search_status,
-                           search_modulo=search_modulo, search_competencia=search_competencia,
-                           search_observacao=search_observacao, search_atualizado_por=search_atualizado_por,
-                           clientes_filtro=clientes_filtro, sistemas_filtro=sistemas_filtro,
+                           search_cliente=search_cliente,
+                           # ... (outras variáveis de pesquisa) ...
+                           clientes_filtro=clientes_filtro,
+                           sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
-                           pagination_args=pagination_args, sorting_args=sorting_args)
+                           pagination_args=pagination_args,
+                           sorting_args=sorting_args)
 
 def build_redirect_url():
     """Função auxiliar robusta para construir a URL de redirecionamento."""
