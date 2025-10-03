@@ -37,7 +37,7 @@
         <div class="header-actions">
             <h1>Módulo de Prestação de Contas</h1>
             <div class="actions-group">
-                <a href="{{ url_for('new_prestacao', **pagination_args) }}" class="button new">Nova Prestação</a>
+                <a href="{{ url_for('new_prestacao', **request.args) }}" class="button new">Nova Prestação</a>
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
@@ -108,7 +108,7 @@
                         <td class="truncate" title="{{ item['observacao'] }}">{{ item['observacao'] }}</td>
                         <td class="truncate" title="{{ item['atualizado_por'] }}">{{ item['atualizado_por'] }}</td>
                         <td class="actions">
-                            <a href="{{ url_for('edit_prestacao', id=item['id'], **sorting_args) }}" class="button edit">Editar</a>
+                            <a href="{{ url_for('edit_prestacao', id=item['id'], **request.args) }}" class="button edit">Editar</a>
                             <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
                                 {% for key, value in pagination_args.items() %}
                                     <input type="hidden" name="{{ key }}" value="{{ value }}">

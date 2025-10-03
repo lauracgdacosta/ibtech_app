@@ -754,17 +754,19 @@ def delete_agenda(id):
     return redirect(url_for('agenda'))
 
 # --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
+# Em app.py, substitua as duas funções seguintes:
+
 @app.route('/prestacao_contas')
 @login_required
 @role_required(module='prestacao_contas', action='can_read')
 def prestacao_contas():
     conn = get_db_connection()
-
+    
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'id', type=str)
     order = request.args.get('order', 'desc', type=str)
-
+    
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
@@ -808,71 +810,54 @@ def prestacao_contas():
     if search_atualizado_por:
         base_query += " AND atualizado_por LIKE ?"
         params.append(f"%{search_atualizado_por}%")
-
+    
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     dados = conn.execute(data_query, tuple(params)).fetchall()
-
-    # --- LÓGICA DO DASHBOARD ADICIONADA AQUI ---
+    
     status_counts_data = conn.execute("SELECT status, COUNT(id) as count FROM prestacao_contas GROUP BY status").fetchall()
     status_counts = {row['status']: row['count'] for row in status_counts_data}
-    # --- FIM DA LÓGICA DO DASHBOARD ---
-
+    
     clientes_filtro = [row['cliente'] for row in conn.execute('SELECT DISTINCT cliente FROM prestacao_contas ORDER BY cliente').fetchall()]
     sistemas_filtro = [row['sistema'] for row in conn.execute('SELECT DISTINCT sistema FROM prestacao_contas ORDER BY sistema').fetchall()]
     responsaveis_filtro = [row['responsavel'] for row in conn.execute('SELECT DISTINCT responsavel FROM prestacao_contas ORDER BY responsavel').fetchall()]
-
     conn.close()
 
     pagination_args = request.args.to_dict()
-    if 'page' in pagination_args:
-        del pagination_args['page']
-
+    if 'page' in pagination_args: del pagination_args['page']
     sorting_args = request.args.to_dict()
-    if 'sort_by' in sorting_args:
-        del sorting_args['sort_by']
-    if 'order' in sorting_args:
-        del sorting_args['order']
+    if 'sort_by' in sorting_args: del sorting_args['sort_by']
+    if 'order' in sorting_args: del sorting_args['order']
 
     return render_template('prestacao_contas.html', 
-                           dados=dados,
-                           page=page, total_pages=total_pages,
-                           sort_by=sort_by, order=order,
-                           status_counts=status_counts, # <-- Variável agora a ser enviada
-                           search_cliente=search_cliente,
-                           search_sistema=search_sistema,
-                           search_responsavel=search_responsavel,
-                           search_status=search_status,
-                           search_modulo=search_modulo,
-                           search_competencia=search_competencia,
-                           search_observacao=search_observacao,
-                           search_atualizado_por=search_atualizado_por,
-                           clientes_filtro=clientes_filtro,
-                           sistemas_filtro=sistemas_filtro,
+                           dados=dados, page=page, total_pages=total_pages,
+                           sort_by=sort_by, order=order, status_counts=status_counts,
+                           search_cliente=search_cliente, search_sistema=search_sistema,
+                           search_responsavel=search_responsavel, search_status=search_status,
+                           search_modulo=search_modulo, search_competencia=search_competencia,
+                           search_observacao=search_observacao, search_atualizado_por=search_atualizado_por,
+                           clientes_filtro=clientes_filtro, sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
-                           pagination_args=pagination_args,
-                           sorting_args=sorting_args)
+                           pagination_args=pagination_args, sorting_args=sorting_args)
 
-# ---- FUNÇÃO AUXILIAR QUE ESTAVA EM FALTA ----
 def build_redirect_url():
-    """Função auxiliar para construir a URL de redirecionamento com os filtros."""
+    """Função auxiliar robusta para construir a URL de redirecionamento."""
     args = {}
-    # Lista de todos os parâmetros que controlam o estado da visualização
     valid_state_keys = [
         'search_cliente', 'search_sistema', 'search_responsavel', 'search_status',
         'search_modulo', 'search_competencia', 'search_observacao', 
         'search_atualizado_por', 'page', 'sort_by', 'order'
     ]
-
-    # O 'request.form' contém todos os dados enviados pelo formulário (incluindo os campos ocultos)
+    
+    # request.form contém todos os dados enviados pelo formulário (incluindo os campos ocultos)
     for key in valid_state_keys:
         value = request.form.get(key)
-        if value:
+        if value: # Apenas adiciona se o valor não for vazio
             args[key] = value
-
+            
     return url_for('prestacao_contas', **args)
 # ---------------------------------------------
 
