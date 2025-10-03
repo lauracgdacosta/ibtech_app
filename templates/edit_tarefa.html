@@ -48,8 +48,7 @@
         </select>
         
         <label for="observacoes">Observações</label>
-        <textarea name="observacoes">{{ tarefa['observacoes'] }}</textarea>
-
+        <textarea name="observacoes">{{ tarefa['observacoes'] | default('', true) }}</textarea>
         <button type="submit">Salvar Alterações</button>
     </form>
     <a href="{{ url_for('checklist_projeto', projeto_id=tarefa['projeto_id']) }}" class="button">Cancelar</a>
