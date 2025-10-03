@@ -8,7 +8,7 @@ import datetime
 app = Flask(__name__)
 app.secret_key = '18T3ch'
 
-# --- LISTA MESTRA DE MÓDULOS ---
+# --- LISTA MESTRA DE MÓDulos ---
 AVAILABLE_MODULES = {
     'cadastros': 'Cadastros (Técnicos, Clientes, etc)',
     'agenda': 'Agenda',
@@ -98,12 +98,19 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS sistemas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, motivo TEXT, descricao TEXT, status TEXT)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, periodo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS projetos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cliente TEXT, data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT, role TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL, role TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, role_name TEXT NOT NULL, module_name TEXT NOT NULL, can_read BOOLEAN DEFAULT 0, can_edit BOOLEAN DEFAULT 0, can_delete BOOLEAN DEFAULT 0, UNIQUE(role_name, module_name))''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS matriz_responsabilidades (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, sistema TEXT NOT NULL, responsavel1 TEXT NOT NULL, responsavel2 TEXT, observacoes TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS matriz_responsabilidades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente TEXT NOT NULL,
+            sistema TEXT NOT NULL,
+            responsavel1 TEXT NOT NULL,
+            responsavel2 TEXT,
+            observacoes TEXT
+        )''')
     conn.commit()
     conn.close()
 
@@ -116,14 +123,11 @@ def migrate_db_roles():
         print("MIGRATE: Adicionando coluna 'role' à tabela 'usuarios'.")
         cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT")
     
-    # Atualiza a coluna 'role' com base em 'nivel_acesso' para usuários existentes
     cursor.execute("UPDATE usuarios SET role = CASE WHEN nivel_acesso = 'Admin' THEN 'admin' WHEN nivel_acesso = 'Usuario' THEN 'tecnico' ELSE role END WHERE role IS NULL")
     
-    # Verifica se há algum usuário no banco de dados
     cursor.execute("SELECT COUNT(id) FROM usuarios")
     if cursor.fetchone()[0] == 0:
         print("MIGRATE: Nenhum usuário encontrado. Criando usuário admin padrão.")
-        # CORREÇÃO APLICADA AQUI: Adicionado 'nivel_acesso' ao INSERT
         cursor.execute(
             "INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)", 
             ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin', 'Admin')
@@ -753,15 +757,12 @@ def delete_agenda(id):
     conn.close()
     return redirect(url_for('agenda'))
 
-# --- INÍCIO DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
-# Em app.py, substitua as duas funções seguintes:
-
+# --- MÓDULO DE PRESTAÇÃO DE CONTAS ---
 @app.route('/prestacao_contas')
 @login_required
 @role_required(module='prestacao_contas', action='can_read')
 def prestacao_contas():
     conn = get_db_connection()
-    
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'id', type=str)
@@ -777,10 +778,8 @@ def prestacao_contas():
     search_atualizado_por = request.args.get('search_atualizado_por', '', type=str)
 
     allowed_sort_columns = ['id', 'cliente', 'sistema', 'responsavel', 'modulo', 'competencia', 'status', 'observacao', 'atualizado_por']
-    if sort_by not in allowed_sort_columns:
-        sort_by = 'id'
-    if order.lower() not in ['asc', 'desc']:
-        order = 'desc'
+    if sort_by not in allowed_sort_columns: sort_by = 'id'
+    if order.lower() not in ['asc', 'desc']: order = 'desc'
 
     offset = (page - 1) * per_page
     base_query = "FROM prestacao_contas WHERE 1=1"
@@ -789,7 +788,27 @@ def prestacao_contas():
     if search_cliente:
         base_query += " AND cliente LIKE ?"
         params.append(f"%{search_cliente}%")
-    # ... (outros filtros) ...
+    if search_sistema:
+        base_query += " AND sistema LIKE ?"
+        params.append(f"%{search_sistema}%")
+    if search_responsavel:
+        base_query += " AND responsavel LIKE ?"
+        params.append(f"%{search_responsavel}%")
+    if search_status:
+        base_query += " AND status = ?"
+        params.append(search_status)
+    if search_modulo:
+        base_query += " AND modulo LIKE ?"
+        params.append(f"%{search_modulo}%")
+    if search_competencia:
+        base_query += " AND competencia LIKE ?"
+        params.append(f"%{search_competencia}%")
+    if search_observacao:
+        base_query += " AND observacao LIKE ?"
+        params.append(f"%{search_observacao}%")
+    if search_atualizado_por:
+        base_query += " AND atualizado_por LIKE ?"
+        params.append(f"%{search_atualizado_por}%")
     
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
@@ -815,16 +834,15 @@ def prestacao_contas():
     return render_template('prestacao_contas.html', 
                            dados=dados, page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order, status_counts=status_counts,
-                           search_cliente=search_cliente,
-                           # ... (outras variáveis de pesquisa) ...
-                           clientes_filtro=clientes_filtro,
-                           sistemas_filtro=sistemas_filtro,
+                           search_cliente=search_cliente, search_sistema=search_sistema,
+                           search_responsavel=search_responsavel, search_status=search_status,
+                           search_modulo=search_modulo, search_competencia=search_competencia,
+                           search_observacao=search_observacao, search_atualizado_por=search_atualizado_por,
+                           clientes_filtro=clientes_filtro, sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
-                           pagination_args=pagination_args,
-                           sorting_args=sorting_args)
+                           pagination_args=pagination_args, sorting_args=sorting_args)
 
 def build_redirect_url():
-    """Função auxiliar robusta para construir a URL de redirecionamento."""
     args = {}
     valid_state_keys = [
         'search_cliente', 'search_sistema', 'search_responsavel', 'search_status',
@@ -832,27 +850,24 @@ def build_redirect_url():
         'search_atualizado_por', 'page', 'sort_by', 'order'
     ]
     
-    # request.form contém todos os dados enviados pelo formulário (incluindo os campos ocultos)
     for key in valid_state_keys:
         value = request.form.get(key)
-        if value: # Apenas adiciona se o valor não for vazio
+        if value:
             args[key] = value
             
     return url_for('prestacao_contas', **args)
-# ---------------------------------------------
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
 @login_required
 @role_required(module='prestacao_contas', action='can_edit')
 def new_prestacao():
     args = request.args.to_dict()
-
     if request.method == 'POST':
         conn = get_db_connection()
         form = request.form
         atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {session.get('user_name', 'Desconhecido')}"
-        conn.execute('INSERT INTO prestacao_contas (cliente, sistema, responsavel, modulo, periodo, competencia, status, observacao, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por))
+        conn.execute('INSERT INTO prestacao_contas (cliente, sistema, responsavel, modulo, competencia, status, observacao, atualizado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['competencia'], form['status'], form['observacao'], atualizado_por))
         conn.commit()
         conn.close()
         flash('Registo criado com sucesso!', 'success')
@@ -870,15 +885,13 @@ def new_prestacao():
 @role_required(module='prestacao_contas', action='can_edit')
 def edit_prestacao(id):
     args = request.args.to_dict()
-    
     conn = get_db_connection()
     item = conn.execute('SELECT * FROM prestacao_contas WHERE id = ?', (id,)).fetchone()
-
     if request.method == 'POST':
         form = request.form
         atualizado_por = f"{datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')} por {session.get('user_name', 'Desconhecido')}"
-        conn.execute('UPDATE prestacao_contas SET cliente=?, sistema=?, responsavel=?, modulo=?, periodo=?, competencia=?, status=?, observacao=?, atualizado_por=? WHERE id=?',
-            (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['periodo'], form['competencia'], form['status'], form['observacao'], atualizado_por, id))
+        conn.execute('UPDATE prestacao_contas SET cliente=?, sistema=?, responsavel=?, modulo=?, competencia=?, status=?, observacao=?, atualizado_por=? WHERE id=?',
+            (form['cliente'], form['sistema'], form['responsavel'], form['modulo'], form['competencia'], form['status'], form['observacao'], atualizado_por, id))
         conn.commit()
         conn.close()
         flash('Registo atualizado com sucesso!', 'success')
@@ -900,8 +913,6 @@ def delete_prestacao(id):
     conn.close()
     flash('Registo excluído com sucesso!', 'success')
     return redirect(build_redirect_url())
-
-# --- FIM DO MÓDULO DE PRESTAÇÃO DE CONTAS ATUALIZADO ---
 
 # --- GESTÃO DE USUÁRIOS (Admin) ---
 @app.route('/usuarios')
@@ -968,39 +979,7 @@ def delete_usuario(id):
     flash('Usuário excluído.', 'success')
     return redirect(url_for('usuarios'))
 
-
-# --- ROTA DE API ATUALIZADA PARA O CALENDÁRIO COM CORES ---
-@app.route('/api/agendamentos')
-@login_required
-def api_agendamentos():
-    conn = get_db_connection()
-    agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
-    conn.close()
-
-    color_map = {
-        'Planejada': '#3498db',
-        'Realizada': '#2ecc71',
-        'Cancelada': '#f1c40f'
-    }
-
-    eventos = []
-    for agendamento in agendamentos_db:
-        eventos.append({
-            'id': agendamento['id'],
-            'title': f"{agendamento['cliente']} ({agendamento['tecnico']})",
-            'start': agendamento['data_agendamento'],
-            'color': color_map.get(agendamento['status'], '#808080'),
-            'extendedProps': {
-                'motivo': agendamento['motivo'],
-                'descricao': agendamento['descricao'],
-                'status': agendamento['status']
-            }
-        })
-
-    return jsonify(eventos)
-
 # --- MÓDULO DE MATRIZ DE RESPONSABILIDADES ---
-
 @app.route('/matriz')
 @login_required
 def matriz_responsabilidades():
@@ -1054,14 +1033,14 @@ def matriz_responsabilidades():
         if search_responsavel:
             base_query += " AND (responsavel1 = ? OR responsavel2 = ?)"
             params.extend([search_responsavel, search_responsavel])
-
+        
         base_query += " ORDER BY cliente, sistema"
         registos = conn.execute(base_query, tuple(params)).fetchall()
         clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
         sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
         responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
         conn.close()
-
+        
         return render_template('matriz_responsabilidades.html', 
                                view=view, registos=registos, 
                                clientes=clientes, sistemas=sistemas, responsaveis=responsaveis,
@@ -1116,6 +1095,35 @@ def delete_matriz_responsabilidade(id):
     flash('Registo de responsabilidade excluído com sucesso.', 'success')
     return redirect(url_for('matriz_responsabilidades'))
 
+# --- ROTA DE API ATUALIZADA PARA O CALENDÁRIO COM CORES ---
+@app.route('/api/agendamentos')
+@login_required
+def api_agendamentos():
+    conn = get_db_connection()
+    agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
+    conn.close()
+
+    color_map = {
+        'Planejada': '#3498db',
+        'Realizada': '#2ecc71',
+        'Cancelada': '#f1c40f'
+    }
+
+    eventos = []
+    for agendamento in agendamentos_db:
+        eventos.append({
+            'id': agendamento['id'],
+            'title': f"{agendamento['cliente']} ({agendamento['tecnico']})",
+            'start': agendamento['data_agendamento'],
+            'color': color_map.get(agendamento['status'], '#808080'),
+            'extendedProps': {
+                'motivo': agendamento['motivo'],
+                'descricao': agendamento['descricao'],
+                'status': agendamento['status']
+            }
+        })
+
+    return jsonify(eventos)
+
 if __name__ == '__main__':
-    # O host='0.0.0.0' permite acesso de outros dispositivos na mesma rede.
     app.run(host='0.0.0.0', port=5000, debug=True)
