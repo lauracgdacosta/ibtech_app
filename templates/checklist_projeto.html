@@ -28,6 +28,7 @@
                 <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista de Projetos</a>
             </div>
         </div>
+
         <table>
             <thead>
                 <tr>
@@ -49,12 +50,23 @@
                             <td>
                                 {{ tarefa['descricao'] }}
                                 {% if tarefa['observacoes'] %}
-                                    <p style="font-size: 0.9em; color: #7f8c8d; margin: 5px 0 0 0;">Obs: {{ tarefa['observacoes'] }}</p>
+                                    <p style="font-size: 0.9em; color: #7f8c8d; margin: 5px 0 0 0;">Obs: {{ tarefa['observacoes'] | default('', true) }}</p>
                                 {% endif %}
                             </td>
                             <td>{{ tarefa['data_inicio'] | dateformat }} - {{ tarefa['data_termino'] | dateformat }}</td>
                             <td>{{ tarefa['duracao_calculada'] }}</td>
-                            <td><b>PM:</b> {{ tarefa['responsavel_pm'] or '---' }}<br><b>CM:</b> {{ tarefa['responsavel_cm'] or '---' }}</td>
+                            
+                            <td>
+                                {% if tarefa.responsavel_pm and tarefa.responsavel_cm %}
+                                    <b>PM:</b> {{ tarefa.responsavel_pm }}<br><b>CM:</b> {{ tarefa.responsavel_cm }}
+                                {% elif tarefa.responsavel_pm %}
+                                    <b>PM:</b> {{ tarefa.responsavel_pm }}
+                                {% elif tarefa.responsavel_cm %}
+                                    <b>CM:</b> {{ tarefa.responsavel_cm }}
+                                {% else %}
+                                    ---
+                                {% endif %}
+                            </td>
                             <td>{{ tarefa['local_execucao'] or '---' }}</td>
                             <td>
                                 <form action="{{ url_for('toggle_tarefa_status', tarefa_id=tarefa['id']) }}" method="post" style="margin:0;">
