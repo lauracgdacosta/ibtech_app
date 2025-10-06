@@ -6,9 +6,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
     <div class="container">
         <div class="header-actions">
-            <h1>Adicionar Novo Agendamento</h1>
+            <h1>Novo Agendamento</h1>
+            <div class="actions-group">
+                <a href="{{ url_for('agenda') }}" class="button">Voltar para a Lista</a>
+            </div>
         </div>
         <form method="post">
             <label for="cliente">Cliente</label>
@@ -64,9 +73,8 @@
 
             <div class="actions-group" style="margin-top: 20px;">
                 <button type="submit" class="button new">Salvar Agendamento</button>
-                <a href="{{ url_for('agenda') }}" class="button">Cancelar</a>
-            </div>
-        </form>
+                </div>
+            </form>
     </div>
 </body>
 </html>
