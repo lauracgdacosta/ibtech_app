@@ -49,6 +49,10 @@
             
             <button type="submit" class="button new">Salvar Plano</button>
         </form>
+
+    {% for key, value in args.items() %}
+    <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
     </div>
     
     <script>

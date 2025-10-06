@@ -4,82 +4,109 @@
     <meta charset="UTF-8">
     <title>Planejamento de Férias</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css">
-    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/datetime-moment.js"></script>
+    <style>
+        .pagination { display: flex; justify-content: center; align-items: center; margin-top: 25px; gap: 5px; }
+        .pagination a, .pagination span { padding: 8px 12px; border-radius: 5px; text-decoration: none; }
+        .pagination a { background-color: #f1f1f1; color: #333; }
+        .pagination a:hover { background-color: #ddd; }
+        .pagination .current { background-color: #007bff; color: white; font-weight: bold; }
+        th a { color: inherit; text-decoration: none; display: block; }
+        th a:hover { text-decoration: underline; }
+        .filter-row th { padding: 8px; background-color: #f8f9fa; }
+        .filter-row input { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .filter-actions { display: flex; gap: 5px; align-items: center; }
+        .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
+    </style>
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Planejamento de Férias</h1>
             <div class="actions-group">
                 {% if check_permission('ferias', 'can_edit') %}
-                    <a href="{{ url_for('new_ferias') }}" class="button new">Novo Planejamento</a>
+                    <a href="{{ url_for('new_ferias', **request.args) }}" class="button new">Novo Planejamento</a>
                 {% endif %}
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
 
-        <h2>Férias Planejadas</h2>
-        <table id="tabela" class="display" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Funcionário</th>
-                    <th>Admissão</th>
-                    <th>Contrato</th>
-                    <th>Ano</th>
-                    <th>Data Início</th>
-                    <th>Data Término</th>
-                    <th>Observações</th>
-                    {% if check_permission('ferias', 'can_edit') or check_permission('ferias', 'can_delete') %}
-                        <th class="no-sort">Ações</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for ferias_item in ferias %}
-                <tr>
-                    <td>{{ ferias_item['funcionario'] }}</td>
-                    <td>{{ ferias_item['admissao'] | dateformat }}</td>
-                    <td>{{ ferias_item['contrato'] }}</td>
-                    <td>{{ ferias_item['ano'] }}</td>
-                    <td>{{ ferias_item['data_inicio'] | dateformat }}</td>
-                    <td>{{ ferias_item['data_termino'] | dateformat }}</td>
-                    <td>{{ ferias_item['obs'] }}</td>
-                    {% if check_permission('ferias', 'can_edit') or check_permission('ferias', 'can_delete') %}
-                        <td class="actions">
-                            {% if check_permission('ferias', 'can_edit') %}
-                                <a href="{{ url_for('edit_ferias', id=ferias_item['id']) }}" class="button edit">Editar</a>
-                            {% endif %}
-                            {% if check_permission('ferias', 'can_delete') %}
-                                <form action="{{ url_for('delete_ferias', id=ferias_item['id']) }}" method="post" style="display:inline;">
-                                    <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar este plano de férias?');">Deletar</button>
-                                </form>
-                            {% endif %}
-                        </td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        <form method="get" action="{{ url_for('ferias') }}">
+            <input type="hidden" name="sort_by" value="{{ sort_by }}">
+            <input type="hidden" name="order" value="{{ order }}">
+            
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
+                            <th><a href="{{ url_for('ferias', sort_by='funcionario', order=sort_order, **sorting_args) }}">Funcionário</a></th>
+                            <th><a href="{{ url_for('ferias', sort_by='admissao', order=sort_order, **sorting_args) }}">Admissão</a></th>
+                            <th><a href="{{ url_for('ferias', sort_by='contrato', order=sort_order, **sorting_args) }}">Contrato</a></th>
+                            <th><a href="{{ url_for('ferias', sort_by='ano', order=sort_order, **sorting_args) }}">Ano</a></th>
+                            <th><a href="{{ url_for('ferias', sort_by='data_inicio', order=sort_order, **sorting_args) }}">Data Início</a></th>
+                            <th><a href="{{ url_for('ferias', sort_by='data_termino', order=sort_order, **sorting_args) }}">Data Término</a></th>
+                            <th><a href="{{ url_for('ferias', sort_by='obs', order=sort_order, **sorting_args) }}">Observações</a></th>
+                            <th>Ações</th>
+                        </tr>
+                        <tr class="filter-row">
+                            <th><input type="text" name="search_funcionario" value="{{ search_funcionario }}" placeholder="Filtrar funcionário..."></th>
+                            <th></th>
+                            <th><input type="text" name="search_contrato" value="{{ search_contrato }}" placeholder="Filtrar contrato..."></th>
+                            <th><input type="number" name="search_ano" value="{{ search_ano }}" placeholder="Filtrar ano..."></th>
+                            <th></th>
+                            <th></th>
+                            <th><input type="text" name="obs" placeholder="Filtrar obs..."></th>
+                            <th class="filter-actions">
+                                <button type="submit" class="button">Filtrar</button>
+                                <a href="{{ url_for('ferias') }}" class="button" style="background-color: #6c757d;">Limpar</a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ferias_item in ferias %}
+                        <tr>
+                            <td>{{ ferias_item['funcionario'] }}</td>
+                            <td>{{ ferias_item['admissao'] | dateformat }}</td>
+                            <td>{{ ferias_item['contrato'] }}</td>
+                            <td>{{ ferias_item['ano'] }}</td>
+                            <td>{{ ferias_item['data_inicio'] | dateformat }}</td>
+                            <td>{{ ferias_item['data_termino'] | dateformat }}</td>
+                            <td>{{ ferias_item['obs'] }}</td>
+                            <td class="actions">
+                                {% if check_permission('ferias', 'can_edit') %}
+                                    <a href="{{ url_for('edit_ferias', id=ferias_item['id'], **request.args) }}" class="button edit">Editar</a>
+                                {% endif %}
+                                {% if check_permission('ferias', 'can_delete') %}
+                                    <form action="{{ url_for('delete_ferias', id=ferias_item['id']) }}" method="post" style="display:inline;">
+                                        {% for key, value in request.args.items() %}
+                                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                        {% endfor %}
+                                        <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align: center;">Nenhum plano de férias encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
 
-    <script>
-    $(document).ready(function() {
-        DataTable.moment('DD/MM/YYYY');
-        $('#tabela').DataTable({
-            "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
-            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
-        });
-    });
-    </script>
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}<a href="{{ url_for('ferias', page=page-1, **pagination_args) }}">&laquo; Anterior</a>{% endif %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}<span class="current">{{ p }}</span>
+                {% elif p > page - 3 and p < page + 3 %}<a href="{{ url_for('ferias', page=p, **pagination_args) }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page < total_pages %}<a href="{{ url_for('ferias', page=page+1, **pagination_args) }}">Próximo &raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
 </body>
 </html>

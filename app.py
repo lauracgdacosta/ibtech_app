@@ -787,47 +787,116 @@ def delete_pendencia(id):
     return redirect(url_for('pendencias'))
 
 # --- MÓDULO DE FÉRIAS ---
+# --- MÓDULO DE FÉRIAS ---
+
 @app.route('/ferias')
 @login_required
 @role_required(module='ferias', action='can_read')
 def ferias():
     conn = get_db_connection()
-    ferias_data = conn.execute('SELECT * FROM ferias').fetchall()
+    
+    per_page = 20
+    page = request.args.get('page', 1, type=int)
+    sort_by = request.args.get('sort_by', 'data_inicio', type=str)
+    order = request.args.get('order', 'desc', type=str)
+    
+    # Filtros
+    search_funcionario = request.args.get('search_funcionario', '', type=str)
+    search_contrato = request.args.get('search_contrato', '', type=str)
+    search_ano = request.args.get('search_ano', '', type=str)
+
+    allowed_sort_columns = ['funcionario', 'admissao', 'contrato', 'ano', 'data_inicio', 'data_termino', 'obs']
+    if sort_by not in allowed_sort_columns:
+        sort_by = 'data_inicio'
+    if order.lower() not in ['asc', 'desc']:
+        order = 'desc'
+
+    offset = (page - 1) * per_page
+    base_query = "FROM ferias WHERE 1=1"
+    params = []
+
+    if search_funcionario:
+        base_query += " AND funcionario LIKE ?"
+        params.append(f"%{search_funcionario}%")
+    if search_contrato:
+        base_query += " AND contrato LIKE ?"
+        params.append(f"%{search_contrato}%")
+    if search_ano:
+        base_query += " AND ano = ?"
+        params.append(search_ano)
+    
+    total_query = "SELECT COUNT(id) " + base_query
+    total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
+    total_pages = (total_results + per_page - 1) // per_page
+    data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
+    params.extend([per_page, offset])
+    ferias_data = conn.execute(data_query, tuple(params)).fetchall()
+    
     conn.close()
-    return render_template('ferias.html', ferias=ferias_data)
+
+    pagination_args = request.args.to_dict()
+    if 'page' in pagination_args: del pagination_args['page']
+    sorting_args = request.args.to_dict()
+    if 'sort_by' in sorting_args: del sorting_args['sort_by']
+    if 'order' in sorting_args: del sorting_args['order']
+
+    return render_template('ferias.html', 
+                           ferias=ferias_data,
+                           page=page, total_pages=total_pages,
+                           sort_by=sort_by, order=order,
+                           search_funcionario=search_funcionario,
+                           search_contrato=search_contrato,
+                           search_ano=search_ano,
+                           pagination_args=pagination_args,
+                           sorting_args=sorting_args)
+
+def build_ferias_redirect_url():
+    args = {}
+    valid_state_keys = ['search_funcionario', 'search_contrato', 'search_ano', 'page', 'sort_by', 'order']
+    for key in valid_state_keys:
+        value = request.form.get(key)
+        if value:
+            args[key] = value
+    return url_for('ferias', **args)
 
 @app.route('/new_ferias', methods=['GET', 'POST'])
 @login_required
 @role_required(module='ferias', action='can_edit')
 def new_ferias():
+    args = request.args.to_dict()
     conn = get_db_connection()
-    tecnicos = conn.execute('SELECT nome, contrato FROM tecnicos').fetchall()
     if request.method == 'POST':
         form = request.form
         conn.execute('INSERT INTO ferias (funcionario, admissao, contrato, ano, data_inicio, data_termino, obs) VALUES (?, ?, ?, ?, ?, ?, ?)',
                      (form['funcionario'], form['admissao'], form['contrato'], form['ano'], form['data_inicio'], form['data_termino'], form['obs']))
         conn.commit()
         conn.close()
-        return redirect(url_for('ferias'))
+        flash('Novo plano de férias criado com sucesso!', 'success')
+        return redirect(build_ferias_redirect_url())
+    
+    tecnicos = conn.execute('SELECT nome, contrato FROM tecnicos ORDER BY nome').fetchall()
     conn.close()
-    return render_template('new_ferias.html', tecnicos=tecnicos)
+    return render_template('new_ferias.html', tecnicos=tecnicos, args=args)
 
 @app.route('/edit_ferias/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(module='ferias', action='can_edit')
 def edit_ferias(id):
+    args = request.args.to_dict()
     conn = get_db_connection()
     ferias_item = conn.execute('SELECT * FROM ferias WHERE id = ?', (id,)).fetchone()
-    tecnicos = conn.execute('SELECT nome, contrato FROM tecnicos').fetchall()
     if request.method == 'POST':
         form = request.form
         conn.execute('UPDATE ferias SET funcionario=?, admissao=?, contrato=?, ano=?, data_inicio=?, data_termino=?, obs=? WHERE id=?',
                      (form['funcionario'], form['admissao'], form['contrato'], form['ano'], form['data_inicio'], form['data_termino'], form['obs'], id))
         conn.commit()
         conn.close()
-        return redirect(url_for('ferias'))
+        flash('Plano de férias atualizado com sucesso!', 'success')
+        return redirect(build_ferias_redirect_url())
+        
+    tecnicos = conn.execute('SELECT nome, contrato FROM tecnicos ORDER BY nome').fetchall()
     conn.close()
-    return render_template('edit_ferias.html', ferias_item=ferias_item, tecnicos=tecnicos)
+    return render_template('edit_ferias.html', ferias_item=ferias_item, tecnicos=tecnicos, args=args)
 
 @app.route('/delete_ferias/<int:id>', methods=['POST'])
 @login_required
@@ -837,7 +906,8 @@ def delete_ferias(id):
     conn.execute('DELETE FROM ferias WHERE id = ?', (id,))
     conn.commit()
     conn.close()
-    return redirect(url_for('ferias'))
+    flash('Plano de férias excluído com sucesso!', 'success')
+    return redirect(build_ferias_redirect_url())
 
 # --- MÓDULO DE AGENDA ---
 @app.route('/agenda')
