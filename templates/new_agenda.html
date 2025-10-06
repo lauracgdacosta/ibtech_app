@@ -6,18 +6,72 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
+    {% if session.user_name %}
+        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
+        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
+    {% endif %}
+    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Adicionar Novo Agendamento</h1>
         </div>
         <form method="post">
+            <label for="cliente">Cliente</label>
+            <select id="cliente" name="cliente" required>
+                <option value="" disabled selected>Selecione um Cliente</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente }}">{{ cliente }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="tecnico">Técnico</label>
+            <select id="tecnico" name="tecnico" required>
+                <option value="" disabled selected>Selecione um Técnico</option>
+                {% for tecnico in tecnicos %}
+                    <option value="{{ tecnico }}">{{ tecnico }}</option>
+                {% endfor %}
+            </select>
+
+            <label for="sistema">Sistema</label>
+            <select id="sistema" name="sistema">
+                <option value="">Nenhum</option>
+                {% for sistema in sistemas %}
+                    <option value="{{ sistema }}">{{ sistema }}</option>
+                {% endfor %}
+            </select>
+
             <label for="data_agendamento">Data do Agendamento</label>
             <input type="date" id="data_agendamento" name="data_agendamento" value="{{ pre_selected_date }}" required>
             
             <label for="horario_agendamento">Horário do Agendamento</label>
             <input type="time" id="horario_agendamento" name="horario_agendamento">
 
-            </form>
+            <label for="motivo">Motivo</label>
+            <select id="motivo" name="motivo">
+                <option value="Treinamento">Treinamento</option>
+                <option value="Visita Contratual">Visita Contratual</option>
+                <option value="Visita Cortesia">Visita Cortesia</option>
+                <option value="Atendimento Externo">Atendimento Externo</option>
+                <option value="Apresentação">Apresentação</option>
+                <option value="Outros Motivos">Outros Motivos</option>
+            </select>
+            
+            <label for="descricao">Descrição da Tarefa</label>
+            <textarea id="descricao" name="descricao" rows="4"></textarea>
+
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="Planejada">Planejada</option>
+                <option value="Realizada">Realizada</option>
+                <option value="Cancelada">Cancelada</option>
+            </select>
+
+            <div class="actions-group" style="margin-top: 20px;">
+                <button type="submit" class="button new">Salvar Agendamento</button>
+                <a href="{{ url_for('agenda') }}" class="button">Cancelar</a>
+            </div>
+        </form>
     </div>
 </body>
 </html>
