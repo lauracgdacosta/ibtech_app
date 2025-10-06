@@ -74,10 +74,12 @@ label {
     color: #555;
 }
 
+/* --- ALTERAÇÃO APLICADA AQUI --- */
 input[type="text"],
 input[type="email"],
 input[type="tel"],
 input[type="date"],
+input[type="time"], /* Seletor para o campo de hora foi adicionado */
 input[type="password"],
 input[type="number"],
 select,
@@ -91,6 +93,8 @@ textarea {
     font-size: 14px;
     transition: border-color 0.3s;
 }
+/* --- FIM DA ALTERAÇÃO --- */
+
 
 input:focus,
 select:focus,
@@ -195,9 +199,13 @@ td.actions .button, td.actions button {
     font-size: 0.9em;
 }
 
-.actions form {
+td.actions form {
     display: inline-block;
+    padding: 0;
     margin: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
 }
 
 /* --- Módulos e Grid da Home --- */
@@ -286,12 +294,4 @@ td.actions .button, td.actions button {
     margin-top: 50px;
     text-align: center;
     color: #34495e;
-}
-
-td.actions form {
-    padding: 0;
-    margin: 0;
-    border: none;
-    background: none;
-    box-shadow: none;
 }
