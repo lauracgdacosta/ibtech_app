@@ -57,6 +57,7 @@
                 <option value="Planejada" {% if agendamento['status'] == 'Planejada' %}selected{% endif %}>Planejada</option>
                 <option value="Realizada" {% if agendamento['status'] == 'Realizada' %}selected{% endif %}>Realizada</option>
                 <option value="Cancelada" {% if agendamento['status'] == 'Cancelada' %}selected{% endif %}>Cancelada</option>
+                <option value="Aguardando Confirmação do Cliente" {% if agendamento['status'] == 'Aguardando Confirmação do Cliente' %}selected{% endif %}>Aguardando Confirmação do Cliente</option>
             </select>
 
             <div class="actions-group" style="margin-top: 20px;">

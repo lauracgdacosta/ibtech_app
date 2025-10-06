@@ -1253,19 +1253,32 @@ def api_agendamentos():
     agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
     conn.close()
 
+    # Mapeamento de status para cores
     color_map = {
-        'Planejada': '#3498db',
-        'Realizada': '#2ecc71',
-        'Cancelada': '#f1c40f'
+        'Planejada': '#3498db',  # Azul
+        'Realizada': '#2ecc71',  # Verde
+        'Cancelada': '#f1c40f',   # Amarelo
+        # --- NOVA COR ADICIONADA AQUI ---
+        'Aguardando Confirmação do Cliente': '#f39c12' # Laranja
     }
 
     eventos = []
     for agendamento in agendamentos_db:
+        # Combina data e hora para o calendário
+        start_datetime = agendamento['data_agendamento']
+        if agendamento['horario_agendamento']:
+            start_datetime += f"T{agendamento['horario_agendamento']}"
+
+        # Adiciona a hora ao título do evento, se existir
+        titulo = f"{agendamento['cliente']} ({agendamento['tecnico']})"
+        if agendamento['horario_agendamento']:
+            titulo = f"{agendamento['horario_agendamento']} - {titulo}"
+
         eventos.append({
             'id': agendamento['id'],
-            'title': f"{agendamento['cliente']} ({agendamento['tecnico']})",
-            'start': agendamento['data_agendamento'],
-            'color': color_map.get(agendamento['status'], '#808080'),
+            'title': titulo,
+            'start': start_datetime,
+            'color': color_map.get(agendamento['status'], '#808080'), # Usa a cor do mapa ou um cinza padrão
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
