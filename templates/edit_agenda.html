@@ -6,12 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Editar Agendamento</h1>
@@ -42,12 +36,17 @@
             <label for="data_agendamento">Data do Agendamento</label>
             <input type="date" id="data_agendamento" name="data_agendamento" value="{{ agendamento['data_agendamento'] }}" required>
 
+            <label for="horario_agendamento">Horário do Agendamento</label>
+            <input type="time" id="horario_agendamento" name="horario_agendamento" value="{{ agendamento['horario_agendamento'] | default('', true) }}">
+
             <label for="motivo">Motivo</label>
             <select id="motivo" name="motivo">
                 <option value="Treinamento" {% if agendamento['motivo'] == 'Treinamento' %}selected{% endif %}>Treinamento</option>
                 <option value="Visita Contratual" {% if agendamento['motivo'] == 'Visita Contratual' %}selected{% endif %}>Visita Contratual</option>
                 <option value="Visita Cortesia" {% if agendamento['motivo'] == 'Visita Cortesia' %}selected{% endif %}>Visita Cortesia</option>
                 <option value="Atendimento Externo" {% if agendamento['motivo'] == 'Atendimento Externo' %}selected{% endif %}>Atendimento Externo</option>
+                <option value="Apresentação" {% if agendamento['motivo'] == 'Apresentação' %}selected{% endif %}>Apresentação</option>
+                <option value="Outros Motivos" {% if agendamento['motivo'] == 'Outros Motivos' %}selected{% endif %}>Outros Motivos</option>
             </select>
             
             <label for="descricao">Descrição da Tarefa</label>

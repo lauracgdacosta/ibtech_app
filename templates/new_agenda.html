@@ -6,12 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Adicionar Novo Agendamento</h1>
@@ -41,6 +35,9 @@
 
             <label for="data_agendamento">Data do Agendamento</label>
             <input type="date" id="data_agendamento" name="data_agendamento" required>
+            
+            <label for="horario_agendamento">Horário do Agendamento</label>
+            <input type="time" id="horario_agendamento" name="horario_agendamento">
 
             <label for="motivo">Motivo</label>
             <select id="motivo" name="motivo">
@@ -48,6 +45,8 @@
                 <option value="Visita Contratual">Visita Contratual</option>
                 <option value="Visita Cortesia">Visita Cortesia</option>
                 <option value="Atendimento Externo">Atendimento Externo</option>
+                <option value="Apresentação">Apresentação</option>
+                <option value="Outros Motivos">Outros Motivos</option>
             </select>
             
             <label for="descricao">Descrição da Tarefa</label>

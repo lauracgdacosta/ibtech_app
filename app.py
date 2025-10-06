@@ -8,7 +8,7 @@ import datetime
 app = Flask(__name__)
 app.secret_key = '18T3ch'
 
-# --- LISTA MESTRA DE MÓDulos ---
+# --- LISTA MESTRA DE MÓDULOS ---
 AVAILABLE_MODULES = {
     'cadastros': 'Cadastros (Técnicos, Clientes, etc)',
     'agenda': 'Agenda',
@@ -97,7 +97,7 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, processo TEXT, cliente TEXT, sistema TEXT, data_prioridade TEXT, prazo_entrega TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS sistemas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, motivo TEXT, descricao TEXT, status TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, horario_agendamento TEXT, motivo TEXT, descricao TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS projetos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cliente TEXT, data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
@@ -113,6 +113,23 @@ def init_db():
         )''')
     conn.commit()
     conn.close()
+
+def migrate_agenda_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(agenda)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'horario_agendamento' not in columns:
+            print("MIGRATE: Adicionando coluna 'horario_agendamento' à tabela 'agenda'.")
+            cursor.execute("ALTER TABLE agenda ADD COLUMN horario_agendamento TEXT")
+            conn.commit()
+            print("MIGRATE: Coluna adicionada com sucesso.")
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela agenda: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
 
 def migrate_db_roles():
     conn = get_db_connection()
@@ -159,6 +176,7 @@ with app.app_context():
     init_db()
     migrate_db_roles()
     migrate_permissions_table()
+    migrate_agenda_table()
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
