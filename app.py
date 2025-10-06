@@ -785,10 +785,6 @@ def delete_pendencia(id):
     conn.commit()
     conn.close()
     return redirect(url_for('pendencias'))
-
-# --- MÓDULO DE FÉRIAS ---
-# --- MÓDULO DE FÉRIAS ---
-
 @app.route('/ferias')
 @login_required
 @role_required(module='ferias', action='can_read')
@@ -800,10 +796,15 @@ def ferias():
     sort_by = request.args.get('sort_by', 'data_inicio', type=str)
     order = request.args.get('order', 'desc', type=str)
     
-    # Filtros
+    # Filtros existentes e novos
     search_funcionario = request.args.get('search_funcionario', '', type=str)
     search_contrato = request.args.get('search_contrato', '', type=str)
     search_ano = request.args.get('search_ano', '', type=str)
+    # --- NOVOS FILTROS ---
+    search_admissao = request.args.get('search_admissao', '', type=str)
+    search_data_inicio = request.args.get('search_data_inicio', '', type=str)
+    search_data_termino = request.args.get('search_data_termino', '', type=str)
+    search_obs = request.args.get('search_obs', '', type=str)
 
     allowed_sort_columns = ['funcionario', 'admissao', 'contrato', 'ano', 'data_inicio', 'data_termino', 'obs']
     if sort_by not in allowed_sort_columns:
@@ -824,7 +825,20 @@ def ferias():
     if search_ano:
         base_query += " AND ano = ?"
         params.append(search_ano)
-    
+    # --- LÓGICA PARA NOVOS FILTROS ---
+    if search_admissao:
+        base_query += " AND admissao = ?"
+        params.append(search_admissao)
+    if search_data_inicio:
+        base_query += " AND data_inicio = ?"
+        params.append(search_data_inicio)
+    if search_data_termino:
+        base_query += " AND data_termino = ?"
+        params.append(search_data_termino)
+    if search_obs:
+        base_query += " AND obs LIKE ?"
+        params.append(f"%{search_obs}%")
+
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
@@ -847,8 +861,14 @@ def ferias():
                            search_funcionario=search_funcionario,
                            search_contrato=search_contrato,
                            search_ano=search_ano,
+                           # --- NOVAS VARIÁVEIS PARA O TEMPLATE ---
+                           search_admissao=search_admissao,
+                           search_data_inicio=search_data_inicio,
+                           search_data_termino=search_data_termino,
+                           search_obs=search_obs,
                            pagination_args=pagination_args,
                            sorting_args=sorting_args)
+
 
 def build_ferias_redirect_url():
     args = {}
