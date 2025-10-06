@@ -22,6 +22,21 @@
         .fc-daygrid-day {
             cursor: pointer;
         }
+
+        /* --- INÍCIO DA CORREÇÃO DE CSS --- */
+        /* Anula os estilos globais da tabela apenas para o calendário */
+        .fc th, .fc td {
+            text-align: center; /* Centraliza os dias da semana (seg, ter, etc.) */
+            padding: 2px;       /* Reduz o padding para dar espaço aos números */
+            vertical-align: top;/* Alinha o conteúdo ao topo */
+        }
+        
+        /* Força o alinhamento do número do dia para a direita */
+        .fc .fc-daygrid-day-top {
+            justify-content: flex-end; /* Usa flexbox para alinhar à direita */
+            padding: 4px;
+        }
+        /* --- FIM DA CORREÇÃO DE CSS --- */
     </style>
 </head>
 <body>
