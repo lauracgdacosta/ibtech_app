@@ -854,18 +854,29 @@ def agenda():
 @role_required(module='agenda', action='can_edit')
 def new_agenda():
     conn = get_db_connection()
-    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
-    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
-    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     if request.method == 'POST':
         form = request.form
-        conn.execute('INSERT INTO agenda (cliente, tecnico, sistema, data_agendamento, motivo, descricao, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                     (form['cliente'], form['tecnico'], form['sistema'], form['data_agendamento'], form['motivo'], form['descricao'], form['status']))
+        conn.execute('INSERT INTO agenda (cliente, tecnico, sistema, data_agendamento, horario_agendamento, motivo, descricao, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                     (form['cliente'], form['tecnico'], form['sistema'], form['data_agendamento'], form['horario_agendamento'], form['motivo'], form['descricao'], form['status']))
         conn.commit()
         conn.close()
         return redirect(url_for('agenda'))
+    
+    # --- ALTERAÇÃO APLICADA AQUI ---
+    # Pega a data da URL, se ela existir
+    pre_selected_date = request.args.get('data_agendamento', '')
+    
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('new_agenda.html', clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
+    
+    # Passa a data pré-selecionada para o template
+    return render_template('new_agenda.html', 
+                           clientes=clientes, 
+                           tecnicos=tecnicos, 
+                           sistemas=sistemas,
+                           pre_selected_date=pre_selected_date)
 
 @app.route('/edit_agenda/<int:id>', methods=['GET', 'POST'])
 @login_required

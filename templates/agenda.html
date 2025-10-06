@@ -8,19 +8,18 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
     
     <style>
-        /* --- CORREÇÃO DEFINITIVA APLICADA AQUI --- */
-        /* Alarga o container principal APENAS nesta página */
         .container {
-            max-width: 95%; /* Aumenta a largura máxima de 90% para 95% */
+            max-width: 95%;
         }
-        /* --- FIM DA CORREÇÃO --- */
-
         .fc {
             max-width: 100%;
             margin: 20px auto;
         }
-        
         .fc-event-main {
+            cursor: pointer;
+        }
+        /* Adiciona um cursor para indicar que os dias são clicáveis */
+        .fc-daygrid-day {
             cursor: pointer;
         }
     </style>
@@ -66,6 +65,19 @@
                 day: 'Dia'
             },
             events: '/api/agendamentos',
+            
+            // --- ALTERAÇÕES APLICADAS AQUI ---
+            selectable: true, // Permite a seleção de datas
+            
+            dateClick: function(info) {
+                // Pega a data clicada no formato YYYY-MM-DD
+                var clickedDate = info.dateStr;
+                // Constrói a URL para a página de novo agendamento com a data
+                var newEventUrl = `/new_agenda?data_agendamento=${clickedDate}`;
+                // Redireciona o utilizador
+                window.location.href = newEventUrl;
+            },
+            // --- FIM DAS ALTERAÇÕES ---
 
             eventClick: function(info) {
                 info.jsEvent.preventDefault(); 
