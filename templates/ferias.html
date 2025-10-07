@@ -13,7 +13,7 @@
         th a { color: inherit; text-decoration: none; display: block; }
         th a:hover { text-decoration: underline; }
         .filter-row th { padding: 8px; background-color: #f8f9fa; }
-        .filter-row input { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         .filter-actions { display: flex; gap: 5px; align-items: center; }
         .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
     </style>
@@ -46,16 +46,25 @@
                             <th><a href="{{ url_for('ferias', sort_by='data_inicio', order=sort_order, **sorting_args) }}">Data Início</a></th>
                             <th><a href="{{ url_for('ferias', sort_by='data_termino', order=sort_order, **sorting_args) }}">Data Término</a></th>
                             <th><a href="{{ url_for('ferias', sort_by='obs', order=sort_order, **sorting_args) }}">Observações</a></th>
+                            <th><a href="{{ url_for('ferias', sort_by='status', order=sort_order, **sorting_args) }}">Status</a></th>
                             <th>Ações</th>
                         </tr>
                         <tr class="filter-row">
                             <th><input type="text" name="search_funcionario" value="{{ search_funcionario }}" placeholder="Filtrar..."></th>
-                            <th><input type="date" name="search_admissao" value="{{ search_admissao }}"></th>
+                            <th></th>
                             <th><input type="text" name="search_contrato" value="{{ search_contrato }}" placeholder="Filtrar..."></th>
                             <th><input type="number" name="search_ano" value="{{ search_ano }}" placeholder="Filtrar..."></th>
-                            <th><input type="date" name="search_data_inicio" value="{{ search_data_inicio }}"></th>
-                            <th><input type="date" name="search_data_termino" value="{{ search_data_termino }}"></th>
+                            <th></th>
+                            <th></th>
                             <th><input type="text" name="search_obs" value="{{ search_obs }}" placeholder="Filtrar..."></th>
+                            <th>
+                                <select name="search_status">
+                                    <option value="">Todos</option>
+                                    <option value="Planejada" {% if search_status == 'Planejada' %}selected{% endif %}>Planejada</option>
+                                    <option value="Em Andamento" {% if search_status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                                    <option value="Concluído" {% if search_status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                </select>
+                            </th>
                             <th class="filter-actions">
                                 <button type="submit" class="button">Filtrar</button>
                                 <a href="{{ url_for('ferias') }}" class="button" style="background-color: #6c757d;">Limpar</a>
@@ -72,6 +81,7 @@
                             <td>{{ ferias_item['data_inicio'] | dateformat }}</td>
                             <td>{{ ferias_item['data_termino'] | dateformat }}</td>
                             <td>{{ ferias_item['obs'] }}</td>
+                            <td>{{ ferias_item['status'] }}</td>
                             <td class="actions">
                                 {% if check_permission('ferias', 'can_edit') %}
                                     <a href="{{ url_for('edit_ferias', id=ferias_item['id'], **request.args) }}" class="button edit">Editar</a>
@@ -88,7 +98,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="8" style="text-align: center;">Nenhum plano de férias encontrado.</td>
+                            <td colspan="9" style="text-align: center;">Nenhum plano de férias encontrado.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -107,6 +117,7 @@
             {% if page < total_pages %}<a href="{{ url_for('ferias', page=page+1, **pagination_args) }}">Próximo &raquo;</a>{% endif %}
         </div>
         {% endif %}
+
     </div>
 </body>
 </html>

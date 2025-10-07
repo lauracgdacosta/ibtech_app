@@ -95,7 +95,7 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, municipio TEXT NOT NULL, orgao TEXT, contrato TEXT, sistemas TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS equipes (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT, lider TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, processo TEXT, cliente TEXT, sistema TEXT, data_prioridade TEXT, prazo_entrega TEXT, status TEXT)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT,status TEXT NOT NULL DEFAULT 'Planejada')''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS sistemas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, horario_agendamento TEXT, motivo TEXT, descricao TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
@@ -114,20 +114,20 @@ def init_db():
     conn.commit()
     conn.close()
 
-def migrate_agenda_table():
+def migrate_ferias_table():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("PRAGMA table_info(agenda)")
+        cursor.execute("PRAGMA table_info(ferias)")
         columns = [row['name'] for row in cursor.fetchall()]
-        if 'horario_agendamento' not in columns:
-            print("MIGRATE: Adicionando coluna 'horario_agendamento' à tabela 'agenda'.")
-            cursor.execute("ALTER TABLE agenda ADD COLUMN horario_agendamento TEXT")
+        if 'status' not in columns:
+            print("MIGRATE: Adicionando coluna 'status' à tabela 'ferias'.")
+            # Adiciona a coluna com um valor padrão para os registos existentes
+            cursor.execute("ALTER TABLE ferias ADD COLUMN status TEXT NOT NULL DEFAULT 'Planejada'")
             conn.commit()
-            print("MIGRATE: Coluna adicionada com sucesso.")
+            print("MIGRATE: Coluna 'status' adicionada com sucesso.")
     except Exception as e:
-        print(f"ERRO ao migrar a tabela agenda: {e}")
-        conn.rollback()
+        print(f"ERRO ao migrar a tabela ferias: {e}")
     finally:
         conn.close()
 
@@ -177,6 +177,7 @@ with app.app_context():
     migrate_db_roles()
     migrate_permissions_table()
     migrate_agenda_table()
+    migrate_ferias_table() # <-- ADICIONE ESTA LINHA
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
@@ -785,6 +786,8 @@ def delete_pendencia(id):
     conn.commit()
     conn.close()
     return redirect(url_for('pendencias'))
+
+
 @app.route('/ferias')
 @login_required
 @role_required(module='ferias', action='can_read')
@@ -796,57 +799,60 @@ def ferias():
     sort_by = request.args.get('sort_by', 'data_inicio', type=str)
     order = request.args.get('order', 'desc', type=str)
     
-    # Filtros existentes e novos
     search_funcionario = request.args.get('search_funcionario', '', type=str)
     search_contrato = request.args.get('search_contrato', '', type=str)
     search_ano = request.args.get('search_ano', '', type=str)
-    # --- NOVOS FILTROS ---
-    search_admissao = request.args.get('search_admissao', '', type=str)
-    search_data_inicio = request.args.get('search_data_inicio', '', type=str)
-    search_data_termino = request.args.get('search_data_termino', '', type=str)
     search_obs = request.args.get('search_obs', '', type=str)
+    # Novo filtro de status
+    search_status = request.args.get('search_status', '', type=str)
 
-    allowed_sort_columns = ['funcionario', 'admissao', 'contrato', 'ano', 'data_inicio', 'data_termino', 'obs']
+    allowed_sort_columns = ['funcionario', 'admissao', 'contrato', 'ano', 'data_inicio', 'data_termino', 'obs', 'status']
     if sort_by not in allowed_sort_columns:
         sort_by = 'data_inicio'
     if order.lower() not in ['asc', 'desc']:
         order = 'desc'
 
     offset = (page - 1) * per_page
-    base_query = "FROM ferias WHERE 1=1"
-    params = []
-
-    if search_funcionario:
-        base_query += " AND funcionario LIKE ?"
-        params.append(f"%{search_funcionario}%")
-    if search_contrato:
-        base_query += " AND contrato LIKE ?"
-        params.append(f"%{search_contrato}%")
-    if search_ano:
-        base_query += " AND ano = ?"
-        params.append(search_ano)
-    # --- LÓGICA PARA NOVOS FILTROS ---
-    if search_admissao:
-        base_query += " AND admissao = ?"
-        params.append(search_admissao)
-    if search_data_inicio:
-        base_query += " AND data_inicio = ?"
-        params.append(search_data_inicio)
-    if search_data_termino:
-        base_query += " AND data_termino = ?"
-        params.append(search_data_termino)
-    if search_obs:
-        base_query += " AND obs LIKE ?"
-        params.append(f"%{search_obs}%")
-
-    total_query = "SELECT COUNT(id) " + base_query
-    total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
-    total_pages = (total_results + per_page - 1) // per_page
-    data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
-    params.extend([per_page, offset])
-    ferias_data = conn.execute(data_query, tuple(params)).fetchall()
     
+    # A lógica de filtro agora acontece em Python após buscar todos os dados
+    ferias_db = conn.execute('SELECT * FROM ferias').fetchall()
     conn.close()
+
+    # --- LÓGICA DE STATUS AUTOMÁTICO E FILTRAGEM ---
+    ferias_processadas = []
+    hoje = datetime.date.today()
+
+    for ferias_row in ferias_db:
+        item = dict(ferias_row)
+        
+        data_inicio = datetime.datetime.strptime(item['data_inicio'], '%Y-%m-%d').date() if item['data_inicio'] else None
+        data_termino = datetime.datetime.strptime(item['data_termino'], '%Y-%m-%d').date() if item['data_termino'] else None
+
+        # Calcula o status dinâmico
+        if data_termino and hoje > data_termino:
+            item['status'] = 'Concluído'
+        elif data_inicio and data_termino and data_inicio <= hoje <= data_termino:
+            item['status'] = 'Em Andamento'
+        else:
+            item['status'] = 'Planejada'
+        
+        # Aplica os filtros
+        if (search_funcionario.lower() not in item['funcionario'].lower()): continue
+        if (search_contrato.lower() not in item['contrato'].lower()): continue
+        if (search_ano and str(item['ano']) != search_ano): continue
+        if (search_obs.lower() not in (item['obs'] or '').lower()): continue
+        if (search_status and item['status'] != search_status): continue
+        
+        ferias_processadas.append(item)
+    # --- FIM DA LÓGICA ---
+
+    # Ordenação
+    ferias_processadas.sort(key=lambda x: x[sort_by] or '', reverse=(order == 'desc'))
+
+    # Paginação
+    total_results = len(ferias_processadas)
+    total_pages = (total_results + per_page - 1) // per_page
+    ferias_paginadas = ferias_processadas[offset : offset + per_page]
 
     pagination_args = request.args.to_dict()
     if 'page' in pagination_args: del pagination_args['page']
@@ -855,20 +861,16 @@ def ferias():
     if 'order' in sorting_args: del sorting_args['order']
 
     return render_template('ferias.html', 
-                           ferias=ferias_data,
+                           ferias=ferias_paginadas,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
                            search_funcionario=search_funcionario,
                            search_contrato=search_contrato,
                            search_ano=search_ano,
-                           # --- NOVAS VARIÁVEIS PARA O TEMPLATE ---
-                           search_admissao=search_admissao,
-                           search_data_inicio=search_data_inicio,
-                           search_data_termino=search_data_termino,
                            search_obs=search_obs,
+                           search_status=search_status,
                            pagination_args=pagination_args,
                            sorting_args=sorting_args)
-
 
 def build_ferias_redirect_url():
     args = {}
