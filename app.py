@@ -301,42 +301,119 @@ def cadastros():
 @role_required(module='cadastros', action='can_read')
 def tecnicos():
     conn = get_db_connection()
-    tecnicos_data = conn.execute('SELECT * FROM tecnicos').fetchall()
+    
+    per_page = 20
+    page = request.args.get('page', 1, type=int)
+    sort_by = request.args.get('sort_by', 'nome', type=str)
+    order = request.args.get('order', 'asc', type=str)
+    
+    # Filtros
+    search_nome = request.args.get('search_nome', '', type=str)
+    search_email = request.args.get('search_email', '', type=str)
+    search_funcao = request.args.get('search_funcao', '', type=str)
+    search_equipe = request.args.get('search_equipe', '', type=str)
+    search_contrato = request.args.get('search_contrato', '', type=str)
+
+    allowed_sort_columns = ['nome', 'email', 'telefone', 'funcao', 'equipe', 'contrato']
+    if sort_by not in allowed_sort_columns:
+        sort_by = 'nome'
+    if order.lower() not in ['asc', 'desc']:
+        order = 'asc'
+
+    offset = (page - 1) * per_page
+    base_query = "FROM tecnicos WHERE 1=1"
+    params = []
+
+    if search_nome:
+        base_query += " AND nome LIKE ?"
+        params.append(f"%{search_nome}%")
+    if search_email:
+        base_query += " AND email LIKE ?"
+        params.append(f"%{search_email}%")
+    if search_funcao:
+        base_query += " AND funcao LIKE ?"
+        params.append(f"%{search_funcao}%")
+    if search_equipe:
+        base_query += " AND equipe LIKE ?"
+        params.append(f"%{search_equipe}%")
+    if search_contrato:
+        base_query += " AND contrato LIKE ?"
+        params.append(f"%{search_contrato}%")
+    
+    total_query = "SELECT COUNT(id) " + base_query
+    total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
+    total_pages = (total_results + per_page - 1) // per_page
+    data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
+    params.extend([per_page, offset])
+    tecnicos_data = conn.execute(data_query, tuple(params)).fetchall()
+    
     conn.close()
-    return render_template('tecnicos.html', tecnicos=tecnicos_data)
+
+    pagination_args = request.args.to_dict()
+    if 'page' in pagination_args: del pagination_args['page']
+    sorting_args = request.args.to_dict()
+    if 'sort_by' in sorting_args: del sorting_args['sort_by']
+    if 'order' in sorting_args: del sorting_args['order']
+
+    return render_template('tecnicos.html', 
+                           tecnicos=tecnicos_data,
+                           page=page, total_pages=total_pages,
+                           sort_by=sort_by, order=order,
+                           search_nome=search_nome,
+                           search_email=search_email,
+                           search_funcao=search_funcao,
+                           search_equipe=search_equipe,
+                           search_contrato=search_contrato,
+                           pagination_args=pagination_args,
+                           sorting_args=sorting_args)
+
+def build_tecnicos_redirect_url():
+    args = {}
+    valid_state_keys = ['search_nome', 'search_email', 'search_funcao', 'search_equipe', 'search_contrato', 'page', 'sort_by', 'order']
+    for key in valid_state_keys:
+        value = request.form.get(key)
+        if value:
+            args[key] = value
+    return url_for('tecnicos', **args)
 
 @app.route('/new_tecnico', methods=['GET', 'POST'])
 @login_required
 @role_required(module='cadastros', action='can_edit')
 def new_tecnico():
+    args = request.args.to_dict()
     conn = get_db_connection()
-    equipes = conn.execute('SELECT nome FROM equipes').fetchall()
     if request.method == 'POST':
         form = request.form
         conn.execute('INSERT INTO tecnicos (nome, email, telefone, funcao, equipe, contrato) VALUES (?, ?, ?, ?, ?, ?)',
                      (form['nome'], form['email'], form['telefone'], form['funcao'], form['equipe'], form['contrato']))
         conn.commit()
         conn.close()
-        return redirect(url_for('tecnicos'))
+        flash('Novo técnico criado com sucesso!', 'success')
+        return redirect(build_tecnicos_redirect_url())
+    
+    equipes = conn.execute('SELECT nome FROM equipes ORDER BY nome').fetchall()
     conn.close()
-    return render_template('new_tecnico.html', equipes=equipes)
+    return render_template('new_tecnico.html', equipes=equipes, args=args)
 
 @app.route('/edit_tecnico/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(module='cadastros', action='can_edit')
 def edit_tecnico(id):
+    args = request.args.to_dict()
     conn = get_db_connection()
     tecnico = conn.execute('SELECT * FROM tecnicos WHERE id = ?', (id,)).fetchone()
-    equipes = conn.execute('SELECT nome FROM equipes').fetchall()
     if request.method == 'POST':
         form = request.form
         conn.execute('UPDATE tecnicos SET nome=?, email=?, telefone=?, funcao=?, equipe=?, contrato=? WHERE id=?',
                      (form['nome'], form['email'], form['telefone'], form['funcao'], form['equipe'], form['contrato'], id))
         conn.commit()
         conn.close()
-        return redirect(url_for('tecnicos'))
+        flash('Técnico atualizado com sucesso!', 'success')
+        return redirect(build_tecnicos_redirect_url())
+        
+    equipes = conn.execute('SELECT nome FROM equipes ORDER BY nome').fetchall()
     conn.close()
-    return render_template('edit_tecnico.html', tecnico=tecnico, equipes=equipes)
+    return render_template('edit_tecnico.html', tecnico=tecnico, equipes=equipes, args=args)
 
 @app.route('/delete_tecnico/<int:id>', methods=['POST'])
 @login_required
@@ -346,7 +423,8 @@ def delete_tecnico(id):
     conn.execute('DELETE FROM tecnicos WHERE id = ?', (id,))
     conn.commit()
     conn.close()
-    return redirect(url_for('tecnicos'))
+    flash('Técnico excluído com sucesso.', 'success')
+    return redirect(build_tecnicos_redirect_url())
 
 @app.route('/clientes')
 @login_required

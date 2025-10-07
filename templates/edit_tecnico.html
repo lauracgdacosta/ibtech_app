@@ -48,6 +48,9 @@
             
             <button type="submit" class="button edit">Salvar Alterações</button>
         </form>
+        {% for key, value in args.items() %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endfor %}
     </div>
 </body>
 </html>
