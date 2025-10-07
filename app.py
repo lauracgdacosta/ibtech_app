@@ -95,7 +95,7 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, municipio TEXT NOT NULL, orgao TEXT, contrato TEXT, sistemas TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS equipes (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT, lider TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, processo TEXT, cliente TEXT, sistema TEXT, data_prioridade TEXT, prazo_entrega TEXT, status TEXT)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT,status TEXT NOT NULL DEFAULT 'Planejada')''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT, status TEXT NOT NULL DEFAULT 'Planejada')''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS sistemas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, horario_agendamento TEXT, motivo TEXT, descricao TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
@@ -114,6 +114,22 @@ def init_db():
     conn.commit()
     conn.close()
 
+def migrate_agenda_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(agenda)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'horario_agendamento' not in columns:
+            print("MIGRATE: Adicionando coluna 'horario_agendamento' à tabela 'agenda'.")
+            cursor.execute("ALTER TABLE agenda ADD COLUMN horario_agendamento TEXT")
+            conn.commit()
+            print("MIGRATE: Coluna adicionada com sucesso.")
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela agenda: {e}")
+    finally:
+        conn.close()
+
 def migrate_ferias_table():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -122,7 +138,6 @@ def migrate_ferias_table():
         columns = [row['name'] for row in cursor.fetchall()]
         if 'status' not in columns:
             print("MIGRATE: Adicionando coluna 'status' à tabela 'ferias'.")
-            # Adiciona a coluna com um valor padrão para os registos existentes
             cursor.execute("ALTER TABLE ferias ADD COLUMN status TEXT NOT NULL DEFAULT 'Planejada'")
             conn.commit()
             print("MIGRATE: Coluna 'status' adicionada com sucesso.")
@@ -137,18 +152,10 @@ def migrate_db_roles():
     try:
         cursor.execute("SELECT role FROM usuarios LIMIT 1")
     except sqlite3.OperationalError:
-        print("MIGRATE: Adicionando coluna 'role' à tabela 'usuarios'.")
         cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT")
-    
     cursor.execute("UPDATE usuarios SET role = CASE WHEN nivel_acesso = 'Admin' THEN 'admin' WHEN nivel_acesso = 'Usuario' THEN 'tecnico' ELSE role END WHERE role IS NULL")
-    
-    cursor.execute("SELECT COUNT(id) FROM usuarios")
-    if cursor.fetchone()[0] == 0:
-        print("MIGRATE: Nenhum usuário encontrado. Criando usuário admin padrão.")
-        cursor.execute(
-            "INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)", 
-            ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin', 'Admin')
-        )
+    if cursor.execute("SELECT COUNT(id) FROM usuarios").fetchone()[0] == 0:
+        cursor.execute("INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)", ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin', 'Admin'))
     conn.commit()
     conn.close()
 
@@ -158,14 +165,12 @@ def migrate_permissions_table():
     try:
         cursor.execute("SELECT can_read FROM role_permissions LIMIT 1")
     except sqlite3.OperationalError:
-        print("MIGRATE: Atualizando 'role_permissions' para permissões granulares.")
         try:
             cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_read BOOLEAN DEFAULT 0")
             cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_edit BOOLEAN DEFAULT 0")
             cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_delete BOOLEAN DEFAULT 0")
             cursor.execute("UPDATE role_permissions SET can_read = 1, can_edit = 1, can_delete = 1")
             conn.commit()
-            print("MIGRATE: Tabela 'role_permissions' atualizada com sucesso.")
         except Exception as e:
             print(f"ERRO MIGRATE: {e}")
             conn.rollback()
@@ -177,7 +182,7 @@ with app.app_context():
     migrate_db_roles()
     migrate_permissions_table()
     migrate_agenda_table()
-    migrate_ferias_table() # <-- ADICIONE ESTA LINHA
+    migrate_ferias_table()
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
@@ -495,32 +500,42 @@ def delete_sistema(id):
     conn.close()
     return redirect(url_for('sistemas'))
 
-
-
 # --- MÓDULO DE PROJETOS ---
 @app.route('/projetos')
 @login_required
 @role_required(module='projetos', action='can_read')
 def projetos():
     conn = get_db_connection()
-    lista_projetos = conn.execute('SELECT * FROM projetos ORDER BY id DESC').fetchall()
+    projetos_db = conn.execute('SELECT * FROM projetos ORDER BY id DESC').fetchall()
     conn.close()
-    return render_template('projetos.html', projetos=lista_projetos)
+
+    projetos_processados = []
+    hoje = datetime.date.today()
+
+    for projeto_row in projetos_db:
+        projeto = dict(projeto_row)
+        data_inicio = datetime.datetime.strptime(projeto['data_inicio_previsto'], '%Y-%m-%d').date() if projeto['data_inicio_previsto'] else None
+        data_termino = datetime.datetime.strptime(projeto['data_termino_previsto'], '%Y-%m-%d').date() if projeto['data_termino_previsto'] else None
+
+        if data_termino and hoje >= data_termino:
+            projeto['status'] = 'Concluído'
+        elif data_inicio and hoje >= data_inicio:
+            projeto['status'] = 'Em Andamento'
+        
+        projetos_processados.append(projeto)
+
+    return render_template('projetos.html', projetos=projetos_processados)
 
 @app.route('/new_projeto', methods=['GET', 'POST'])
 @login_required
 @role_required(module='projetos', action='can_edit')
 def new_projeto():
     conn = get_db_connection()
-    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
-    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     if request.method == 'POST':
-        nome, cliente = request.form['nome'], request.form['cliente']
-        data_inicio, data_termino = request.form['data_inicio_previsto'], request.form['data_termino_previsto']
-        status = request.form['status']
+        form = request.form
         cursor = conn.cursor()
         cursor.execute('INSERT INTO projetos (nome, cliente, data_inicio_previsto, data_termino_previsto, status) VALUES (?, ?, ?, ?, ?)',
-                     (nome, cliente, data_inicio, data_termino, status))
+                     (form['nome'], form['cliente'], form['data_inicio_previsto'], form['data_termino_previsto'], form['status']))
         novo_projeto_id = cursor.lastrowid
         for tarefa in TAREFAS_PADRAO:
             cursor.execute('INSERT INTO tarefas (projeto_id, atividade_id, descricao, tipo, status) VALUES (?, ?, ?, ?, ?)',
@@ -529,6 +544,9 @@ def new_projeto():
         conn.close()
         flash('Projeto criado com sucesso e checklist padrão adicionado!', 'success')
         return redirect(url_for('projetos'))
+    
+    clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
+    clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     conn.close()
     return render_template('new_projeto.html', clientes=clientes)
 
@@ -539,15 +557,14 @@ def edit_projeto(projeto_id):
     conn = get_db_connection()
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     if request.method == 'POST':
-        nome, cliente = request.form['nome'], request.form['cliente']
-        data_inicio, data_termino = request.form['data_inicio_previsto'], request.form['data_termino_previsto']
-        status = request.form['status']
+        form = request.form
         conn.execute('UPDATE projetos SET nome = ?, cliente = ?, data_inicio_previsto = ?, data_termino_previsto = ?, status = ? WHERE id = ?',
-                     (nome, cliente, data_inicio, data_termino, status, projeto_id))
+                     (form['nome'], form['cliente'], form['data_inicio_previsto'], form['data_termino_previsto'], form['status'], projeto_id))
         conn.commit()
         conn.close()
         flash('Projeto atualizado com sucesso!', 'success')
         return redirect(url_for('projetos'))
+        
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     conn.close()
@@ -580,20 +597,13 @@ def checklist_projeto(projeto_id):
             try:
                 inicio = datetime.datetime.strptime(tarefa['data_inicio'], '%Y-%m-%d')
                 termino = datetime.datetime.strptime(tarefa['data_termino'], '%Y-%m-%d')
-                
-                # --- ALTERAÇÃO APLICADA AQUI ---
-                # Calcula a diferença de dias e adiciona 1 para tornar a contagem inclusiva.
                 delta = (termino - inicio).days
-                
                 if delta < 0:
                     duracao = "Inválido"
                 else:
                     dias_totais = delta + 1
-                    # Adiciona 's' a 'dia' apenas se for maior que 1
                     sufixo = 's' if dias_totais > 1 else ''
                     duracao = f"{dias_totais} dia{sufixo}"
-                # --- FIM DA ALTERAÇÃO ---
-
             except (ValueError, TypeError):
                 duracao = "Inválido"
         tarefa['duracao_calculada'] = duracao
@@ -628,27 +638,6 @@ def edit_tarefa(tarefa_id):
     locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
     conn.close()
     return render_template('edit_tarefa.html', tarefa=tarefa, tecnicos=tecnicos, locais=locais)
-@app.route('/titulo/edit/<int:tarefa_id>', methods=['GET', 'POST'])
-@login_required
-@role_required(module='projetos', action='can_edit')
-def edit_titulo(tarefa_id):
-    conn = get_db_connection()
-    tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
-
-    if request.method == 'POST':
-        form = request.form
-        conn.execute('UPDATE tarefas SET atividade_id = ?, descricao = ? WHERE id = ?',
-                     (form['atividade_id'], form['descricao'], tarefa_id))
-        conn.commit()
-        conn.close()
-        flash('Título atualizado com sucesso!', 'success')
-        return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
-
-    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (tarefa['projeto_id'],)).fetchone()
-    conn.close()
-    
-    return render_template('edit_titulo.html', projeto=projeto, tarefa=tarefa)
-
 
 @app.route('/tarefa/delete/<int:tarefa_id>', methods=['POST'])
 @login_required
@@ -663,15 +652,26 @@ def delete_tarefa(tarefa_id):
     flash('Tarefa excluída.', 'success')
     return redirect(url_for('checklist_projeto', projeto_id=projeto_id)) if projeto_id else redirect(url_for('projetos'))
 
+@app.route('/tarefa/toggle_status/<int:tarefa_id>', methods=['POST'])
+@login_required
+@role_required(module='projetos', action='can_edit')
+def toggle_tarefa_status(tarefa_id):
+    conn = get_db_connection()
+    tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
+    if tarefa:
+        novo_status = 'Em Andamento' if tarefa['status'] == 'Concluída' else 'Concluída'
+        conn.execute('UPDATE tarefas SET status = ? WHERE id = ?', (novo_status, tarefa_id))
+        conn.commit()
+    conn.close()
+    return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
+
 @app.route('/projeto/<int:projeto_id>/new_tarefa', methods=['GET', 'POST'])
 @login_required
 @role_required(module='projetos', action='can_edit')
 def new_tarefa(projeto_id):
     conn = get_db_connection()
-    
     if request.method == 'POST':
         form = request.form
-        # Define o tipo como 'tarefa' e o status inicial como 'Planejada'
         conn.execute(
             'INSERT INTO tarefas (projeto_id, tipo, status, atividade_id, descricao, responsavel_pm, responsavel_cm) VALUES (?, ?, ?, ?, ?, ?, ?)',
             (projeto_id, 'tarefa', 'Planejada', form['atividade_id'], form['descricao'], form['responsavel_pm'], form['responsavel_cm'])
@@ -680,11 +680,9 @@ def new_tarefa(projeto_id):
         conn.close()
         flash('Nova tarefa adicionada com sucesso!', 'success')
         return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
-
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    
     return render_template('new_tarefa.html', projeto=projeto, tecnicos=tecnicos)
 
 @app.route('/projeto/<int:projeto_id>/new_titulo', methods=['GET', 'POST'])
@@ -692,10 +690,8 @@ def new_tarefa(projeto_id):
 @role_required(module='projetos', action='can_edit')
 def new_titulo(projeto_id):
     conn = get_db_connection()
-
     if request.method == 'POST':
         form = request.form
-        # Insere uma nova tarefa do tipo 'titulo'
         conn.execute(
             'INSERT INTO tarefas (projeto_id, tipo, status, atividade_id, descricao) VALUES (?, ?, ?, ?, ?)',
             (projeto_id, 'titulo', 'N/A', form['atividade_id'], form['descricao'])
@@ -704,33 +700,27 @@ def new_titulo(projeto_id):
         conn.close()
         flash('Novo título adicionado com sucesso!', 'success')
         return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
-
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     conn.close()
-    
     return render_template('new_titulo.html', projeto=projeto)
 
-@app.route('/tarefa/toggle_status/<int:tarefa_id>', methods=['POST'])
+@app.route('/titulo/edit/<int:tarefa_id>', methods=['GET', 'POST'])
 @login_required
 @role_required(module='projetos', action='can_edit')
-def toggle_tarefa_status(tarefa_id):
+def edit_titulo(tarefa_id):
     conn = get_db_connection()
     tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
-    
-    if tarefa:
-        # Lógica simples para alternar o status
-        if tarefa['status'] == 'Concluída':
-            novo_status = 'Em Andamento'
-        else:
-            novo_status = 'Concluída'
-            
-        conn.execute('UPDATE tarefas SET status = ? WHERE id = ?', (novo_status, tarefa_id))
+    if request.method == 'POST':
+        form = request.form
+        conn.execute('UPDATE tarefas SET atividade_id = ?, descricao = ? WHERE id = ?',
+                     (form['atividade_id'], form['descricao'], tarefa_id))
         conn.commit()
-    
+        conn.close()
+        flash('Título atualizado com sucesso!', 'success')
+        return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
+    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (tarefa['projeto_id'],)).fetchone()
     conn.close()
-    
-    # Redireciona de volta para a página do checklist
-    return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
+    return render_template('edit_titulo.html', projeto=projeto, tarefa=tarefa)
 
 # --- MÓDULO DE PENDÊNCIAS ---
 @app.route('/pendencias')
@@ -787,99 +777,61 @@ def delete_pendencia(id):
     conn.close()
     return redirect(url_for('pendencias'))
 
-
+# --- MÓDULO DE FÉRIAS ---
 @app.route('/ferias')
 @login_required
 @role_required(module='ferias', action='can_read')
 def ferias():
     conn = get_db_connection()
-    
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'data_inicio', type=str)
     order = request.args.get('order', 'desc', type=str)
-    
     search_funcionario = request.args.get('search_funcionario', '', type=str)
     search_contrato = request.args.get('search_contrato', '', type=str)
     search_ano = request.args.get('search_ano', '', type=str)
     search_obs = request.args.get('search_obs', '', type=str)
-    # Novo filtro de status
     search_status = request.args.get('search_status', '', type=str)
 
     allowed_sort_columns = ['funcionario', 'admissao', 'contrato', 'ano', 'data_inicio', 'data_termino', 'obs', 'status']
-    if sort_by not in allowed_sort_columns:
-        sort_by = 'data_inicio'
-    if order.lower() not in ['asc', 'desc']:
-        order = 'desc'
+    if sort_by not in allowed_sort_columns: sort_by = 'data_inicio'
+    if order.lower() not in ['asc', 'desc']: order = 'desc'
 
     offset = (page - 1) * per_page
-    
-    # A lógica de filtro agora acontece em Python após buscar todos os dados
     ferias_db = conn.execute('SELECT * FROM ferias').fetchall()
     conn.close()
 
-    # --- LÓGICA DE STATUS AUTOMÁTICO E FILTRAGEM ---
     ferias_processadas = []
     hoje = datetime.date.today()
-
     for ferias_row in ferias_db:
         item = dict(ferias_row)
-        
         data_inicio = datetime.datetime.strptime(item['data_inicio'], '%Y-%m-%d').date() if item['data_inicio'] else None
         data_termino = datetime.datetime.strptime(item['data_termino'], '%Y-%m-%d').date() if item['data_termino'] else None
-
-        # Calcula o status dinâmico
         if data_termino and hoje > data_termino:
             item['status'] = 'Concluído'
         elif data_inicio and data_termino and data_inicio <= hoje <= data_termino:
             item['status'] = 'Em Andamento'
         else:
             item['status'] = 'Planejada'
-        
-        # Aplica os filtros
         if (search_funcionario.lower() not in item['funcionario'].lower()): continue
-        if (search_contrato.lower() not in item['contrato'].lower()): continue
+        if (search_contrato.lower() not in (item['contrato'] or '').lower()): continue
         if (search_ano and str(item['ano']) != search_ano): continue
         if (search_obs.lower() not in (item['obs'] or '').lower()): continue
         if (search_status and item['status'] != search_status): continue
-        
         ferias_processadas.append(item)
-    # --- FIM DA LÓGICA ---
-
-    # Ordenação
-    ferias_processadas.sort(key=lambda x: x[sort_by] or '', reverse=(order == 'desc'))
-
-    # Paginação
+    ferias_processadas.sort(key=lambda x: x.get(sort_by) or '', reverse=(order == 'desc'))
     total_results = len(ferias_processadas)
     total_pages = (total_results + per_page - 1) // per_page
     ferias_paginadas = ferias_processadas[offset : offset + per_page]
-
     pagination_args = request.args.to_dict()
     if 'page' in pagination_args: del pagination_args['page']
     sorting_args = request.args.to_dict()
     if 'sort_by' in sorting_args: del sorting_args['sort_by']
     if 'order' in sorting_args: del sorting_args['order']
-
-    return render_template('ferias.html', 
-                           ferias=ferias_paginadas,
-                           page=page, total_pages=total_pages,
-                           sort_by=sort_by, order=order,
-                           search_funcionario=search_funcionario,
-                           search_contrato=search_contrato,
-                           search_ano=search_ano,
-                           search_obs=search_obs,
-                           search_status=search_status,
-                           pagination_args=pagination_args,
-                           sorting_args=sorting_args)
-
-def build_ferias_redirect_url():
-    args = {}
-    valid_state_keys = ['search_funcionario', 'search_contrato', 'search_ano', 'page', 'sort_by', 'order']
-    for key in valid_state_keys:
-        value = request.form.get(key)
-        if value:
-            args[key] = value
-    return url_for('ferias', **args)
+    return render_template('ferias.html', ferias=ferias_paginadas, page=page, total_pages=total_pages,
+                           sort_by=sort_by, order=order, search_funcionario=search_funcionario,
+                           search_contrato=search_contrato, search_ano=search_ano, search_obs=search_obs,
+                           search_status=search_status, pagination_args=pagination_args, sorting_args=sorting_args)
 
 @app.route('/new_ferias', methods=['GET', 'POST'])
 @login_required
@@ -894,8 +846,7 @@ def new_ferias():
         conn.commit()
         conn.close()
         flash('Novo plano de férias criado com sucesso!', 'success')
-        return redirect(build_ferias_redirect_url())
-    
+        return redirect(url_for('ferias'))
     tecnicos = conn.execute('SELECT nome, contrato FROM tecnicos ORDER BY nome').fetchall()
     conn.close()
     return render_template('new_ferias.html', tecnicos=tecnicos, args=args)
@@ -914,8 +865,7 @@ def edit_ferias(id):
         conn.commit()
         conn.close()
         flash('Plano de férias atualizado com sucesso!', 'success')
-        return redirect(build_ferias_redirect_url())
-        
+        return redirect(url_for('ferias'))
     tecnicos = conn.execute('SELECT nome, contrato FROM tecnicos ORDER BY nome').fetchall()
     conn.close()
     return render_template('edit_ferias.html', ferias_item=ferias_item, tecnicos=tecnicos, args=args)
@@ -929,17 +879,14 @@ def delete_ferias(id):
     conn.commit()
     conn.close()
     flash('Plano de férias excluído com sucesso!', 'success')
-    return redirect(build_ferias_redirect_url())
+    return redirect(url_for('ferias'))
 
 # --- MÓDULO DE AGENDA ---
 @app.route('/agenda')
 @login_required
 @role_required(module='agenda', action='can_read')
 def agenda():
-    conn = get_db_connection()
-    agenda_data = conn.execute('SELECT * FROM agenda ORDER BY data_agendamento DESC').fetchall()
-    conn.close()
-    return render_template('agenda.html', agenda_data=agenda_data)
+    return render_template('agenda.html')
 
 @app.route('/new_agenda', methods=['GET', 'POST'])
 @login_required
@@ -953,22 +900,12 @@ def new_agenda():
         conn.commit()
         conn.close()
         return redirect(url_for('agenda'))
-    
-    # --- ALTERAÇÃO APLICADA AQUI ---
-    # Pega a data da URL, se ela existir
     pre_selected_date = request.args.get('data_agendamento', '')
-    
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     conn.close()
-    
-    # Passa a data pré-selecionada para o template
-    return render_template('new_agenda.html', 
-                           clientes=clientes, 
-                           tecnicos=tecnicos, 
-                           sistemas=sistemas,
-                           pre_selected_date=pre_selected_date)
+    return render_template('new_agenda.html', clientes=clientes, tecnicos=tecnicos, sistemas=sistemas, pre_selected_date=pre_selected_date)
 
 @app.route('/edit_agenda/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -976,16 +913,16 @@ def new_agenda():
 def edit_agenda(id):
     conn = get_db_connection()
     agendamento = conn.execute('SELECT * FROM agenda WHERE id = ?', (id,)).fetchone()
-    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
-    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
-    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     if request.method == 'POST':
         form = request.form
-        conn.execute('UPDATE agenda SET cliente=?, tecnico=?, sistema=?, data_agendamento=?, motivo=?, descricao=?, status=? WHERE id=?',
-                     (form['cliente'], form['tecnico'], form['sistema'], form['data_agendamento'], form['motivo'], form['descricao'], form['status'], id))
+        conn.execute('UPDATE agenda SET cliente=?, tecnico=?, sistema=?, data_agendamento=?, horario_agendamento=?, motivo=?, descricao=?, status=? WHERE id=?',
+                     (form['cliente'], form['tecnico'], form['sistema'], form['data_agendamento'], form['horario_agendamento'], form['motivo'], form['descricao'], form['status'], id))
         conn.commit()
         conn.close()
         return redirect(url_for('agenda'))
+    clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+    tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     conn.close()
     return render_template('edit_agenda.html', agendamento=agendamento, clientes=clientes, tecnicos=tecnicos, sistemas=sistemas)
 
@@ -997,6 +934,7 @@ def delete_agenda(id):
     conn.execute('DELETE FROM agenda WHERE id = ?', (id,))
     conn.commit()
     conn.close()
+    flash('Agendamento excluído com sucesso!', 'success')
     return redirect(url_for('agenda'))
 
 # --- MÓDULO DE PRESTAÇÃO DE CONTAS ---
@@ -1009,7 +947,6 @@ def prestacao_contas():
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'id', type=str)
     order = request.args.get('order', 'desc', type=str)
-    
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
@@ -1026,7 +963,6 @@ def prestacao_contas():
     offset = (page - 1) * per_page
     base_query = "FROM prestacao_contas WHERE 1=1"
     params = []
-
     if search_cliente:
         base_query += " AND cliente LIKE ?"
         params.append(f"%{search_cliente}%")
@@ -1051,30 +987,24 @@ def prestacao_contas():
     if search_atualizado_por:
         base_query += " AND atualizado_por LIKE ?"
         params.append(f"%{search_atualizado_por}%")
-    
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     dados = conn.execute(data_query, tuple(params)).fetchall()
-    
     status_counts_data = conn.execute("SELECT status, COUNT(id) as count FROM prestacao_contas GROUP BY status").fetchall()
     status_counts = {row['status']: row['count'] for row in status_counts_data}
-    
     clientes_filtro = [row['cliente'] for row in conn.execute('SELECT DISTINCT cliente FROM prestacao_contas ORDER BY cliente').fetchall()]
     sistemas_filtro = [row['sistema'] for row in conn.execute('SELECT DISTINCT sistema FROM prestacao_contas ORDER BY sistema').fetchall()]
     responsaveis_filtro = [row['responsavel'] for row in conn.execute('SELECT DISTINCT responsavel FROM prestacao_contas ORDER BY responsavel').fetchall()]
     conn.close()
-
     pagination_args = request.args.to_dict()
     if 'page' in pagination_args: del pagination_args['page']
     sorting_args = request.args.to_dict()
     if 'sort_by' in sorting_args: del sorting_args['sort_by']
     if 'order' in sorting_args: del sorting_args['order']
-
-    return render_template('prestacao_contas.html', 
-                           dados=dados, page=page, total_pages=total_pages,
+    return render_template('prestacao_contas.html', dados=dados, page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order, status_counts=status_counts,
                            search_cliente=search_cliente, search_sistema=search_sistema,
                            search_responsavel=search_responsavel, search_status=search_status,
@@ -1083,21 +1013,6 @@ def prestacao_contas():
                            clientes_filtro=clientes_filtro, sistemas_filtro=sistemas_filtro,
                            responsaveis_filtro=responsaveis_filtro,
                            pagination_args=pagination_args, sorting_args=sorting_args)
-
-def build_redirect_url():
-    args = {}
-    valid_state_keys = [
-        'search_cliente', 'search_sistema', 'search_responsavel', 'search_status',
-        'search_modulo', 'search_competencia', 'search_observacao', 
-        'search_atualizado_por', 'page', 'sort_by', 'order'
-    ]
-    
-    for key in valid_state_keys:
-        value = request.form.get(key)
-        if value:
-            args[key] = value
-            
-    return url_for('prestacao_contas', **args)
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
 @login_required
@@ -1113,8 +1028,12 @@ def new_prestacao():
         conn.commit()
         conn.close()
         flash('Registo criado com sucesso!', 'success')
-        return redirect(build_redirect_url())
-    
+        redirect_args = {}
+        valid_state_keys = ['search_cliente', 'search_sistema', 'search_responsavel', 'search_status', 'search_modulo', 'search_competencia', 'search_observacao', 'search_atualizado_por', 'page', 'sort_by', 'order']
+        for key in valid_state_keys:
+            value = request.form.get(key)
+            if value: redirect_args[key] = value
+        return redirect(url_for('prestacao_contas', **redirect_args))
     conn = get_db_connection()
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
@@ -1137,8 +1056,12 @@ def edit_prestacao(id):
         conn.commit()
         conn.close()
         flash('Registo atualizado com sucesso!', 'success')
-        return redirect(build_redirect_url())
-        
+        redirect_args = {}
+        valid_state_keys = ['search_cliente', 'search_sistema', 'search_responsavel', 'search_status', 'search_modulo', 'search_competencia', 'search_observacao', 'search_atualizado_por', 'page', 'sort_by', 'order']
+        for key in valid_state_keys:
+            value = request.form.get(key)
+            if value: redirect_args[key] = value
+        return redirect(url_for('prestacao_contas', **redirect_args))
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
@@ -1154,7 +1077,12 @@ def delete_prestacao(id):
     conn.commit()
     conn.close()
     flash('Registo excluído com sucesso!', 'success')
-    return redirect(build_redirect_url())
+    redirect_args = {}
+    valid_state_keys = ['search_cliente', 'search_sistema', 'search_responsavel', 'search_status', 'search_modulo', 'search_competencia', 'search_observacao', 'search_atualizado_por', 'page', 'sort_by', 'order']
+    for key in valid_state_keys:
+        value = request.form.get(key)
+        if value: redirect_args[key] = value
+    return redirect(url_for('prestacao_contas', **redirect_args))
 
 # --- GESTÃO DE USUÁRIOS (Admin) ---
 @app.route('/usuarios')
@@ -1227,45 +1155,27 @@ def delete_usuario(id):
 def matriz_responsabilidades():
     conn = get_db_connection()
     view = request.args.get('view', 'list')
-
     if view == 'matrix':
         all_clientes = conn.execute("SELECT municipio || ' - ' || orgao as nome FROM clientes ORDER BY nome").fetchall()
-        sistemas_a_excluir = (
-            'Compras, Licitações e Contratos', 
-            'Frotas', 
-            'Patrimônio', 
-            'Almoxarifado',
-            'Nota Fiscal de Serviços Eletrônicos',
-            'Portal da Transparência',
-            'Portal do Servidor'
-        )
+        sistemas_a_excluir = ('Compras, Licitações e Contratos', 'Frotas', 'Patrimônio', 'Almoxarifado', 'Nota Fiscal de Serviços Eletrônicos', 'Portal da Transparência', 'Portal do Servidor')
         placeholders = ','.join('?' for _ in sistemas_a_excluir)
         query_sistemas = f"SELECT nome FROM sistemas WHERE nome NOT IN ({placeholders}) ORDER BY nome"
         all_sistemas = conn.execute(query_sistemas, sistemas_a_excluir).fetchall()
         registos = conn.execute("SELECT cliente, sistema, responsavel1, responsavel2 FROM matriz_responsabilidades").fetchall()
-
         matriz_data = {}
         for reg in registos:
-            if reg['cliente'] not in matriz_data:
-                matriz_data[reg['cliente']] = {}
+            if reg['cliente'] not in matriz_data: matriz_data[reg['cliente']] = {}
             responsaveis_str = reg['responsavel1']
-            if reg['responsavel2']:
-                responsaveis_str += f" / {reg['responsavel2']}"
+            if reg['responsavel2']: responsaveis_str += f" / {reg['responsavel2']}"
             matriz_data[reg['cliente']][reg['sistema']] = responsaveis_str
-
         conn.close()
-        return render_template('matriz_responsabilidades.html', 
-                               view=view,
-                               all_clientes=all_clientes,
-                               all_sistemas=all_sistemas,
-                               matriz_data=matriz_data)
+        return render_template('matriz_responsabilidades.html', view=view, all_clientes=all_clientes, all_sistemas=all_sistemas, matriz_data=matriz_data)
     else:
         search_cliente = request.args.get('search_cliente', '', type=str)
         search_sistema = request.args.get('search_sistema', '', type=str)
         search_responsavel = request.args.get('search_responsavel', '', type=str)
         base_query = "SELECT * FROM matriz_responsabilidades WHERE 1=1"
         params = []
-
         if search_cliente:
             base_query += " AND cliente = ?"
             params.append(search_cliente)
@@ -1275,19 +1185,13 @@ def matriz_responsabilidades():
         if search_responsavel:
             base_query += " AND (responsavel1 = ? OR responsavel2 = ?)"
             params.extend([search_responsavel, search_responsavel])
-        
         base_query += " ORDER BY cliente, sistema"
         registos = conn.execute(base_query, tuple(params)).fetchall()
         clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
         sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
         responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
         conn.close()
-        
-        return render_template('matriz_responsabilidades.html', 
-                               view=view, registos=registos, 
-                               clientes=clientes, sistemas=sistemas, responsaveis=responsaveis,
-                               search_cliente=search_cliente, search_sistema=search_sistema,
-                               search_responsavel=search_responsavel)
+        return render_template('matriz_responsabilidades.html', view=view, registos=registos, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, search_cliente=search_cliente, search_sistema=search_sistema, search_responsavel=search_responsavel)
 
 @app.route('/matriz/new', methods=['GET', 'POST'])
 @login_required
@@ -1337,47 +1241,38 @@ def delete_matriz_responsabilidade(id):
     flash('Registo de responsabilidade excluído com sucesso.', 'success')
     return redirect(url_for('matriz_responsabilidades'))
 
-# --- ROTA DE API ATUALIZADA PARA O CALENDÁRIO COM CORES ---
+# --- ROTA DE API PARA O CALENDÁRIO ---
 @app.route('/api/agendamentos')
 @login_required
 def api_agendamentos():
     conn = get_db_connection()
     agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
     conn.close()
-
-    # Mapeamento de status para cores
     color_map = {
-        'Planejada': '#3498db',  # Azul
-        'Realizada': '#2ecc71',  # Verde
-        'Cancelada': '#f1c40f',   # Amarelo
-        # --- NOVA COR ADICIONADA AQUI ---
-        'Aguardando Confirmação do Cliente': '#f39c12' # Laranja
+        'Planejada': '#3498db',
+        'Realizada': '#2ecc71',
+        'Cancelada': '#f1c40f',
+        'Aguardando Confirmação do Cliente': '#f39c12'
     }
-
     eventos = []
     for agendamento in agendamentos_db:
-        # Combina data e hora para o calendário
         start_datetime = agendamento['data_agendamento']
         if agendamento['horario_agendamento']:
             start_datetime += f"T{agendamento['horario_agendamento']}"
-
-        # Adiciona a hora ao título do evento, se existir
         titulo = f"{agendamento['cliente']} ({agendamento['tecnico']})"
         if agendamento['horario_agendamento']:
             titulo = f"{agendamento['horario_agendamento']} - {titulo}"
-
         eventos.append({
             'id': agendamento['id'],
             'title': titulo,
             'start': start_datetime,
-            'color': color_map.get(agendamento['status'], '#808080'), # Usa a cor do mapa ou um cinza padrão
+            'color': color_map.get(agendamento['status'], '#808080'),
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
                 'status': agendamento['status']
             }
         })
-
     return jsonify(eventos)
 
 if __name__ == '__main__':
