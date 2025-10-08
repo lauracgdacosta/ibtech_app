@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Módulo de Pendências</title>
+    <title>Controle de Demandas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         .pagination { display: flex; justify-content: center; align-items: center; margin-top: 25px; gap: 5px; }
@@ -16,16 +16,17 @@
         .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         .filter-actions { display: flex; gap: 5px; align-items: center; }
         .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
+        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        td.actions { white-space: nowrap; width: 135px; }
+        td.actions form { display: inline-block; padding: 0; margin: 0; border: none; background: none; box-shadow: none; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header-actions">
-            <h1>Módulo de Pendências</h1>
+            <h1>Controle de Demandas</h1>
             <div class="actions-group">
-                {% if check_permission('pendencias', 'can_edit') %}
-                    <a href="{{ url_for('new_pendencia', **request.args) }}" class="button new">Nova Pendência</a>
-                {% endif %}
+                <a href="{{ url_for('new_pendencia', **request.args) }}" class="button new">Nova Demanda</a>
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
@@ -33,31 +34,47 @@
         <form method="get" action="{{ url_for('pendencias') }}">
             <input type="hidden" name="sort_by" value="{{ sort_by }}">
             <input type="hidden" name="order" value="{{ order }}">
-            
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
                             {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
-                            <th><a href="{{ url_for('pendencias', sort_by='processo', order=sort_order, **sorting_args) }}">Processo</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='protocolo', order=sort_order, **sorting_args) }}">Protocolo</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='data_registro', order=sort_order, **sorting_args) }}">Registro</a></th>
                             <th><a href="{{ url_for('pendencias', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente</a></th>
                             <th><a href="{{ url_for('pendencias', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema</a></th>
-                            <th><a href="{{ url_for('pendencias', sort_by='data_prioridade', order=sort_order, **sorting_args) }}">Data Prioridade</a></th>
-                            <th><a href="{{ url_for('pendencias', sort_by='prazo_entrega', order=sort_order, **sorting_args) }}">Prazo Entrega</a></th>
+                            <th>Detalhamento</th>
+                            <th><a href="{{ url_for('pendencias', sort_by='responsavel', order=sort_order, **sorting_args) }}">Responsável</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='fase', order=sort_order, **sorting_args) }}">Fase</a></th>
                             <th><a href="{{ url_for('pendencias', sort_by='status', order=sort_order, **sorting_args) }}">Status</a></th>
                             <th>Ações</th>
                         </tr>
                         <tr class="filter-row">
-                            <th><input type="text" name="search_processo" value="{{ search_processo }}" placeholder="Filtrar..."></th>
+                            <th><input type="number" name="search_protocolo" value="{{ search_protocolo }}" placeholder="Filtrar..."></th>
+                            <th></th>
                             <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
                             <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
                             <th></th>
-                            <th></th>
+                            <th><input type="text" name="search_responsavel" value="{{ search_responsavel }}" placeholder="Filtrar..."></th>
+                            <th>
+                                <select name="search_fase">
+                                    <option value="">Todas</option>
+                                    <option value="Teste de entrada" {% if search_fase == 'Teste de entrada' %}selected{% endif %}>Teste de entrada</option>
+                                    <option value="Gerente Dev" {% if search_fase == 'Gerente Dev' %}selected{% endif %}>Gerente Dev</option>
+                                    <option value="Analista" {% if search_fase == 'Analista' %}selected{% endif %}>Analista</option>
+                                    <option value="Dev responsável" {% if search_fase == 'Dev responsável' %}selected{% endif %}>Dev responsável</option>
+                                    <option value="Teste de saída" {% if search_fase == 'Teste de saída' %}selected{% endif %}>Teste de saída</option>
+                                    <option value="Aguardando atualização" {% if search_fase == 'Aguardando atualização' %}selected{% endif %}>Aguardando atualização</option>
+                                    <option value="Feedback ao cliente" {% if search_fase == 'Feedback ao cliente' %}selected{% endif %}>Feedback ao cliente</option>
+                                    <option value="Retrabalho" {% if search_fase == 'Retrabalho' %}selected{% endif %}>Retrabalho</option>
+                                </select>
+                            </th>
                             <th>
                                 <select name="search_status">
                                     <option value="">Todos</option>
-                                    <option value="Aberto" {% if search_status == 'Aberto' %}selected{% endif %}>Aberto</option>
-                                    <option value="Concluído" {% if search_status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                    <option value="Arquivado" {% if search_status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
+                                    <option value="Concluído não arquivado" {% if search_status == 'Concluído não arquivado' %}selected{% endif %}>Concluído não arquivado</option>
+                                    <option value="Pendente" {% if search_status == 'Pendente' %}selected{% endif %}>Pendente</option>
                                 </select>
                             </th>
                             <th class="filter-actions">
@@ -69,18 +86,20 @@
                     <tbody>
                         {% for pendencia in pendencias %}
                         <tr>
-                            <td>{{ pendencia['processo'] }}</td>
-                            <td>{{ pendencia['cliente'] }}</td>
-                            <td>{{ pendencia['sistema'] }}</td>
-                            <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
-                            <td>{{ pendencia['prazo_entrega'] | dateformat }}</td>
-                            <td>{{ pendencia['status'] }}</td>
+                            <td>{{ pendencia.protocolo }}</td>
+                            <td>{{ pendencia.data_registro | dateformat }}</td>
+                            <td class="truncate" title="{{ pendencia.cliente }}">{{ pendencia.cliente }}</td>
+                            <td>{{ pendencia.sistema }}</td>
+                            <td class="truncate" title="{{ pendencia.detalhamento }}">{{ pendencia.detalhamento }}</td>
+                            <td>{{ pendencia.responsavel }}</td>
+                            <td>{{ pendencia.fase }}</td>
+                            <td>{{ pendencia.status }}</td>
                             <td class="actions">
                                 {% if check_permission('pendencias', 'can_edit') %}
-                                    <a href="{{ url_for('edit_pendencia', id=pendencia['id'], **request.args) }}" class="button edit">Editar</a>
+                                    <a href="{{ url_for('edit_pendencia', id=pendencia.id, **request.args) }}" class="button edit">Editar</a>
                                 {% endif %}
                                 {% if check_permission('pendencias', 'can_delete') %}
-                                    <form action="{{ url_for('delete_pendencia', id=pendencia['id']) }}" method="post" style="display:inline;">
+                                    <form action="{{ url_for('delete_pendencia', id=pendencia.id) }}" method="post" style="display:inline;">
                                         {% for key, value in request.args.items() %}
                                             <input type="hidden" name="{{ key }}" value="{{ value }}">
                                         {% endfor %}
@@ -91,7 +110,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="7" style="text-align: center;">Nenhuma pendência encontrada.</td>
+                            <td colspan="9" style="text-align: center;">Nenhuma demanda encontrada.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

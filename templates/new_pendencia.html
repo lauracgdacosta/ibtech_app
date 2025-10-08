@@ -2,61 +2,77 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Nova Pendência em Ficha</title>
+    <title>Nova Demanda</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
-            <h1>Nova Pendência em Ficha</h1>
+            <h1>Nova Demanda</h1>
             <div class="actions-group">
-                <a href="{{ url_for('pendencias') }}" class="button">Voltar para a Lista</a>
+                <a href="{{ url_for('pendencias', **args) }}" class="button">Voltar para a Lista</a>
             </div>
         </div>
         
-        <form action="{{ url_for('new_pendencia') }}" method="post">
-            <label for="processo">Processo:</label>
-            <input type="text" id="processo" name="processo" required>
+        <form method="post">
+            {% for key, value in args.items() %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+
+            <label for="protocolo">Protocolo</label>
+            <input type="number" id="protocolo" name="protocolo">
             
-            <label for="cliente">Cliente:</label>
-            <select id="cliente" name="cliente">
-                <option value="">Selecione um Cliente</option>
+            <label for="data_registro">Data de Registro</label>
+            <input type="date" id="data_registro" name="data_registro" required>
+            
+            <label for="cliente">Cliente</label>
+            <select id="cliente" name="cliente" required>
+                <option value="" disabled selected>Selecione um Cliente</option>
                 {% for cliente in clientes %}
                     <option value="{{ cliente }}">{{ cliente }}</option>
                 {% endfor %}
             </select>
             
-            <label for="sistema">Sistema:</label>
-            <select id="sistema" name="sistema">
-                <option value="">Selecione um Sistema</option>
-                {% for sistema in sistemas_para_selecao %}
+            <label for="sistema">Sistema</label>
+            <select id="sistema" name="sistema" required>
+                <option value="" disabled selected>Selecione um Sistema</option>
+                {% for sistema in sistemas %}
                     <option value="{{ sistema }}">{{ sistema }}</option>
                 {% endfor %}
             </select>
             
-            <label for="data_prioridade">Data da Prioridade:</label>
-            <input type="date" id="data_prioridade" name="data_prioridade">
+            <label for="detalhamento">Detalhamento</label>
+            <textarea id="detalhamento" name="detalhamento" rows="5"></textarea>
 
-            <label for="prazo_entrega">Prazo de Entrega:</label>
-            <input type="date" id="prazo_entrega" name="prazo_entrega">
+            <label for="responsavel">Responsável</label>
+            <select id="responsavel" name="responsavel">
+                <option value="" disabled selected>Selecione um Responsável</option>
+                {% for responsavel in responsaveis %}
+                    <option value="{{ responsavel }}">{{ responsavel }}</option>
+                {% endfor %}
+            </select>
 
-            <label for="status">Status:</label>
+            <label for="fase">Fase</label>
+            <select id="fase" name="fase">
+                <option value="Teste de entrada">Teste de entrada</option>
+                <option value="Gerente Dev">Gerente Dev</option>
+                <option value="Analista">Analista</option>
+                <option value="Dev responsável">Dev responsável</option>
+                <option value="Teste de saída">Teste de saída</option>
+                <option value="Aguardando atualização">Aguardando atualização</option>
+                <option value="Feedback ao cliente">Feedback ao cliente</option>
+                <option value="Retrabalho">Retrabalho</option>
+            </select>
+
+            <label for="status">Status</label>
             <select id="status" name="status">
-                <option value="Aberto">Aberto</option>
-                <option value="Concluído">Concluído</option>
+                <option value="Pendente" selected>Pendente</option>
+                <option value="Concluído não arquivado">Concluído não arquivado</option>
+                <option value="Arquivado">Arquivado</option>
             </select>
             
-            <button type="submit" class="button new">Salvar Pendência</button>
+            <button type="submit" class="button new">Salvar Demanda</button>
         </form>
-        {% for key, value in args.items() %}
-        <input type="hidden" name="{{ key }}" value="{{ value }}">
-        {% endfor %}
     </div>
 </body>
 </html>

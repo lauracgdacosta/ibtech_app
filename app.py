@@ -177,12 +177,43 @@ def migrate_permissions_table():
     finally:
         conn.close()
 
+def migrate_pendencias_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        print("MIGRATE: Verificando a tabela 'pendencias'...")
+        # Adiciona as novas colunas se elas não existirem
+        cursor.execute("PRAGMA table_info(pendencias)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        
+        new_columns = {
+            'protocolo': 'INTEGER',
+            'data_registro': 'TEXT',
+            'detalhamento': 'TEXT',
+            'responsavel': 'TEXT',
+            'fase': 'TEXT'
+        }
+        
+        for col, col_type in new_columns.items():
+            if col not in columns:
+                print(f"MIGRATE: Adicionando coluna '{col}' à tabela 'pendencias'.")
+                cursor.execute(f"ALTER TABLE pendencias ADD COLUMN {col} {col_type}")
+
+        conn.commit()
+        print("MIGRATE: Tabela 'pendencias' atualizada com sucesso.")
+            
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela pendencias: {e}")
+    finally:
+        conn.close()
+
 with app.app_context():
     init_db()
     migrate_db_roles()
     migrate_permissions_table()
     migrate_agenda_table()
     migrate_ferias_table()
+    migrate_pendencias_table()
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
@@ -801,6 +832,7 @@ def edit_titulo(tarefa_id):
     return render_template('edit_titulo.html', projeto=projeto, tarefa=tarefa)
 
 # --- MÓDULO DE PENDÊNCIAS ---
+# --- MÓDULO DE PENDÊNCIAS (Atualizado como Controle de Demandas) ---
 
 @app.route('/pendencias')
 @login_required
@@ -810,34 +842,42 @@ def pendencias():
     
     per_page = 20
     page = request.args.get('page', 1, type=int)
-    sort_by = request.args.get('sort_by', 'data_prioridade', type=str)
-    order = request.args.get('order', 'asc', type=str)
+    sort_by = request.args.get('sort_by', 'data_registro', type=str)
+    order = request.args.get('order', 'desc', type=str)
     
     # Filtros
-    search_processo = request.args.get('search_processo', '', type=str)
+    search_protocolo = request.args.get('search_protocolo', '', type=str)
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
+    search_responsavel = request.args.get('search_responsavel', '', type=str)
+    search_fase = request.args.get('search_fase', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
 
-    allowed_sort_columns = ['processo', 'cliente', 'sistema', 'data_prioridade', 'prazo_entrega', 'status']
+    allowed_sort_columns = ['protocolo', 'data_registro', 'cliente', 'sistema', 'responsavel', 'fase', 'status']
     if sort_by not in allowed_sort_columns:
-        sort_by = 'data_prioridade'
+        sort_by = 'data_registro'
     if order.lower() not in ['asc', 'desc']:
-        order = 'asc'
+        order = 'desc'
 
     offset = (page - 1) * per_page
     base_query = "FROM pendencias WHERE 1=1"
     params = []
 
-    if search_processo:
-        base_query += " AND processo LIKE ?"
-        params.append(f"%{search_processo}%")
+    if search_protocolo:
+        base_query += " AND protocolo = ?"
+        params.append(search_protocolo)
     if search_cliente:
         base_query += " AND cliente LIKE ?"
         params.append(f"%{search_cliente}%")
     if search_sistema:
         base_query += " AND sistema LIKE ?"
         params.append(f"%{search_sistema}%")
+    if search_responsavel:
+        base_query += " AND responsavel LIKE ?"
+        params.append(f"%{search_responsavel}%")
+    if search_fase:
+        base_query += " AND fase = ?"
+        params.append(search_fase)
     if search_status:
         base_query += " AND status = ?"
         params.append(search_status)
@@ -861,16 +901,18 @@ def pendencias():
                            pendencias=pendencias_data,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
-                           search_processo=search_processo,
+                           search_protocolo=search_protocolo,
                            search_cliente=search_cliente,
                            search_sistema=search_sistema,
+                           search_responsavel=search_responsavel,
+                           search_fase=search_fase,
                            search_status=search_status,
                            pagination_args=pagination_args,
                            sorting_args=sorting_args)
 
 def build_pendencias_redirect_url():
     args = {}
-    valid_state_keys = ['search_processo', 'search_cliente', 'search_sistema', 'search_status', 'page', 'sort_by', 'order']
+    valid_state_keys = ['search_protocolo', 'search_cliente', 'search_sistema', 'search_responsavel', 'search_fase', 'search_status', 'page', 'sort_by', 'order']
     for key in valid_state_keys:
         value = request.form.get(key)
         if value:
@@ -882,20 +924,22 @@ def build_pendencias_redirect_url():
 @role_required(module='pendencias', action='can_edit')
 def new_pendencia():
     args = request.args.to_dict()
-    conn = get_db_connection()
     if request.method == 'POST':
         form = request.form
-        conn.execute('INSERT INTO pendencias (processo, cliente, sistema, data_prioridade, prazo_entrega, status) VALUES (?, ?, ?, ?, ?, ?)',
-                     (form['processo'], form['cliente'], form['sistema'], form['data_prioridade'], form['prazo_entrega'], form['status']))
+        conn = get_db_connection()
+        conn.execute('INSERT INTO pendencias (protocolo, data_registro, cliente, sistema, detalhamento, responsavel, fase, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                     (form['protocolo'], form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status']))
         conn.commit()
         conn.close()
-        flash('Nova pendência criada com sucesso!', 'success')
+        flash('Nova demanda criada com sucesso!', 'success')
         return redirect(build_pendencias_redirect_url())
     
+    conn = get_db_connection()
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('new_pendencia.html', clientes=clientes, sistemas_para_selecao=sistemas, args=args)
+    return render_template('new_pendencia.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args)
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -906,17 +950,18 @@ def edit_pendencia(id):
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
     if request.method == 'POST':
         form = request.form
-        conn.execute('UPDATE pendencias SET processo=?, cliente=?, sistema=?, data_prioridade=?, prazo_entrega=?, status=? WHERE id=?',
-                     (form['processo'], form['cliente'], form['sistema'], form['data_prioridade'], form['prazo_entrega'], form['status'], id))
+        conn.execute('UPDATE pendencias SET protocolo=?, data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=? WHERE id=?',
+                     (form['protocolo'], form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], id))
         conn.commit()
         conn.close()
-        flash('Pendência atualizada com sucesso!', 'success')
+        flash('Demanda atualizada com sucesso!', 'success')
         return redirect(build_pendencias_redirect_url())
         
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+    responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas_para_selecao=sistemas, args=args)
+    return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args)
 
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
@@ -926,7 +971,7 @@ def delete_pendencia(id):
     conn.execute('DELETE FROM pendencias WHERE id = ?', (id,))
     conn.commit()
     conn.close()
-    flash('Pendência excluída com sucesso.', 'success')
+    flash('Demanda excluída com sucesso.', 'success')
     return redirect(build_pendencias_redirect_url())
 
 # --- MÓDULO DE FÉRIAS ---
