@@ -4,80 +4,112 @@
     <meta charset="UTF-8">
     <title>Módulo de Pendências</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.css">
-    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <script src="https://cdn.datatables.net/plug-ins/1.10.21/sorting/datetime-moment.js"></script>
+    <style>
+        .pagination { display: flex; justify-content: center; align-items: center; margin-top: 25px; gap: 5px; }
+        .pagination a, .pagination span { padding: 8px 12px; border-radius: 5px; text-decoration: none; }
+        .pagination a { background-color: #f1f1f1; color: #333; }
+        .pagination a:hover { background-color: #ddd; }
+        .pagination .current { background-color: #007bff; color: white; font-weight: bold; }
+        th a { color: inherit; text-decoration: none; display: block; }
+        th a:hover { text-decoration: underline; }
+        .filter-row th { padding: 8px; background-color: #f8f9fa; }
+        .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .filter-actions { display: flex; gap: 5px; align-items: center; }
+        .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
+    </style>
 </head>
 <body>
-    <div style="background-color: #34495e; color: white; padding: 10px 20px; text-align: right; margin-bottom: 15px;">
-    {% if session.user_name %}
-        <span>Bem-vindo, <strong>{{ session.user_name }}</strong>!</span>
-        <a href="{{ url_for('logout') }}" style="color: #ecf0f1; margin-left: 15px; text-decoration: none;">Sair</a>
-    {% endif %}
-    </div>
     <div class="container">
         <div class="header-actions">
             <h1>Módulo de Pendências</h1>
             <div class="actions-group">
                 {% if check_permission('pendencias', 'can_edit') %}
-                    <a href="{{ url_for('new_pendencia') }}" class="button new">Nova Pendência</a>
+                    <a href="{{ url_for('new_pendencia', **request.args) }}" class="button new">Nova Pendência</a>
                 {% endif %}
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
 
-        <h2>Pendências Cadastradas</h2>
-        <table id="tabela" class="display" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Processo</th>
-                    <th>Cliente</th>
-                    <th>Sistema</th>
-                    <th>Data Prioridade</th>
-                    <th>Prazo Entrega</th>
-                    <th>Status</th>
-                    {% if check_permission('pendencias', 'can_edit') or check_permission('pendencias', 'can_delete') %}
-                        <th class="no-sort">Ações</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for pendencia in pendencias %}
-                <tr>
-                    <td>{{ pendencia['processo'] }}</td>
-                    <td>{{ pendencia['cliente'] }}</td>
-                    <td>{{ pendencia['sistema'] }}</td>
-                    <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
-                    <td>{{ pendencia['prazo_entrega'] | dateformat }}</td>
-                    <td>{{ pendencia['status'] }}</td>
-                    {% if check_permission('pendencias', 'can_edit') or check_permission('pendencias', 'can_delete') %}
-                        <td class="actions">
-                            {% if check_permission('pendencias', 'can_edit') %}
-                                <a href="{{ url_for('edit_pendencia', id=pendencia['id']) }}" class="button edit">Editar</a>
-                            {% endif %}
-                            {% if check_permission('pendencias', 'can_delete') %}
-                                <form action="{{ url_for('delete_pendencia', id=pendencia['id']) }}" method="post" style="display:inline;">
-                                    <button type="submit" class="button delete" onclick="return confirm('Tem certeza que deseja deletar esta pendência?');">Deletar</button>
-                                </form>
-                            {% endif %}
-                        </td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        <form method="get" action="{{ url_for('pendencias') }}">
+            <input type="hidden" name="sort_by" value="{{ sort_by }}">
+            <input type="hidden" name="order" value="{{ order }}">
+            
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            {% set sort_order = 'asc' if order == 'desc' else 'desc' %}
+                            <th><a href="{{ url_for('pendencias', sort_by='processo', order=sort_order, **sorting_args) }}">Processo</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='cliente', order=sort_order, **sorting_args) }}">Cliente</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='sistema', order=sort_order, **sorting_args) }}">Sistema</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='data_prioridade', order=sort_order, **sorting_args) }}">Data Prioridade</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='prazo_entrega', order=sort_order, **sorting_args) }}">Prazo Entrega</a></th>
+                            <th><a href="{{ url_for('pendencias', sort_by='status', order=sort_order, **sorting_args) }}">Status</a></th>
+                            <th>Ações</th>
+                        </tr>
+                        <tr class="filter-row">
+                            <th><input type="text" name="search_processo" value="{{ search_processo }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
+                            <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
+                            <th></th>
+                            <th></th>
+                            <th>
+                                <select name="search_status">
+                                    <option value="">Todos</option>
+                                    <option value="Aberto" {% if search_status == 'Aberto' %}selected{% endif %}>Aberto</option>
+                                    <option value="Concluído" {% if search_status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                                </select>
+                            </th>
+                            <th class="filter-actions">
+                                <button type="submit" class="button">Filtrar</button>
+                                <a href="{{ url_for('pendencias') }}" class="button" style="background-color: #6c757d;">Limpar</a>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pendencia in pendencias %}
+                        <tr>
+                            <td>{{ pendencia['processo'] }}</td>
+                            <td>{{ pendencia['cliente'] }}</td>
+                            <td>{{ pendencia['sistema'] }}</td>
+                            <td>{{ pendencia['data_prioridade'] | dateformat }}</td>
+                            <td>{{ pendencia['prazo_entrega'] | dateformat }}</td>
+                            <td>{{ pendencia['status'] }}</td>
+                            <td class="actions">
+                                {% if check_permission('pendencias', 'can_edit') %}
+                                    <a href="{{ url_for('edit_pendencia', id=pendencia['id'], **request.args) }}" class="button edit">Editar</a>
+                                {% endif %}
+                                {% if check_permission('pendencias', 'can_delete') %}
+                                    <form action="{{ url_for('delete_pendencia', id=pendencia['id']) }}" method="post" style="display:inline;">
+                                        {% for key, value in request.args.items() %}
+                                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                        {% endfor %}
+                                        <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center;">Nenhuma pendência encontrada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
 
-    <script>
-    $(document).ready(function() {
-        DataTable.moment('DD/MM/YYYY');
-        $('#tabela').DataTable({
-            "columnDefs": [{ "targets": 'no-sort', "orderable": false }],
-            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/pt-BR.json" }
-        });
-    });
-    </script>
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}<a href="{{ url_for('pendencias', page=page-1, **pagination_args) }}">&laquo; Anterior</a>{% endif %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}<span class="current">{{ p }}</span>
+                {% elif p > page - 3 and p < page + 3 %}<a href="{{ url_for('pendencias', page=p, **pagination_args) }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page < total_pages %}<a href="{{ url_for('pendencias', page=page+1, **pagination_args) }}">Próximo &raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+    </div>
 </body>
 </html>
