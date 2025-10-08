@@ -181,31 +181,45 @@ def migrate_pendencias_table():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        print("MIGRATE: Verificando a tabela 'pendencias'...")
-        # Adiciona as novas colunas se elas não existirem
+        print("MIGRATE: Verificando a estrutura da tabela 'pendencias'...")
         cursor.execute("PRAGMA table_info(pendencias)")
         columns = [row['name'] for row in cursor.fetchall()]
-        
-        new_columns = {
-            'protocolo': 'INTEGER',
-            'data_registro': 'TEXT',
-            'detalhamento': 'TEXT',
-            'responsavel': 'TEXT',
-            'fase': 'TEXT'
-        }
-        
-        for col, col_type in new_columns.items():
-            if col not in columns:
-                print(f"MIGRATE: Adicionando coluna '{col}' à tabela 'pendencias'.")
-                cursor.execute(f"ALTER TABLE pendencias ADD COLUMN {col} {col_type}")
 
-        conn.commit()
-        print("MIGRATE: Tabela 'pendencias' atualizada com sucesso.")
+        # Se a coluna 'processo' (da versão antiga) ainda existir, reconstruímos a tabela.
+        if 'processo' in columns:
+            print("MIGRATE: Estrutura antiga detectada. Reconstruindo a tabela 'pendencias'...")
+            cursor.execute("BEGIN TRANSACTION;")
+            cursor.execute('''
+                CREATE TABLE pendencias_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    protocolo TEXT,
+                    data_registro TEXT,
+                    cliente TEXT,
+                    sistema TEXT,
+                    detalhamento TEXT,
+                    responsavel TEXT,
+                    fase TEXT,
+                    status TEXT
+                )
+            ''')
+            # Copia os dados compatíveis da tabela antiga para a nova
+            cursor.execute('''
+                INSERT INTO pendencias_new (id, protocolo, cliente, sistema, status)
+                SELECT id, processo, cliente, sistema, status FROM pendencias
+            ''')
+            cursor.execute("DROP TABLE pendencias")
+            cursor.execute("ALTER TABLE pendencias_new RENAME TO pendencias")
+            conn.commit()
+            print("MIGRATE: Tabela 'pendencias' reconstruída com sucesso.")
+        else:
+            print("MIGRATE: Tabela 'pendencias' já está no formato correto.")
             
     except Exception as e:
         print(f"ERRO ao migrar a tabela pendencias: {e}")
+        conn.rollback()
     finally:
         conn.close()
+
 
 with app.app_context():
     init_db()
@@ -927,11 +941,20 @@ def new_pendencia():
     if request.method == 'POST':
         form = request.form
         conn = get_db_connection()
+        
+        # --- LÓGICA DE GERAÇÃO DO PROTOCOLO ALTERADA ---
+        numero_digitado = form['protocolo']
+        ano_atual = str(datetime.date.today().year)
+        
+        # Formata o número com 6 dígitos (preenchendo com zeros à esquerda) e adiciona o ano
+        protocolo_final = f"{numero_digitado.zfill(6)}/{ano_atual}"
+        # --- FIM DA LÓGICA ---
+
         conn.execute('INSERT INTO pendencias (protocolo, data_registro, cliente, sistema, detalhamento, responsavel, fase, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                     (form['protocolo'], form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status']))
+                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status']))
         conn.commit()
         conn.close()
-        flash('Nova demanda criada com sucesso!', 'success')
+        flash(f'Nova demanda criada com sucesso! Protocolo: {protocolo_final}', 'success')
         return redirect(build_pendencias_redirect_url())
     
     conn = get_db_connection()
@@ -950,8 +973,9 @@ def edit_pendencia(id):
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
     if request.method == 'POST':
         form = request.form
-        conn.execute('UPDATE pendencias SET protocolo=?, data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=? WHERE id=?',
-                     (form['protocolo'], form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], id))
+        # O campo 'protocolo' foi removido do UPDATE para não ser alterado
+        conn.execute('UPDATE pendencias SET data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=? WHERE id=?',
+                     (form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], id))
         conn.commit()
         conn.close()
         flash('Demanda atualizada com sucesso!', 'success')
@@ -962,7 +986,6 @@ def edit_pendencia(id):
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
     return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args)
-
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
 @role_required(module='pendencias', action='can_delete')
