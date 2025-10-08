@@ -942,13 +942,9 @@ def new_pendencia():
         form = request.form
         conn = get_db_connection()
         
-        # --- LÓGICA DE GERAÇÃO DO PROTOCOLO ALTERADA ---
         numero_digitado = form['protocolo']
         ano_atual = str(datetime.date.today().year)
-        
-        # Formata o número com 6 dígitos (preenchendo com zeros à esquerda) e adiciona o ano
         protocolo_final = f"{numero_digitado.zfill(6)}/{ano_atual}"
-        # --- FIM DA LÓGICA ---
 
         conn.execute('INSERT INTO pendencias (protocolo, data_registro, cliente, sistema, detalhamento, responsavel, fase, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                      (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status']))
@@ -962,7 +958,11 @@ def new_pendencia():
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('new_pendencia.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args)
+    
+    # Passa o ano atual para o template para exibir a máscara
+    ano_atual = str(datetime.date.today().year)
+    
+    return render_template('new_pendencia.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args, ano_atual=ano_atual)
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -971,11 +971,17 @@ def edit_pendencia(id):
     args = request.args.to_dict()
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
+    
     if request.method == 'POST':
         form = request.form
-        # O campo 'protocolo' foi removido do UPDATE para não ser alterado
-        conn.execute('UPDATE pendencias SET data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=? WHERE id=?',
-                     (form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], id))
+        
+        # Reconstrói o protocolo a partir do número editado e do ano original
+        numero_protocolo_editado = form['protocolo_numero']
+        ano_protocolo = form['protocolo_ano']
+        protocolo_final = f"{numero_protocolo_editado.zfill(6)}/{ano_protocolo}"
+
+        conn.execute('UPDATE pendencias SET protocolo=?, data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=? WHERE id=?',
+                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], id))
         conn.commit()
         conn.close()
         flash('Demanda atualizada com sucesso!', 'success')
@@ -985,7 +991,23 @@ def edit_pendencia(id):
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('edit_pendencia.html', pendencia=pendencia, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args)
+
+    # Separa o número do protocolo e o ano para edição
+    numero_protocolo, ano_protocolo = "", ""
+    if pendencia and pendencia['protocolo'] and '/' in pendencia['protocolo']:
+        partes = pendencia['protocolo'].split('/')
+        numero_protocolo = partes[0]
+        ano_protocolo = partes[1]
+
+    return render_template('edit_pendencia.html', 
+                           pendencia=pendencia, 
+                           clientes=clientes, 
+                           sistemas=sistemas, 
+                           responsaveis=responsaveis, 
+                           args=args,
+                           numero_protocolo=numero_protocolo,
+                           ano_protocolo=ano_protocolo)
+
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
 @role_required(module='pendencias', action='can_delete')

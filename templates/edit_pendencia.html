@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>Editar Demanda</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .protocolo-group { display: flex; align-items: center; gap: 5px; }
+        .protocolo-group input { flex-grow: 1; }
+        .protocolo-group span { font-weight: bold; margin-bottom: 15px; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -19,8 +24,12 @@
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
             {% endfor %}
 
-            <label for="protocolo">Protocolo</label>
-            <input type="text" id="protocolo" name="protocolo" value="{{ pendencia.protocolo }}" readonly style="background-color: #eee;">
+            <label for="protocolo_numero">Protocolo</label>
+            <div class="protocolo-group">
+                <input type="number" id="protocolo_numero" name="protocolo_numero" value="{{ numero_protocolo }}" required maxlength="6">
+                <span>/{{ ano_protocolo }}</span>
+                <input type="hidden" name="protocolo_ano" value="{{ ano_protocolo }}">
+            </div>
             
             <label for="data_registro">Data de Registro</label>
             <input type="date" id="data_registro" name="data_registro" value="{{ pendencia.data_registro }}" required>
