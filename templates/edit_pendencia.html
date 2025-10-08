@@ -20,7 +20,7 @@
             {% endfor %}
 
             <label for="protocolo">Protocolo</label>
-            <input type="number" id="protocolo" name="protocolo" value="{{ pendencia.protocolo }}">
+            <input type="text" id="protocolo" name="protocolo" value="{{ pendencia.protocolo }}" readonly style="background-color: #eee;">
             
             <label for="data_registro">Data de Registro</label>
             <input type="date" id="data_registro" name="data_registro" value="{{ pendencia.data_registro }}" required>
@@ -40,7 +40,7 @@
             </select>
             
             <label for="detalhamento">Detalhamento</label>
-            <textarea id="detalhamento" name="detalhamento" rows="5">{{ pendencia.detalhamento }}</textarea>
+            <textarea id="detalhamento" name="detalhamento" rows="5">{{ pendencia.detalhamento | default('', true) }}</textarea>
 
             <label for="responsavel">Responsável</label>
             <select id="responsavel" name="responsavel">
