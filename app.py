@@ -103,8 +103,9 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS projetos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cliente TEXT, data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
+    
+    
     cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL, role TEXT)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (id INTEGER PRIMARY KEY AUTOINCREMENT, role_name TEXT NOT NULL, module_name TEXT NOT NULL, can_read BOOLEAN DEFAULT 0, can_edit BOOLEAN DEFAULT 0, can_delete BOOLEAN DEFAULT 0, UNIQUE(role_name, module_name))''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS matriz_responsabilidades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             cliente TEXT NOT NULL,
@@ -113,18 +114,20 @@ def init_db():
             responsavel2 TEXT,
             observacoes TEXT
         )''')
+    # MANTENHA APENAS ESTA DEFINIÇÃO COMPLETA DA TABELA
     cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            role_name TEXT NOT NULL,
-            module_name TEXT NOT NULL,
-            can_read BOOLEAN DEFAULT 0,
-            can_create BOOLEAN DEFAULT 0, -- NOVA COLUNA
-            can_edit BOOLEAN DEFAULT 0,
-            can_delete BOOLEAN DEFAULT 0,
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            role_name TEXT NOT NULL, 
+            module_name TEXT NOT NULL, 
+            can_read BOOLEAN DEFAULT 0, 
+            can_create BOOLEAN DEFAULT 0,
+            can_edit BOOLEAN DEFAULT 0, 
+            can_delete BOOLEAN DEFAULT 0, 
             UNIQUE(role_name, module_name)
         )''')
     conn.commit()
     conn.close()
+    
 
 def migrate_agenda_table():
     conn = get_db_connection()
@@ -372,18 +375,26 @@ def salvar_permissoes():
     conn = get_db_connection()
     cursor = conn.cursor()
     roles_to_manage = ['coordenacao', 'tecnico']
-    cursor.execute(f"DELETE FROM role_permissions WHERE role_name IN ({','.join('?'*len(roles_to_manage))})", roles_to_manage)
+
     for role in roles_to_manage:
         for module_key in AVAILABLE_MODULES.keys():
             can_read = 1 if f'permission_{role}_{module_key}_can_read' in request.form else 0
-            can_create = 1 if f'permission_{role}_{module_key}_can_create' in request.form else 0 # NOVO
+            can_create = 1 if f'permission_{role}_{module_key}_can_create' in request.form else 0
             can_edit = 1 if f'permission_{role}_{module_key}_can_edit' in request.form else 0
             can_delete = 1 if f'permission_{role}_{module_key}_can_delete' in request.form else 0
+            
+            # Utiliza a sintaxe UPSERT do SQLite para atualizar ou inserir a permissão
+            sql = '''
+                INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(role_name, module_name) DO UPDATE SET
+                    can_read = excluded.can_read,
+                    can_create = excluded.can_create,
+                    can_edit = excluded.can_edit,
+                    can_delete = excluded.can_delete;
+            '''
+            cursor.execute(sql, (role, module_key, can_read, can_create, can_edit, can_delete))
 
-            if can_read or can_create or can_edit or can_delete:
-                # 'can_create' adicionado ao INSERT
-                cursor.execute('INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete) VALUES (?, ?, ?, ?, ?, ?)',
-                               (role, module_key, can_read, can_create, can_edit, can_delete))
     conn.commit()
     conn.close()
     flash('Permissões atualizadas com sucesso!', 'success')
