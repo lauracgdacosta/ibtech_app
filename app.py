@@ -1399,10 +1399,26 @@ def usuarios():
 @role_required(module='admin_only', action='can_edit')
 def new_usuario():
     if request.method == 'POST':
-        nome, email, senha, role = request.form['nome'], request.form['email'], request.form['senha'], request.form['role']
+        nome = request.form['nome']
+        email = request.form['email']
+        senha = request.form['senha']
+        role = request.form['role']
+        
+        # --- CORREÇÃO APLICADA AQUI ---
+        # Define um valor padrão para 'nivel_acesso' com base no 'role'
+        niveis_acesso = {
+            'admin': 'Admin',
+            'coordenacao': 'Usuario',
+            'tecnico': 'Usuario'
+        }
+        nivel_acesso = niveis_acesso.get(role, 'Usuario') # Padrão para 'Usuario'
+        # --- FIM DA CORREÇÃO ---
+
         conn = get_db_connection()
         try:
-            conn.execute('INSERT INTO usuarios (nome, email, senha, role) VALUES (?, ?, ?, ?)', (nome, email, generate_password_hash(senha), role))
+            # Adiciona o 'nivel_acesso' ao INSERT
+            conn.execute('INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)', 
+                         (nome, email, generate_password_hash(senha), role, nivel_acesso))
             conn.commit()
             flash('Usuário criado com sucesso!', 'success')
         except sqlite3.IntegrityError:
@@ -1410,8 +1426,8 @@ def new_usuario():
         finally:
             conn.close()
         return redirect(url_for('usuarios'))
+    
     return render_template('new_usuario.html')
-
 @app.route('/edit_usuario/<int:id>', methods=['GET', 'POST'])
 @login_required
 @role_required(module='admin_only', action='can_edit')
