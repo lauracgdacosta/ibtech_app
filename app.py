@@ -111,6 +111,16 @@ def init_db():
             responsavel2 TEXT,
             observacoes TEXT
         )''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            role_name TEXT NOT NULL, 
+            module_name TEXT NOT NULL, 
+            can_read BOOLEAN DEFAULT 0, 
+            can_create BOOLEAN DEFAULT 0, -- NOVA COLUNA
+            can_edit BOOLEAN DEFAULT 0, 
+            can_delete BOOLEAN DEFAULT 0, 
+            UNIQUE(role_name, module_name)
+        )''')
     conn.commit()
     conn.close()
 
@@ -220,6 +230,25 @@ def migrate_permissions_table():
     finally:
         conn.close()
 
+def migrate_permissions_for_create():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(role_permissions)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'can_create' not in columns:
+            print("MIGRATE: Adicionando coluna 'can_create' à tabela 'role_permissions'.")
+            cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_create BOOLEAN DEFAULT 0")
+            # Define a permissão inicial de criar como igual à de editar
+            cursor.execute("UPDATE role_permissions SET can_create = can_edit")
+            conn.commit()
+            print("MIGRATE: Coluna 'can_create' adicionada e populada com sucesso.")
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela role_permissions para 'can_create': {e}")
+    finally:
+        conn.close()
+
+
 with app.app_context():
     init_db()
     migrate_db_roles()
@@ -227,6 +256,7 @@ with app.app_context():
     migrate_agenda_table()
     migrate_ferias_table()
     migrate_pendencias_table()
+    migrate_permissions_for_create() # <-- Nova chamada de migração
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
@@ -342,12 +372,16 @@ def salvar_permissoes():
     roles_to_manage = ['coordenacao', 'tecnico']
     cursor.execute(f"DELETE FROM role_permissions WHERE role_name IN ({','.join('?'*len(roles_to_manage))})", roles_to_manage)
     for role in roles_to_manage:
-        for module in AVAILABLE_MODULES.keys():
-            can_read = 1 if f'permission_{role}_{module}_can_read' in request.form else 0
-            can_edit = 1 if f'permission_{role}_{module}_can_edit' in request.form else 0
-            can_delete = 1 if f'permission_{role}_{module}_can_delete' in request.form else 0
-            if can_read or can_edit or can_delete:
-                cursor.execute('INSERT INTO role_permissions (role_name, module_name, can_read, can_edit, can_delete) VALUES (?, ?, ?, ?, ?)', (role, module, can_read, can_edit, can_delete))
+        for module_key in AVAILABLE_MODULES.keys():
+            can_read = 1 if f'permission_{role}_{module_key}_can_read' in request.form else 0
+            can_create = 1 if f'permission_{role}_{module_key}_can_create' in request.form else 0 # NOVO
+            can_edit = 1 if f'permission_{role}_{module_key}_can_edit' in request.form else 0
+            can_delete = 1 if f'permission_{role}_{module_key}_can_delete' in request.form else 0
+            
+            if can_read or can_create or can_edit or can_delete:
+                # 'can_create' adicionado ao INSERT
+                cursor.execute('INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete) VALUES (?, ?, ?, ?, ?, ?)', 
+                               (role, module_key, can_read, can_create, can_edit, can_delete))
     conn.commit()
     conn.close()
     flash('Permissões atualizadas com sucesso!', 'success')
@@ -442,7 +476,7 @@ def build_tecnicos_redirect_url():
 
 @app.route('/new_tecnico', methods=['GET', 'POST'])
 @login_required
-@role_required(module='cadastros', action='can_edit')
+@role_required(module='cadastros', action='can_create') # Alterado de 'can_edit' para 'can_create'
 def new_tecnico():
     args = request.args.to_dict()
     conn = get_db_connection()
