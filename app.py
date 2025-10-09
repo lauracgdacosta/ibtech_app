@@ -358,16 +358,22 @@ def logout():
 @role_required(module='admin_only', action='can_edit')
 def gerenciar_permissoes():
     conn = get_db_connection()
-    permissions_data = conn.execute('SELECT * FROM role_permissions').fetchall()
+    # Adicionado can_create à consulta para garantir que está sendo lido
+    permissions_data = conn.execute('SELECT role_name, module_name, can_read, can_create, can_edit, can_delete FROM role_permissions').fetchall()
     conn.close()
     permissions = {}
     for p in permissions_data:
         role, module = p['role_name'], p['module_name']
         if role not in permissions: permissions[role] = {}
-        permissions[role][module] = {'can_read': p['can_read'], 'can_edit': p['can_edit'], 'can_delete': p['can_delete']}
+        # CORREÇÃO: Adicionando 'can_create' ao dicionário que é enviado para o template
+        permissions[role][module] = {
+            'can_read': p['can_read'], 
+            'can_create': p['can_create'], 
+            'can_edit': p['can_edit'], 
+            'can_delete': p['can_delete']
+        }
     roles_to_manage = ['coordenacao', 'tecnico']
     return render_template('gerenciar_permissoes.html', modules=AVAILABLE_MODULES, roles=roles_to_manage, current_permissions=permissions)
-
 @app.route('/salvar_permissoes', methods=['POST'])
 @login_required
 @role_required(module='admin_only', action='can_edit')
