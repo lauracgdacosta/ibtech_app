@@ -1098,24 +1098,25 @@ def delete_pendencia(id):
     return redirect(build_pendencias_redirect_url())
 
 # --- MÓDULO DE FÉRIAS ---
+# SUBSTITUA TODA A SUA FUNÇÃO ferias() POR ESTA VERSÃO CORRIGIDA
+
 @app.route('/ferias')
 @login_required
 @role_required(module='ferias', action='can_read')
 def ferias():
     conn = get_db_connection()
-
+    
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'data_inicio', type=str)
     order = request.args.get('order', 'desc', type=str)
-
+    
     # Filtros existentes e novos
     search_funcionario = request.args.get('search_funcionario', '', type=str)
     search_contrato = request.args.get('search_contrato', '', type=str)
     search_ano = request.args.get('search_ano', '', type=str)
     search_obs = request.args.get('search_obs', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
-    # --- NOVOS FILTROS PARA DATAS ---
     search_admissao = request.args.get('search_admissao', '', type=str)
     search_data_inicio = request.args.get('search_data_inicio', '', type=str)
     search_data_termino = request.args.get('search_data_termino', '', type=str)
@@ -1127,20 +1128,28 @@ def ferias():
         order = 'desc'
 
     offset = (page - 1) * per_page
-
-    # A lógica de filtro agora acontece em Python após buscar todos os dados
+    
     ferias_db = conn.execute('SELECT * FROM ferias').fetchall()
     conn.close()
 
-    # --- LÓGICA DE STATUS AUTOMÁTICO E FILTRAGEM ---
     ferias_processadas = []
     hoje = datetime.date.today()
 
     for ferias_row in ferias_db:
         item = dict(ferias_row)
+        
+        # --- ALTERAÇÃO APLICADA AQUI ---
+        # Adicionado tratamento de erro para datas inválidas
+        try:
+            data_inicio = datetime.datetime.strptime(item['data_inicio'], '%Y-%m-%d').date() if item['data_inicio'] else None
+        except (ValueError, TypeError):
+            data_inicio = None # Define como None se o formato for inválido
 
-        data_inicio = datetime.datetime.strptime(item['data_inicio'], '%Y-%m-%d').date() if item['data_inicio'] else None
-        data_termino = datetime.datetime.strptime(item['data_termino'], '%Y-%m-%d').date() if item['data_termino'] else None
+        try:
+            data_termino = datetime.datetime.strptime(item['data_termino'], '%Y-%m-%d').date() if item['data_termino'] else None
+        except (ValueError, TypeError):
+            data_termino = None # Define como None se o formato for inválido
+        # --- FIM DA ALTERAÇÃO ---
 
         if data_termino and hoje > data_termino:
             item['status'] = 'Concluído'
@@ -1148,23 +1157,21 @@ def ferias():
             item['status'] = 'Em Andamento'
         else:
             item['status'] = 'Planejada'
-
+        
         # Aplica os filtros
         if (search_funcionario and search_funcionario.lower() not in item['funcionario'].lower()): continue
         if (search_contrato and search_contrato.lower() not in (item['contrato'] or '').lower()): continue
         if (search_ano and str(item['ano']) != search_ano): continue
         if (search_obs and search_obs.lower() not in (item['obs'] or '').lower()): continue
         if (search_status and item['status'] != search_status): continue
-        # --- NOVOS FILTROS DE DATA ---
         if (search_admissao and item['admissao'] != search_admissao): continue
         if (search_data_inicio and item['data_inicio'] != search_data_inicio): continue
         if (search_data_termino and item['data_termino'] != search_data_termino): continue
 
         ferias_processadas.append(item)
-    # --- FIM DA LÓGICA ---
 
     # Ordenação
-    ferias_processadas.sort(key=lambda x: x.get(sort_by) or '', reverse=(order == 'desc'))
+    ferias_processadas.sort(key=lambda x: str(x.get(sort_by) or ''), reverse=(order == 'desc'))
 
     # Paginação
     total_results = len(ferias_processadas)
@@ -1177,7 +1184,7 @@ def ferias():
     if 'sort_by' in sorting_args: del sorting_args['sort_by']
     if 'order' in sorting_args: del sorting_args['order']
 
-    return render_template('ferias.html',
+    return render_template('ferias.html', 
                            ferias=ferias_paginadas, page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
                            search_funcionario=search_funcionario,
@@ -1185,11 +1192,10 @@ def ferias():
                            search_ano=search_ano,
                            search_obs=search_obs,
                            search_status=search_status,
-                           # --- NOVAS VARIÁVEIS ---
                            search_admissao=search_admissao,
                            search_data_inicio=search_data_inicio,
                            search_data_termino=search_data_termino,
-                           pagination_args=pagination_args,
+                           pagination_args=pagination_args, 
                            sorting_args=sorting_args)
 
 @app.route('/new_ferias', methods=['GET', 'POST'])
