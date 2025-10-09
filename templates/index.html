@@ -10,6 +10,8 @@
     
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
             --background-color: #f4f7fa;
@@ -19,143 +21,34 @@
             --border-color: #e2e8f0;
             --shadow-color: rgba(149, 157, 165, 0.1);
         }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            margin: 0;
-            color: var(--text-color);
-            font-size: 14px;
-        }
-
-        .main-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0;
-            border: none;
-        }
-
-        .user-info a {
-            color: var(--text-light);
-            text-decoration: none;
-            margin-left: 8px;
-            transition: color 0.2s;
-        }
-        .user-info a:hover {
-            color: #e74c3c;
-        }
-
-        .card {
-            background-color: var(--card-background);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0px 4px 12px var(--shadow-color);
-            border: 1px solid var(--border-color);
-            overflow: hidden; 
-        }
-
-        .card h2 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 20px;
-            border: none;
-            transition: color 0.2s;
-        }
-        
-        .card-title-link {
-            text-decoration: none;
-            color: inherit;
-        }
-        .card-title-link:hover h2 {
-            color: #3498db;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 24px;
-            margin-top: 40px; /* Adiciona espaço abaixo dos botões */
-        }
-
-        .widget-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed; 
-        }
-
-        .widget-table th, .widget-table td {
-            padding: 12px 8px; 
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            white-space: normal; 
-            word-wrap: break-word; 
-        }
-
-        .widget-table th {
-            font-weight: 500;
-            color: var(--text-light);
-            font-size: 12px;
-        }
-
+        body { font-family: 'Inter', sans-serif; background-color: var(--background-color); margin: 0; color: var(--text-color); font-size: 14px; }
+        .main-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .header h1 { font-size: 24px; font-weight: 600; margin: 0; border: none; }
+        .user-info a { color: var(--text-light); text-decoration: none; margin-left: 8px; transition: color 0.2s; }
+        .user-info a:hover { color: #e74c3c; }
+        .card { background-color: var(--card-background); border-radius: 12px; padding: 24px; box-shadow: 0px 4px 12px var(--shadow-color); border: 1px solid var(--border-color); overflow: hidden; }
+        .card h2 { font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 20px; border: none; transition: color 0.2s; }
+        .card-title-link { text-decoration: none; color: inherit; }
+        .card-title-link:hover h2 { color: #3498db; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-top: 40px; }
+        .widget-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .widget-table th, .widget-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: normal; word-wrap: break-word; }
+        .widget-table th { font-weight: 500; color: var(--text-light); font-size: 12px; }
         .widget-table tr:last-child td { border-bottom: none; }
         .empty-state { text-align: center; padding: 20px; color: var(--text-light); }
-
-        .modules-section {
-            margin-bottom: 24px;
-        }
-        
-        .module-buttons-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .module-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 25px; /* Botões maiores */
-            min-height: 80px; /* Altura mínima maior */
-            text-decoration: none;
-            color: white; 
-            border-radius: 10px;
-            font-weight: 600; 
-            font-size: 1.1em; /* Fonte maior */
-            text-align: center;
-            border: none; 
-            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
-        }
-
-        .module-button:hover {
-            transform: translateY(-5px);
-            box-shadow: 0px 8px 20px rgba(0,0,0,0.15);
-            filter: brightness(1.1); 
-        }
-
-        /* Cores diversas para os botões */
+        .modules-section { margin-bottom: 24px; }
+        .module-buttons-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .module-button { display: flex; align-items: center; justify-content: center; padding: 25px; min-height: 80px; text-decoration: none; color: white; border-radius: 10px; font-weight: 600; font-size: 1.1em; text-align: center; border: none; transition: transform 0.2s, box-shadow 0.2s, filter 0.2s; }
+        .module-button:hover { transform: translateY(-5px); box-shadow: 0px 8px 20px rgba(0,0,0,0.15); filter: brightness(1.1); }
         .module-button.cadastros { background-color: #3498db; }
         .module-button.agenda { background-color: #2ecc71; }
         .module-button.projetos { background-color: #9b59b6; }
         .module-button.pendencias { background-color: #f39c12; }
         .module-button.prestacao { background-color: #1abc9c; }
         .module-button.ferias { background-color: #e67e22; }
-        .module-button.matriz { background-color: #e74c3c; } /* Nova cor para Matriz */
+        .module-button.matriz { background-color: #e74c3c; }
         .module-button.admin-link { background-color: #34495e; }
-
     </style>
 </head>
 <body>
@@ -171,103 +64,75 @@
 
         <main class="content-area">
             <section class="modules-section">
-                <div class="module-buttons-grid">
-                    {% if check_permission('cadastros', 'can_read') %}
-                        <a href="{{ url_for('cadastros') }}" class="module-button cadastros">Cadastros</a>
-                    {% endif %}
-                    {% if check_permission('agenda', 'can_read') %}
-                        <a href="{{ url_for('agenda') }}" class="module-button agenda">Agenda</a>
-                    {% endif %}
-                    {% if check_permission('projetos', 'can_read') %}
-                        <a href="{{ url_for('projetos') }}" class="module-button projetos">Projetos de Implantação</a>
-                    {% endif %}
-                    {% if check_permission('pendencias', 'can_read') %}
-                        <a href="{{ url_for('pendencias') }}" class="module-button pendencias">Controle de Demandas</a>
-                    {% endif %}
-                    {% if check_permission('prestacao_contas', 'can_read') %}
-                        <a href="{{ url_for('prestacao_contas') }}" class="module-button prestacao">Prestação de Contas</a>
-                    {% endif %}
-                    {% if check_permission('ferias', 'can_read') %}
-                        <a href="{{ url_for('ferias') }}" class="module-button ferias">Férias</a>
-                    {% endif %}
-                    <a href="{{ url_for('matriz_responsabilidades') }}" class="module-button matriz">Matriz de Responsabilidades</a>
-    
-                    {% if session['user_role'] == 'admin' %}
-                        <a href="{{ url_for('usuarios') }}" class="module-button admin-link">Gestão de Usuários</a>
-                        <a href="{{ url_for('gerenciar_permissoes') }}" class="module-button admin-link">Gerenciar Permissões</a>
-                    {% endif %}
-                </div>
-            </section>
+                </section>
             
             <div class="dashboard-grid">
                 <div class="card">
-                    <a href="{{ url_for('agenda') }}" class="card-title-link">
-                        <h2>Próximos Agendamentos</h2>
-                    </a>
-                    {% if proximos_agendamentos %}
-                    <table class="widget-table">
-                        <thead><tr><th style="width: 30%;">Cliente</th><th style="width: 25%;">Técnico</th><th style="width: 25%;">Motivo</th><th style="width: 20%;">Data</th></tr></thead>
-                        <tbody>
-                            {% for agendamento in proximos_agendamentos %}
-                            <tr>
-                                <td>{{ agendamento['cliente'] }}</td>
-                                <td>{{ agendamento['tecnico'] }}</td>
-                                <td>{{ agendamento['motivo'] }}</td>
-                                <td>{{ agendamento['data_agendamento'] | dateformat }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <h2>Protocolos por Sistema</h2>
+                    {% if protocolos_por_sistema %}
+                        <canvas id="protocolosChart"></canvas>
                     {% else %}
-                    <p class="empty-state">Nenhum agendamento próximo.</p>
+                        <p class="empty-state">Nenhum protocolo para exibir.</p>
                     {% endif %}
                 </div>
 
                 <div class="card">
-                    <a href="{{ url_for('pendencias') }}" class="card-title-link">
-                        <h2>Demandas Recentes</h2>
-                    </a>
-                    {% if pendencias_abertas %}
-                    <table class="widget-table">
-                        <thead><tr><th style="width: 40%;">Cliente</th><th style="width: 35%;">Sistema</th><th style="width: 25%;">Data de Registro</th></tr></thead>
-                        <tbody>
-                            {% for pendencia in pendencias_abertas %}
-                            <tr>
-                                <td>{{ pendencia['cliente'] }}</td>
-                                <td>{{ pendencia['sistema'] }}</td>
-                                <td>{{ pendencia['data_registro'] | dateformat }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                    <p class="empty-state">Nenhuma demanda pendente.</p>
-                    {% endif %}
-                </div>
+                    </div>
 
                 <div class="card">
-                    <a href="{{ url_for('ferias') }}" class="card-title-link">
-                        <h2>Técnicos em Férias Hoje</h2>
-                    </a>
-                    {% if tecnicos_em_ferias %}
-                    <table class="widget-table">
-                        <thead><tr><th style="width: 50%;">Funcionário</th><th style="width: 25%;">Início</th><th style="width: 25%;">Término</th></tr></thead>
-                        <tbody>
-                            {% for ferias in tecnicos_em_ferias %}
-                            <tr>
-                                <td>{{ ferias['funcionario'] }}</td>
-                                <td>{{ ferias['data_inicio'] | dateformat }}</td>
-                                <td>{{ ferias['data_termino'] | dateformat }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                    <p class="empty-state">Nenhum técnico em férias hoje.</p>
-                    {% endif %}
-                </div>
+                    </div>
+
+                <div class="card">
+                    </div>
             </div>
         </main>
     </div>
+
+    <script>
+    // Garante que o código só é executado se houver dados para o gráfico
+    {% if protocolos_por_sistema %}
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pega os dados enviados pelo Flask
+            const chartRawData = {{ protocolos_por_sistema | tojson }};
+            
+            // Prepara os dados para o formato do Chart.js
+            const labels = chartRawData.map(item => item.sistema);
+            const data = chartRawData.map(item => item.total);
+
+            // Cores para as fatias do gráfico
+            const backgroundColors = [
+                '#3498db', '#2ecc71', '#9b59b6', '#f1c40f', '#e74c3c',
+                '#1abc9c', '#34495e', '#e67e22', '#7f8c8d', '#d35400'
+            ];
+
+            const ctx = document.getElementById('protocolosChart').getContext('2d');
+            const protocolosChart = new Chart(ctx, {
+                type: 'pie', // Tipo de gráfico
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nº de Protocolos',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top', // Posição da legenda
+                        },
+                        title: {
+                            display: false,
+                            text: 'Distribuição de Protocolos por Sistema'
+                        }
+                    }
+                }
+            });
+        });
+    {% endif %}
+    </script>
 </body>
 </html>
