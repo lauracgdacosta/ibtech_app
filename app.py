@@ -273,12 +273,17 @@ def index():
     pendencias_abertas = conn.execute("SELECT * FROM pendencias WHERE status = 'Pendente' ORDER BY data_registro DESC LIMIT 5").fetchall()
     tecnicos_em_ferias = conn.execute('SELECT * FROM ferias WHERE data_inicio <= ? AND data_termino >= ?', (hoje_str, hoje_str)).fetchall()
     
-    # --- NOVA LÓGICA PARA O GRÁFICO ---
+    # Dados para o gráfico de pizza (por sistema)
     protocolos_por_sistema_data = conn.execute(
         "SELECT sistema, COUNT(id) as total FROM pendencias GROUP BY sistema ORDER BY total DESC"
     ).fetchall()
-    # Converte os dados para um formato que o template possa usar
     protocolos_por_sistema = [{'sistema': row['sistema'], 'total': row['total']} for row in protocolos_por_sistema_data]
+
+    # --- NOVA LÓGICA PARA O GRÁFICO DE BARRAS ---
+    protocolos_por_cliente_data = conn.execute(
+        "SELECT cliente, COUNT(id) as total FROM pendencias GROUP BY cliente ORDER BY total DESC"
+    ).fetchall()
+    protocolos_por_cliente = [{'cliente': row['cliente'], 'total': row['total']} for row in protocolos_por_cliente_data]
     # --- FIM DA NOVA LÓGICA ---
 
     conn.close()
@@ -287,7 +292,8 @@ def index():
                            proximos_agendamentos=proximos_agendamentos, 
                            pendencias_abertas=pendencias_abertas, 
                            tecnicos_em_ferias=tecnicos_em_ferias,
-                           protocolos_por_sistema=protocolos_por_sistema) # <-- Nova variável
+                           protocolos_por_sistema=protocolos_por_sistema,
+                           protocolos_por_cliente=protocolos_por_cliente) # <-- Nova variável
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
