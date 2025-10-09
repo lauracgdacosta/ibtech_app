@@ -94,7 +94,7 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS tecnicos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT, telefone TEXT, funcao TEXT, equipe TEXT, contrato TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, municipio TEXT NOT NULL, orgao TEXT, contrato TEXT, sistemas TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS equipes (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT, lider TEXT)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, processo TEXT, cliente TEXT, sistema TEXT, data_prioridade TEXT, prazo_entrega TEXT, status TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo TEXT, data_registro TEXT, cliente TEXT, sistema TEXT, detalhamento TEXT, responsavel TEXT, fase TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT, status TEXT NOT NULL DEFAULT 'Planejada')''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS sistemas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, horario_agendamento TEXT, motivo TEXT, descricao TEXT, status TEXT)''')
@@ -146,37 +146,6 @@ def migrate_ferias_table():
     finally:
         conn.close()
 
-def migrate_db_roles():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT role FROM usuarios LIMIT 1")
-    except sqlite3.OperationalError:
-        cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT")
-    cursor.execute("UPDATE usuarios SET role = CASE WHEN nivel_acesso = 'Admin' THEN 'admin' WHEN nivel_acesso = 'Usuario' THEN 'tecnico' ELSE role END WHERE role IS NULL")
-    if cursor.execute("SELECT COUNT(id) FROM usuarios").fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)", ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin', 'Admin'))
-    conn.commit()
-    conn.close()
-
-def migrate_permissions_table():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT can_read FROM role_permissions LIMIT 1")
-    except sqlite3.OperationalError:
-        try:
-            cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_read BOOLEAN DEFAULT 0")
-            cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_edit BOOLEAN DEFAULT 0")
-            cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_delete BOOLEAN DEFAULT 0")
-            cursor.execute("UPDATE role_permissions SET can_read = 1, can_edit = 1, can_delete = 1")
-            conn.commit()
-        except Exception as e:
-            print(f"ERRO MIGRATE: {e}")
-            conn.rollback()
-    finally:
-        conn.close()
-
 def migrate_pendencias_table():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -220,6 +189,36 @@ def migrate_pendencias_table():
     finally:
         conn.close()
 
+def migrate_db_roles():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT role FROM usuarios LIMIT 1")
+    except sqlite3.OperationalError:
+        cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT")
+    cursor.execute("UPDATE usuarios SET role = CASE WHEN nivel_acesso = 'Admin' THEN 'admin' WHEN nivel_acesso = 'Usuario' THEN 'tecnico' ELSE role END WHERE role IS NULL")
+    if cursor.execute("SELECT COUNT(id) FROM usuarios").fetchone()[0] == 0:
+        cursor.execute("INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)", ('Administrador', 'admin@ibtech.com', generate_password_hash("admin"), 'admin', 'Admin'))
+    conn.commit()
+    conn.close()
+
+def migrate_permissions_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT can_read FROM role_permissions LIMIT 1")
+    except sqlite3.OperationalError:
+        try:
+            cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_read BOOLEAN DEFAULT 0")
+            cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_edit BOOLEAN DEFAULT 0")
+            cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_delete BOOLEAN DEFAULT 0")
+            cursor.execute("UPDATE role_permissions SET can_read = 1, can_edit = 1, can_delete = 1")
+            conn.commit()
+        except Exception as e:
+            print(f"ERRO MIGRATE: {e}")
+            conn.rollback()
+    finally:
+        conn.close()
 
 with app.app_context():
     init_db()
