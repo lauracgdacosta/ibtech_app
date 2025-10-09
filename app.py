@@ -375,29 +375,35 @@ def salvar_permissoes():
     conn = get_db_connection()
     cursor = conn.cursor()
     roles_to_manage = ['coordenacao', 'tecnico']
+    
+    try:
+        # Primeiro, deleta todas as permissões antigas para os grupos gerenciáveis
+        cursor.execute(f"DELETE FROM role_permissions WHERE role_name IN ({','.join('?'*len(roles_to_manage))})", roles_to_manage)
+        
+        # Depois, insere as novas permissões baseadas no formulário
+        for role in roles_to_manage:
+            for module_key in AVAILABLE_MODULES.keys():
+                can_read = 1 if f'permission_{role}_{module_key}_can_read' in request.form else 0
+                can_create = 1 if f'permission_{role}_{module_key}_can_create' in request.form else 0
+                can_edit = 1 if f'permission_{role}_{module_key}_can_edit' in request.form else 0
+                can_delete = 1 if f'permission_{role}_{module_key}_can_delete' in request.form else 0
+                
+                # Insere um novo registro para cada módulo que tiver pelo menos uma permissão
+                if can_read or can_create or can_edit or can_delete:
+                    cursor.execute('INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete) VALUES (?, ?, ?, ?, ?, ?)', 
+                                   (role, module_key, can_read, can_create, can_edit, can_delete))
+        
+        conn.commit()
+        flash('Permissões atualizadas com sucesso!', 'success')
 
-    for role in roles_to_manage:
-        for module_key in AVAILABLE_MODULES.keys():
-            can_read = 1 if f'permission_{role}_{module_key}_can_read' in request.form else 0
-            can_create = 1 if f'permission_{role}_{module_key}_can_create' in request.form else 0
-            can_edit = 1 if f'permission_{role}_{module_key}_can_edit' in request.form else 0
-            can_delete = 1 if f'permission_{role}_{module_key}_can_delete' in request.form else 0
-            
-            # Utiliza a sintaxe UPSERT do SQLite para atualizar ou inserir a permissão
-            sql = '''
-                INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(role_name, module_name) DO UPDATE SET
-                    can_read = excluded.can_read,
-                    can_create = excluded.can_create,
-                    can_edit = excluded.can_edit,
-                    can_delete = excluded.can_delete;
-            '''
-            cursor.execute(sql, (role, module_key, can_read, can_create, can_edit, can_delete))
+    except Exception as e:
+        conn.rollback()
+        flash(f'Ocorreu um erro ao salvar as permissões: {e}', 'danger')
+        print(f"!!!!!!!!!!!! ERRO AO SALVAR PERMISSÕES: {e} !!!!!!!!!!!!")
 
-    conn.commit()
-    conn.close()
-    flash('Permissões atualizadas com sucesso!', 'success')
+    finally:
+        conn.close()
+        
     return redirect(url_for('gerenciar_permissoes'))
 
 # --- MÓDULOS DE CADASTRO ---
@@ -1645,6 +1651,21 @@ def api_agendamentos():
             }
         })
     return jsonify(eventos)
+
+# --- ROTA TEMPORÁRIA PARA CORREÇÃO DO BANCO DE DADOS ---
+@app.route('/force_db_fix')
+@login_required
+def force_db_fix():
+    print("--- INICIANDO CORREÇÃO MANUAL DO BANCO DE DADOS ---")
+    try:
+        # Re-executa a migração que adiciona a coluna 'can_create'
+        migrate_permissions_for_create()
+        flash('A verificação e correção da estrutura do banco de dados foi executada com sucesso!', 'success')
+        print("--- CORREÇÃO MANUAL DO BANCO DE DADOS CONCLUÍDA ---")
+    except Exception as e:
+        flash(f'Ocorreu um erro durante a correção da estrutura: {e}', 'danger')
+        print(f"--- ERRO NA CORREÇÃO MANUAL DA ESTRUTURA: {e} ---")
+    return redirect(url_for('gerenciar_permissoes'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
