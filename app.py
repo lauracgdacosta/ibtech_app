@@ -9,7 +9,6 @@ app = Flask(__name__)
 app.secret_key = '18T3ch'
 
 # --- LISTA MESTRA DE MÓDULOS ---
-# ALTERAÇÃO APLICADA AQUI
 AVAILABLE_MODULES = {
     'cadastros': 'Cadastros (Técnicos, Clientes, etc)',
     'agenda': 'Agenda',
@@ -96,15 +95,14 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS tecnicos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT, telefone TEXT, funcao TEXT, equipe TEXT, contrato TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, municipio TEXT NOT NULL, orgao TEXT, contrato TEXT, sistemas TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS equipes (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT, lider TEXT)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo TEXT, data_registro TEXT, cliente TEXT, sistema TEXT, detalhamento TEXT, responsavel TEXT, fase TEXT, status TEXT)''')
+    # --- ALTERAÇÃO APLICADA AQUI: Adicionada a coluna 'prioridade' ---
+    cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo TEXT, data_registro TEXT, cliente TEXT, sistema TEXT, detalhamento TEXT, responsavel TEXT, fase TEXT, status TEXT, prioridade TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT, status TEXT NOT NULL DEFAULT 'Planejada')''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS sistemas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, horario_agendamento TEXT, motivo TEXT, descricao TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS projetos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cliente TEXT, data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
-    
-    
     cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL, role TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS matriz_responsabilidades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,7 +112,6 @@ def init_db():
             responsavel2 TEXT,
             observacoes TEXT
         )''')
-    # MANTENHA APENAS ESTA DEFINIÇÃO COMPLETA DA TABELA
     cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             role_name TEXT NOT NULL, 
@@ -127,7 +124,6 @@ def init_db():
         )''')
     conn.commit()
     conn.close()
-    
 
 def migrate_agenda_table():
     conn = get_db_connection()
@@ -136,10 +132,8 @@ def migrate_agenda_table():
         cursor.execute("PRAGMA table_info(agenda)")
         columns = [row['name'] for row in cursor.fetchall()]
         if 'horario_agendamento' not in columns:
-            print("MIGRATE: Adicionando coluna 'horario_agendamento' à tabela 'agenda'.")
             cursor.execute("ALTER TABLE agenda ADD COLUMN horario_agendamento TEXT")
             conn.commit()
-            print("MIGRATE: Coluna adicionada com sucesso.")
     except Exception as e:
         print(f"ERRO ao migrar a tabela agenda: {e}")
     finally:
@@ -152,12 +146,27 @@ def migrate_ferias_table():
         cursor.execute("PRAGMA table_info(ferias)")
         columns = [row['name'] for row in cursor.fetchall()]
         if 'status' not in columns:
-            print("MIGRATE: Adicionando coluna 'status' à tabela 'ferias'.")
             cursor.execute("ALTER TABLE ferias ADD COLUMN status TEXT NOT NULL DEFAULT 'Planejada'")
             conn.commit()
-            print("MIGRATE: Coluna 'status' adicionada com sucesso.")
     except Exception as e:
         print(f"ERRO ao migrar a tabela ferias: {e}")
+    finally:
+        conn.close()
+        
+# --- ALTERAÇÃO APLICADA AQUI: Nova função de migração para 'pendencias' ---
+def migrate_pendencias_add_prioridade():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(pendencias)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'prioridade' not in columns:
+            print("MIGRATE: Adicionando coluna 'prioridade' à tabela 'pendencias'.")
+            cursor.execute("ALTER TABLE pendencias ADD COLUMN prioridade TEXT")
+            conn.commit()
+            print("MIGRATE: Coluna 'prioridade' adicionada com sucesso.")
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela pendencias para 'prioridade': {e}")
     finally:
         conn.close()
 
@@ -165,13 +174,10 @@ def migrate_pendencias_table():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        print("MIGRATE: Verificando a estrutura da tabela 'pendencias'...")
         cursor.execute("PRAGMA table_info(pendencias)")
         columns = [row['name'] for row in cursor.fetchall()]
 
-        # Se a coluna 'processo' (da versão antiga) ainda existir, reconstruímos a tabela.
         if 'processo' in columns:
-            print("MIGRATE: Estrutura antiga detectada. Reconstruindo a tabela 'pendencias'...")
             cursor.execute("BEGIN TRANSACTION;")
             cursor.execute('''
                 CREATE TABLE pendencias_new (
@@ -183,10 +189,10 @@ def migrate_pendencias_table():
                     detalhamento TEXT,
                     responsavel TEXT,
                     fase TEXT,
-                    status TEXT
+                    status TEXT,
+                    prioridade TEXT
                 )
             ''')
-            # Copia os dados compatíveis da tabela antiga para a nova
             cursor.execute('''
                 INSERT INTO pendencias_new (id, protocolo, cliente, sistema, status)
                 SELECT id, processo, cliente, sistema, status FROM pendencias
@@ -194,10 +200,6 @@ def migrate_pendencias_table():
             cursor.execute("DROP TABLE pendencias")
             cursor.execute("ALTER TABLE pendencias_new RENAME TO pendencias")
             conn.commit()
-            print("MIGRATE: Tabela 'pendencias' reconstruída com sucesso.")
-        else:
-            print("MIGRATE: Tabela 'pendencias' já está no formato correto.")
-
     except Exception as e:
         print(f"ERRO ao migrar a tabela pendencias: {e}")
         conn.rollback()
@@ -242,12 +244,9 @@ def migrate_permissions_for_create():
         cursor.execute("PRAGMA table_info(role_permissions)")
         columns = [row['name'] for row in cursor.fetchall()]
         if 'can_create' not in columns:
-            print("MIGRATE: Adicionando coluna 'can_create' à tabela 'role_permissions'.")
             cursor.execute("ALTER TABLE role_permissions ADD COLUMN can_create BOOLEAN DEFAULT 0")
-            # Define a permissão inicial de criar como igual à de editar
             cursor.execute("UPDATE role_permissions SET can_create = can_edit")
             conn.commit()
-            print("MIGRATE: Coluna 'can_create' adicionada e populada com sucesso.")
     except Exception as e:
         print(f"ERRO ao migrar a tabela role_permissions para 'can_create': {e}")
     finally:
@@ -261,7 +260,9 @@ with app.app_context():
     migrate_agenda_table()
     migrate_ferias_table()
     migrate_pendencias_table()
-    migrate_permissions_for_create() # <-- Nova chamada de migração
+    migrate_permissions_for_create()
+    # --- ALTERAÇÃO APLICADA AQUI: Chamada da nova função de migração ---
+    migrate_pendencias_add_prioridade()
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
@@ -931,12 +932,12 @@ def edit_titulo(tarefa_id):
 @role_required(module='pendencias', action='can_read')
 def pendencias():
     conn = get_db_connection()
-
+    
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'data_registro', type=str)
     order = request.args.get('order', 'desc', type=str)
-
+    
     # Filtros
     search_protocolo = request.args.get('search_protocolo', '', type=str)
     search_cliente = request.args.get('search_cliente', '', type=str)
@@ -944,8 +945,11 @@ def pendencias():
     search_responsavel = request.args.get('search_responsavel', '', type=str)
     search_fase = request.args.get('search_fase', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
+    # --- ALTERAÇÃO APLICADA AQUI: Adicionado filtro de prioridade ---
+    search_prioridade = request.args.get('search_prioridade', '', type=str)
 
-    allowed_sort_columns = ['protocolo', 'data_registro', 'cliente', 'sistema', 'responsavel', 'fase', 'status']
+    # --- ALTERAÇÃO APLICADA AQUI: Adicionada 'prioridade' às colunas ordenáveis ---
+    allowed_sort_columns = ['protocolo', 'data_registro', 'cliente', 'sistema', 'responsavel', 'fase', 'status', 'prioridade']
     if sort_by not in allowed_sort_columns:
         sort_by = 'data_registro'
     if order.lower() not in ['asc', 'desc']:
@@ -973,14 +977,18 @@ def pendencias():
     if search_status:
         base_query += " AND status = ?"
         params.append(search_status)
-
+    # --- ALTERAÇÃO APLICADA AQUI: Adicionada lógica de filtro para prioridade ---
+    if search_prioridade:
+        base_query += " AND prioridade = ?"
+        params.append(search_prioridade)
+    
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     pendencias_data = conn.execute(data_query, tuple(params)).fetchall()
-
+    
     conn.close()
 
     pagination_args = request.args.to_dict()
@@ -989,7 +997,7 @@ def pendencias():
     if 'sort_by' in sorting_args: del sorting_args['sort_by']
     if 'order' in sorting_args: del sorting_args['order']
 
-    return render_template('pendencias.html',
+    return render_template('pendencias.html', 
                            pendencias=pendencias_data,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
@@ -999,16 +1007,13 @@ def pendencias():
                            search_responsavel=search_responsavel,
                            search_fase=search_fase,
                            search_status=search_status,
+                           # --- ALTERAÇÃO APLICADA AQUI: Passando o filtro para o template ---
+                           search_prioridade=search_prioridade,
                            pagination_args=pagination_args,
                            sorting_args=sorting_args)
 
 def build_pendencias_redirect_url():
-    args = {}
-    valid_state_keys = ['search_protocolo', 'search_cliente', 'search_sistema', 'search_responsavel', 'search_fase', 'search_status', 'page', 'sort_by', 'order']
-    for key in valid_state_keys:
-        value = request.form.get(key)
-        if value:
-            args[key] = value
+    # ... (código inalterado)
     return url_for('pendencias', **args)
 
 @app.route('/new_pendencia', methods=['GET', 'POST'])
@@ -1019,27 +1024,27 @@ def new_pendencia():
     if request.method == 'POST':
         form = request.form
         conn = get_db_connection()
-
+        
         numero_digitado = form['protocolo']
         ano_atual = str(datetime.date.today().year)
         protocolo_final = f"{numero_digitado.zfill(6)}/{ano_atual}"
 
-        conn.execute('INSERT INTO pendencias (protocolo, data_registro, cliente, sistema, detalhamento, responsavel, fase, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status']))
+        # --- ALTERAÇÃO APLICADA AQUI: Adicionada 'prioridade' ao INSERT ---
+        conn.execute('INSERT INTO pendencias (protocolo, data_registro, cliente, sistema, detalhamento, responsavel, fase, status, prioridade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], form['prioridade']))
         conn.commit()
         conn.close()
         flash(f'Nova demanda criada com sucesso! Protocolo: {protocolo_final}', 'success')
         return redirect(build_pendencias_redirect_url())
-
+    
     conn = get_db_connection()
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-
-    # Passa o ano atual para o template para exibir a máscara
+    
     ano_atual = str(datetime.date.today().year)
-
+    
     return render_template('new_pendencia.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args, ano_atual=ano_atual)
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
@@ -1049,39 +1054,38 @@ def edit_pendencia(id):
     args = request.args.to_dict()
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
-
+    
     if request.method == 'POST':
         form = request.form
-
-        # Reconstrói o protocolo a partir do número editado e do ano original
+        
         numero_protocolo_editado = form['protocolo_numero']
         ano_protocolo = form['protocolo_ano']
         protocolo_final = f"{numero_protocolo_editado.zfill(6)}/{ano_protocolo}"
 
-        conn.execute('UPDATE pendencias SET protocolo=?, data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=? WHERE id=?',
-                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], id))
+        # --- ALTERAÇÃO APLICADA AQUI: Adicionada 'prioridade' ao UPDATE ---
+        conn.execute('UPDATE pendencias SET protocolo=?, data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=?, prioridade=? WHERE id=?',
+                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], form['prioridade'], id))
         conn.commit()
         conn.close()
         flash('Demanda atualizada com sucesso!', 'success')
         return redirect(build_pendencias_redirect_url())
-
+        
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
 
-    # Separa o número do protocolo e o ano para edição
     numero_protocolo, ano_protocolo = "", ""
     if pendencia and pendencia['protocolo'] and '/' in pendencia['protocolo']:
         partes = pendencia['protocolo'].split('/')
         numero_protocolo = partes[0]
         ano_protocolo = partes[1]
 
-    return render_template('edit_pendencia.html',
-                           pendencia=pendencia,
-                           clientes=clientes,
-                           sistemas=sistemas,
-                           responsaveis=responsaveis,
+    return render_template('edit_pendencia.html', 
+                           pendencia=pendencia, 
+                           clientes=clientes, 
+                           sistemas=sistemas, 
+                           responsaveis=responsaveis, 
                            args=args,
                            numero_protocolo=numero_protocolo,
                            ano_protocolo=ano_protocolo)
@@ -1090,12 +1094,9 @@ def edit_pendencia(id):
 @login_required
 @role_required(module='pendencias', action='can_delete')
 def delete_pendencia(id):
-    conn = get_db_connection()
-    conn.execute('DELETE FROM pendencias WHERE id = ?', (id,))
-    conn.commit()
-    conn.close()
-    flash('Demanda excluída com sucesso.', 'success')
+    # ... (código inalterado)
     return redirect(build_pendencias_redirect_url())
+
 
 # --- MÓDULO DE FÉRIAS ---
 # SUBSTITUA TODA A SUA FUNÇÃO ferias() POR ESTA VERSÃO CORRIGIDA

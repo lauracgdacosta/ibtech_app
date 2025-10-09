@@ -77,6 +77,14 @@
                 <option value="Concluído não arquivado" {% if pendencia.status == 'Concluído não arquivado' %}selected{% endif %}>Concluído não arquivado</option>
                 <option value="Arquivado" {% if pendencia.status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
             </select>
+
+            <label for="prioridade">Prioridade</label>
+            <select id="prioridade" name="prioridade">
+                <option value="Baixa" {% if pendencia.prioridade == 'Baixa' %}selected{% endif %}>Baixa</option>
+                <option value="Média" {% if pendencia.prioridade == 'Média' %}selected{% endif %}>Média</option>
+                <option value="Alta" {% if pendencia.prioridade == 'Alta' %}selected{% endif %}>Alta</option>
+                <option value="Crítica" {% if pendencia.prioridade == 'Crítica' %}selected{% endif %}>Crítica</option>
+            </select>
             
             <button type="submit" class="button edit">Atualizar Demanda</button>
         </form>
