@@ -16,19 +16,27 @@
         .filter-row input, .filter-row select { width: 100%; padding: 6px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         .filter-actions { display: flex; gap: 5px; align-items: center; }
         .filter-actions .button { padding: 6px 10px; font-size: 0.9em; width: 100%; }
-        
-        /* Ajustes de layout da tabela */
-        table { table-layout: fixed; width: 100%; }
-        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         td.actions { white-space: nowrap; width: 135px; }
         td.actions form { display: inline-block; padding: 0; margin: 0; border: none; background: none; box-shadow: none; }
-
-        /* --- NOVA REGRA DE CSS ADICIONADA AQUI --- */
-        /* Permite a quebra de linha na coluna de detalhamento */
-        td.col-detalhamento {
-            white-space: normal;
-            word-wrap: break-word;
+        
+        /* --- INÍCIO DAS ALTERAÇÕES --- */
+        table { 
+            table-layout: fixed; /* Força a tabela a respeitar larguras */
+            width: 100%;
         }
+
+        /* Classe para abreviar texto com '...' */
+        .truncate {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Classe para o campo detalhamento, que será clicável */
+        .detalhamento-clicavel {
+            cursor: pointer;
+        }
+        /* --- FIM DAS ALTERAÇÕES --- */
     </style>
 </head>
 <body>
@@ -60,7 +68,7 @@
                         <th>Ações</th>
                     </tr>
                     <tr class="filter-row">
-                        <th><input type="number" name="search_protocolo" value="{{ search_protocolo }}" placeholder="Filtrar..."></th>
+                        <th><input type="text" name="search_protocolo" value="{{ search_protocolo }}" placeholder="Filtrar..."></th>
                         <th></th>
                         <th><input type="text" name="search_cliente" value="{{ search_cliente }}" placeholder="Filtrar..."></th>
                         <th><input type="text" name="search_sistema" value="{{ search_sistema }}" placeholder="Filtrar..."></th>
@@ -68,22 +76,22 @@
                         <th>
                             <select name="search_fase">
                                 <option value="">Todas</option>
-                                <option value="Teste de entrada" {% if search_fase == 'Teste de entrada' %}selected{% endif %}>Teste de entrada</option>
-                                <option value="Gerente Dev" {% if search_fase == 'Gerente Dev' %}selected{% endif %}>Gerente Dev</option>
-                                <option value="Analista" {% if search_fase == 'Analista' %}selected{% endif %}>Analista</option>
-                                <option value="Dev responsável" {% if search_fase == 'Dev responsável' %}selected{% endif %}>Dev responsável</option>
-                                <option value="Teste de saída" {% if search_fase == 'Teste de saída' %}selected{% endif %}>Teste de saída</option>
-                                <option value="Aguardando atualização" {% if search_fase == 'Aguardando atualização' %}selected{% endif %}>Aguardando atualização</option>
-                                <option value="Feedback ao cliente" {% if search_fase == 'Feedback ao cliente' %}selected{% endif %}>Feedback ao cliente</option>
-                                <option value="Retrabalho" {% if search_fase == 'Retrabalho' %}selected{% endif %}>Retrabalho</option>
+                                <option value="Teste de entrada">Teste de entrada</option>
+                                <option value="Gerente Dev">Gerente Dev</option>
+                                <option value="Analista">Analista</option>
+                                <option value="Dev responsável">Dev responsável</option>
+                                <option value="Teste de saída">Teste de saída</option>
+                                <option value="Aguardando atualização">Aguardando atualização</option>
+                                <option value="Feedback ao cliente">Feedback ao cliente</option>
+                                <option value="Retrabalho">Retrabalho</option>
                             </select>
                         </th>
                         <th>
                             <select name="search_status">
                                 <option value="">Todos</option>
-                                <option value="Arquivado" {% if search_status == 'Arquivado' %}selected{% endif %}>Arquivado</option>
-                                <option value="Concluído não arquivado" {% if search_status == 'Concluído não arquivado' %}selected{% endif %}>Concluído não arquivado</option>
-                                <option value="Pendente" {% if search_status == 'Pendente' %}selected{% endif %}>Pendente</option>
+                                <option value="Arquivado">Arquivado</option>
+                                <option value="Concluído não arquivado">Concluído não arquivado</option>
+                                <option value="Pendente">Pendente</option>
                             </select>
                         </th>
                         <th class="filter-actions">
@@ -99,7 +107,13 @@
                         <td>{{ pendencia.data_registro | dateformat }}</td>
                         <td class="truncate" title="{{ pendencia.cliente }}">{{ pendencia.cliente }}</td>
                         <td>{{ pendencia.sistema }}</td>
-                        <td class="col-detalhamento">{{ pendencia.detalhamento }}</td>
+
+                        <td class="truncate detalhamento-clicavel" 
+                            title="{{ pendencia.detalhamento }}" 
+                            onclick="alert(this.getAttribute('title'))">
+                            {{ pendencia.detalhamento }}
+                        </td>
+                        
                         <td>{{ pendencia.responsavel }}</td>
                         <td>{{ pendencia.fase }}</td>
                         <td>{{ pendencia.status }}</td>
