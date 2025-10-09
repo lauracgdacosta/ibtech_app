@@ -270,11 +270,15 @@ def index():
     conn = get_db_connection()
     hoje_str = datetime.date.today().strftime('%Y-%m-%d')
     proximos_agendamentos = conn.execute('SELECT * FROM agenda WHERE data_agendamento >= ? ORDER BY data_agendamento ASC LIMIT 5', (hoje_str,)).fetchall()
-    pendencias_abertas = conn.execute("SELECT * FROM pendencias WHERE status = 'Aberto' ORDER BY data_prioridade ASC LIMIT 5").fetchall()
+
+    # --- LINHA CORRIGIDA AQUI ---
+    # A consulta agora usa 'status = 'Pendente'' e ordena por 'data_registro'
+    pendencias_abertas = conn.execute("SELECT * FROM pendencias WHERE status = 'Pendente' ORDER BY data_registro DESC LIMIT 5").fetchall()
+    # --- FIM DA CORREÇÃO ---
+
     tecnicos_em_ferias = conn.execute('SELECT * FROM ferias WHERE data_inicio <= ? AND data_termino >= ?', (hoje_str, hoje_str)).fetchall()
     conn.close()
     return render_template('index.html', proximos_agendamentos=proximos_agendamentos, pendencias_abertas=pendencias_abertas, tecnicos_em_ferias=tecnicos_em_ferias)
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session: return redirect(url_for('index'))
