@@ -9,13 +9,15 @@ app = Flask(__name__)
 app.secret_key = '18T3ch'
 
 # --- LISTA MESTRA DE MÓDULOS ---
+# ALTERAÇÃO APLICADA AQUI
 AVAILABLE_MODULES = {
     'cadastros': 'Cadastros (Técnicos, Clientes, etc)',
     'agenda': 'Agenda',
     'projetos': 'Projetos de Implantação',
     'pendencias': 'Pendências',
     'prestacao_contas': 'Prestação de Contas',
-    'ferias': 'Férias'
+    'ferias': 'Férias',
+    'matriz': 'Matriz de Responsabilidades'
 }
 
 # --- MODELO DE TAREFAS PADRÃO PARA NOVOS PROJETOS ---
@@ -112,13 +114,13 @@ def init_db():
             observacoes TEXT
         )''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, 
-            role_name TEXT NOT NULL, 
-            module_name TEXT NOT NULL, 
-            can_read BOOLEAN DEFAULT 0, 
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            role_name TEXT NOT NULL,
+            module_name TEXT NOT NULL,
+            can_read BOOLEAN DEFAULT 0,
             can_create BOOLEAN DEFAULT 0, -- NOVA COLUNA
-            can_edit BOOLEAN DEFAULT 0, 
-            can_delete BOOLEAN DEFAULT 0, 
+            can_edit BOOLEAN DEFAULT 0,
+            can_delete BOOLEAN DEFAULT 0,
             UNIQUE(role_name, module_name)
         )''')
     conn.commit()
@@ -192,7 +194,7 @@ def migrate_pendencias_table():
             print("MIGRATE: Tabela 'pendencias' reconstruída com sucesso.")
         else:
             print("MIGRATE: Tabela 'pendencias' já está no formato correto.")
-            
+
     except Exception as e:
         print(f"ERRO ao migrar a tabela pendencias: {e}")
         conn.rollback()
@@ -302,7 +304,7 @@ def index():
     proximos_agendamentos = conn.execute('SELECT * FROM agenda WHERE data_agendamento >= ? ORDER BY data_agendamento ASC LIMIT 5', (hoje_str,)).fetchall()
     pendencias_abertas = conn.execute("SELECT * FROM pendencias WHERE status = 'Pendente' ORDER BY data_registro DESC LIMIT 5").fetchall()
     tecnicos_em_ferias = conn.execute('SELECT * FROM ferias WHERE data_inicio <= ? AND data_termino >= ?', (hoje_str, hoje_str)).fetchall()
-    
+
     # Dados para o gráfico de pizza (por sistema)
     protocolos_por_sistema_data = conn.execute(
         "SELECT sistema, COUNT(id) as total FROM pendencias GROUP BY sistema ORDER BY total DESC"
@@ -317,10 +319,10 @@ def index():
     # --- FIM DA NOVA LÓGICA ---
 
     conn.close()
-    
-    return render_template('index.html', 
-                           proximos_agendamentos=proximos_agendamentos, 
-                           pendencias_abertas=pendencias_abertas, 
+
+    return render_template('index.html',
+                           proximos_agendamentos=proximos_agendamentos,
+                           pendencias_abertas=pendencias_abertas,
                            tecnicos_em_ferias=tecnicos_em_ferias,
                            protocolos_por_sistema=protocolos_por_sistema,
                            protocolos_por_cliente=protocolos_por_cliente) # <-- Nova variável
@@ -377,10 +379,10 @@ def salvar_permissoes():
             can_create = 1 if f'permission_{role}_{module_key}_can_create' in request.form else 0 # NOVO
             can_edit = 1 if f'permission_{role}_{module_key}_can_edit' in request.form else 0
             can_delete = 1 if f'permission_{role}_{module_key}_can_delete' in request.form else 0
-            
+
             if can_read or can_create or can_edit or can_delete:
                 # 'can_create' adicionado ao INSERT
-                cursor.execute('INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete) VALUES (?, ?, ?, ?, ?, ?)', 
+                cursor.execute('INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete) VALUES (?, ?, ?, ?, ?, ?)',
                                (role, module_key, can_read, can_create, can_edit, can_delete))
     conn.commit()
     conn.close()
@@ -399,12 +401,12 @@ def cadastros():
 @role_required(module='cadastros', action='can_read')
 def tecnicos():
     conn = get_db_connection()
-    
+
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'nome', type=str)
     order = request.args.get('order', 'asc', type=str)
-    
+
     # Filtros
     search_nome = request.args.get('search_nome', '', type=str)
     search_email = request.args.get('search_email', '', type=str)
@@ -437,14 +439,14 @@ def tecnicos():
     if search_contrato:
         base_query += " AND contrato LIKE ?"
         params.append(f"%{search_contrato}%")
-    
+
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     tecnicos_data = conn.execute(data_query, tuple(params)).fetchall()
-    
+
     conn.close()
 
     pagination_args = request.args.to_dict()
@@ -453,7 +455,7 @@ def tecnicos():
     if 'sort_by' in sorting_args: del sorting_args['sort_by']
     if 'order' in sorting_args: del sorting_args['order']
 
-    return render_template('tecnicos.html', 
+    return render_template('tecnicos.html',
                            tecnicos=tecnicos_data,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
@@ -488,7 +490,7 @@ def new_tecnico():
         conn.close()
         flash('Novo técnico criado com sucesso!', 'success')
         return redirect(build_tecnicos_redirect_url())
-    
+
     equipes = conn.execute('SELECT nome FROM equipes ORDER BY nome').fetchall()
     conn.close()
     return render_template('new_tecnico.html', equipes=equipes, args=args)
@@ -508,7 +510,7 @@ def edit_tecnico(id):
         conn.close()
         flash('Técnico atualizado com sucesso!', 'success')
         return redirect(build_tecnicos_redirect_url())
-        
+
     equipes = conn.execute('SELECT nome FROM equipes ORDER BY nome').fetchall()
     conn.close()
     return render_template('edit_tecnico.html', tecnico=tecnico, equipes=equipes, args=args)
@@ -697,7 +699,7 @@ def projetos():
             projeto['status'] = 'Concluído'
         elif data_inicio and hoje >= data_inicio:
             projeto['status'] = 'Em Andamento'
-        
+
         projetos_processados.append(projeto)
 
     return render_template('projetos.html', projetos=projetos_processados)
@@ -720,7 +722,7 @@ def new_projeto():
         conn.close()
         flash('Projeto criado com sucesso e checklist padrão adicionado!', 'success')
         return redirect(url_for('projetos'))
-    
+
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     conn.close()
@@ -740,7 +742,7 @@ def edit_projeto(projeto_id):
         conn.close()
         flash('Projeto atualizado com sucesso!', 'success')
         return redirect(url_for('projetos'))
-        
+
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     conn.close()
@@ -764,7 +766,7 @@ def checklist_projeto(projeto_id):
     conn = get_db_connection()
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
-    
+
     tarefas_processadas = []
     for tarefa_row in tarefas_from_db:
         tarefa = dict(tarefa_row)
@@ -789,7 +791,7 @@ def checklist_projeto(projeto_id):
     if not projeto:
         flash('Projeto não encontrado.', 'danger')
         return redirect(url_for('projetos'))
-    
+
     return render_template('checklist_projeto.html', projeto=projeto, tarefas=tarefas_processadas)
 
 @app.route('/tarefa/edit/<int:tarefa_id>', methods=['GET', 'POST'])
@@ -801,9 +803,9 @@ def edit_tarefa(tarefa_id):
     if request.method == 'POST':
         form = request.form
         conn.execute('''
-            UPDATE tarefas SET atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, 
+            UPDATE tarefas SET atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?,
             responsavel_pm = ?, responsavel_cm = ?, status = ?, local_execucao = ?, observacoes = ? WHERE id = ?
-        ''', (form['atividade_id'], form['descricao'], form['data_inicio'] or None, form['data_termino'] or None, 
+        ''', (form['atividade_id'], form['descricao'], form['data_inicio'] or None, form['data_termino'] or None,
               form['responsavel_pm'], form['responsavel_cm'], form['status'], form['local_execucao'], form['observacoes'], tarefa_id))
         conn.commit()
         conn.close()
@@ -906,12 +908,12 @@ def edit_titulo(tarefa_id):
 @role_required(module='pendencias', action='can_read')
 def pendencias():
     conn = get_db_connection()
-    
+
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'data_registro', type=str)
     order = request.args.get('order', 'desc', type=str)
-    
+
     # Filtros
     search_protocolo = request.args.get('search_protocolo', '', type=str)
     search_cliente = request.args.get('search_cliente', '', type=str)
@@ -948,14 +950,14 @@ def pendencias():
     if search_status:
         base_query += " AND status = ?"
         params.append(search_status)
-    
+
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     total_pages = (total_results + per_page - 1) // per_page
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
     params.extend([per_page, offset])
     pendencias_data = conn.execute(data_query, tuple(params)).fetchall()
-    
+
     conn.close()
 
     pagination_args = request.args.to_dict()
@@ -964,7 +966,7 @@ def pendencias():
     if 'sort_by' in sorting_args: del sorting_args['sort_by']
     if 'order' in sorting_args: del sorting_args['order']
 
-    return render_template('pendencias.html', 
+    return render_template('pendencias.html',
                            pendencias=pendencias_data,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
@@ -994,7 +996,7 @@ def new_pendencia():
     if request.method == 'POST':
         form = request.form
         conn = get_db_connection()
-        
+
         numero_digitado = form['protocolo']
         ano_atual = str(datetime.date.today().year)
         protocolo_final = f"{numero_digitado.zfill(6)}/{ano_atual}"
@@ -1005,16 +1007,16 @@ def new_pendencia():
         conn.close()
         flash(f'Nova demanda criada com sucesso! Protocolo: {protocolo_final}', 'success')
         return redirect(build_pendencias_redirect_url())
-    
+
     conn = get_db_connection()
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    
+
     # Passa o ano atual para o template para exibir a máscara
     ano_atual = str(datetime.date.today().year)
-    
+
     return render_template('new_pendencia.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args, ano_atual=ano_atual)
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
@@ -1024,10 +1026,10 @@ def edit_pendencia(id):
     args = request.args.to_dict()
     conn = get_db_connection()
     pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
-    
+
     if request.method == 'POST':
         form = request.form
-        
+
         # Reconstrói o protocolo a partir do número editado e do ano original
         numero_protocolo_editado = form['protocolo_numero']
         ano_protocolo = form['protocolo_ano']
@@ -1039,7 +1041,7 @@ def edit_pendencia(id):
         conn.close()
         flash('Demanda atualizada com sucesso!', 'success')
         return redirect(build_pendencias_redirect_url())
-        
+
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
@@ -1052,11 +1054,11 @@ def edit_pendencia(id):
         numero_protocolo = partes[0]
         ano_protocolo = partes[1]
 
-    return render_template('edit_pendencia.html', 
-                           pendencia=pendencia, 
-                           clientes=clientes, 
-                           sistemas=sistemas, 
-                           responsaveis=responsaveis, 
+    return render_template('edit_pendencia.html',
+                           pendencia=pendencia,
+                           clientes=clientes,
+                           sistemas=sistemas,
+                           responsaveis=responsaveis,
                            args=args,
                            numero_protocolo=numero_protocolo,
                            ano_protocolo=ano_protocolo)
@@ -1078,12 +1080,12 @@ def delete_pendencia(id):
 @role_required(module='ferias', action='can_read')
 def ferias():
     conn = get_db_connection()
-    
+
     per_page = 20
     page = request.args.get('page', 1, type=int)
     sort_by = request.args.get('sort_by', 'data_inicio', type=str)
     order = request.args.get('order', 'desc', type=str)
-    
+
     # Filtros existentes e novos
     search_funcionario = request.args.get('search_funcionario', '', type=str)
     search_contrato = request.args.get('search_contrato', '', type=str)
@@ -1102,7 +1104,7 @@ def ferias():
         order = 'desc'
 
     offset = (page - 1) * per_page
-    
+
     # A lógica de filtro agora acontece em Python após buscar todos os dados
     ferias_db = conn.execute('SELECT * FROM ferias').fetchall()
     conn.close()
@@ -1113,7 +1115,7 @@ def ferias():
 
     for ferias_row in ferias_db:
         item = dict(ferias_row)
-        
+
         data_inicio = datetime.datetime.strptime(item['data_inicio'], '%Y-%m-%d').date() if item['data_inicio'] else None
         data_termino = datetime.datetime.strptime(item['data_termino'], '%Y-%m-%d').date() if item['data_termino'] else None
 
@@ -1123,7 +1125,7 @@ def ferias():
             item['status'] = 'Em Andamento'
         else:
             item['status'] = 'Planejada'
-        
+
         # Aplica os filtros
         if (search_funcionario and search_funcionario.lower() not in item['funcionario'].lower()): continue
         if (search_contrato and search_contrato.lower() not in (item['contrato'] or '').lower()): continue
@@ -1152,7 +1154,7 @@ def ferias():
     if 'sort_by' in sorting_args: del sorting_args['sort_by']
     if 'order' in sorting_args: del sorting_args['order']
 
-    return render_template('ferias.html', 
+    return render_template('ferias.html',
                            ferias=ferias_paginadas, page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
                            search_funcionario=search_funcionario,
@@ -1164,7 +1166,7 @@ def ferias():
                            search_admissao=search_admissao,
                            search_data_inicio=search_data_inicio,
                            search_data_termino=search_data_termino,
-                           pagination_args=pagination_args, 
+                           pagination_args=pagination_args,
                            sorting_args=sorting_args)
 
 @app.route('/new_ferias', methods=['GET', 'POST'])
@@ -1437,7 +1439,7 @@ def new_usuario():
         email = request.form['email']
         senha = request.form['senha']
         role = request.form['role']
-        
+
         # --- CORREÇÃO APLICADA AQUI ---
         # Define um valor padrão para 'nivel_acesso' com base no 'role'
         niveis_acesso = {
@@ -1451,7 +1453,7 @@ def new_usuario():
         conn = get_db_connection()
         try:
             # Adiciona o 'nivel_acesso' ao INSERT
-            conn.execute('INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)', 
+            conn.execute('INSERT INTO usuarios (nome, email, senha, role, nivel_acesso) VALUES (?, ?, ?, ?, ?)',
                          (nome, email, generate_password_hash(senha), role, nivel_acesso))
             conn.commit()
             flash('Usuário criado com sucesso!', 'success')
@@ -1460,7 +1462,7 @@ def new_usuario():
         finally:
             conn.close()
         return redirect(url_for('usuarios'))
-    
+
     return render_template('new_usuario.html')
 @app.route('/edit_usuario/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -1500,8 +1502,10 @@ def delete_usuario(id):
     return redirect(url_for('usuarios'))
 
 # --- MÓDULO DE MATRIZ DE RESPONSABILIDADES ---
+# ALTERAÇÃO APLICADA AQUI
 @app.route('/matriz')
 @login_required
+@role_required(module='matriz', action='can_read')
 def matriz_responsabilidades():
     conn = get_db_connection()
     view = request.args.get('view', 'list')
@@ -1543,8 +1547,10 @@ def matriz_responsabilidades():
         conn.close()
         return render_template('matriz_responsabilidades.html', view=view, registos=registos, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, search_cliente=search_cliente, search_sistema=search_sistema, search_responsavel=search_responsavel)
 
+# ALTERAÇÃO APLICADA AQUI
 @app.route('/matriz/new', methods=['GET', 'POST'])
 @login_required
+@role_required(module='matriz', action='can_create')
 def new_matriz_responsabilidade():
     if request.method == 'POST':
         form = request.form
@@ -1562,8 +1568,10 @@ def new_matriz_responsabilidade():
     conn.close()
     return render_template('new_matriz.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
 
+# ALTERAÇÃO APLICADA AQUI
 @app.route('/matriz/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
+@role_required(module='matriz', action='can_edit')
 def edit_matriz_responsabilidade(id):
     conn = get_db_connection()
     registo = conn.execute('SELECT * FROM matriz_responsabilidades WHERE id = ?', (id,)).fetchone()
@@ -1581,8 +1589,10 @@ def edit_matriz_responsabilidade(id):
     conn.close()
     return render_template('edit_matriz.html', registo=registo, clientes=clientes, sistemas=sistemas, responsaveis=responsaveis)
 
+# ALTERAÇÃO APLICADA AQUI
 @app.route('/matriz/delete/<int:id>', methods=['POST'])
 @login_required
+@role_required(module='matriz', action='can_delete')
 def delete_matriz_responsabilidade(id):
     conn = get_db_connection()
     conn.execute('DELETE FROM matriz_responsabilidades WHERE id = ?', (id,))

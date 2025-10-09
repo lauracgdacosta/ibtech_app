@@ -51,7 +51,8 @@
         <div class="header-actions">
             <h1>Módulo de Agenda</h1>
             <div class="actions-group">
-                {% if check_permission('cadastros', 'can_create') %}
+                
+                {% if check_permission('agenda', 'can_create') %}
                     <a href="{{ url_for('new_agenda') }}" class="button new">Novo Agendamento</a>
                 {% endif %}
                 <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>

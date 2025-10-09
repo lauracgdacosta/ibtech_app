@@ -44,10 +44,10 @@
         <div class="header-actions">
             <h1>Controle de Demandas</h1>
             <div class="actions-group">
-                {% if check_permission('cadastros', 'can_create') %}
+                {% if check_permission('pendencias', 'can_create') %}
                     <a href="{{ url_for('new_pendencia', **request.args) }}" class="button new">Nova Demanda</a>
-                    <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
                 {% endif %}
+                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
 

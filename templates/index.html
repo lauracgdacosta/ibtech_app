@@ -83,7 +83,10 @@
                     {% if check_permission('ferias', 'can_read') %}
                         <a href="{{ url_for('ferias') }}" class="module-button ferias">Férias</a>
                     {% endif %}
-                    <a href="{{ url_for('matriz_responsabilidades') }}" class="module-button matriz">Matriz de Responsabilidades</a>
+                    
+                    {% if check_permission('matriz', 'can_read') %}
+                        <a href="{{ url_for('matriz_responsabilidades') }}" class="module-button matriz">Matriz de Responsabilidades</a>
+                    {% endif %}
     
                     {% if session['user_role'] == 'admin' %}
                         <a href="{{ url_for('usuarios') }}" class="module-button admin-link">Gestão de Usuários</a>

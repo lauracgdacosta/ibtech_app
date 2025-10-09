@@ -50,10 +50,10 @@
         <div class="header-actions">
             <h1>Módulo de Prestação de Contas</h1>
             <div class="actions-group">
-                {% if check_permission('cadastros', 'can_create') %}
+                {% if check_permission('prestacao_contas', 'can_create') %}
                     <a href="{{ url_for('new_prestacao', **pagination_args) }}" class="button new">Nova Prestação</a>
-                    <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
                 {% endif %}
+                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
             </div>
         </div>
 
@@ -124,13 +124,17 @@
                         <td class="truncate" title="{{ item['observacao'] }}">{{ item['observacao'] }}</td>
                         <td class="truncate" title="{{ item['atualizado_por'] }}">{{ item['atualizado_por'] }}</td>
                         <td class="actions">
+                            {% if check_permission('prestacao_contas', 'can_edit') %}
                             <a href="{{ url_for('edit_prestacao', id=item['id'], **request.args) }}" class="button edit">Editar</a>
+                            {% endif %}
+                            {% if check_permission('prestacao_contas', 'can_delete') %}
                             <form action="{{ url_for('delete_prestacao', id=item['id']) }}" method="post" style="display:inline;">
                                 {% for key, value in pagination_args.items() %}
                                     <input type="hidden" name="{{ key }}" value="{{ value }}">
                                 {% endfor %}
                                 <button type="submit" class="button delete" onclick="return confirm('Tem certeza?');">Deletar</button>
                             </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% else %}

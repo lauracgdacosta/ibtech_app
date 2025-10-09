@@ -50,7 +50,8 @@
         <div class="header-actions">
             <h1>Checklist: {{ projeto['nome'] }}</h1>
             <div class="actions-group">
-                {% if check_permission('cadastros', 'can_create') %}
+                
+                {% if check_permission('projetos', 'can_create') %}
                     <a href="{{ url_for('new_titulo', projeto_id=projeto.id) }}" class="button new" style="background-color: #5bc0de;">Adicionar Título</a>
                     <a href="{{ url_for('new_tarefa', projeto_id=projeto.id) }}" class="button new">Adicionar Tarefa</a>
                 {% endif %}
