@@ -216,6 +216,28 @@
                     {% endif %}
                 </div>
 
+                <div class="card">
+                    <a href="{{ url_for('pendencias') }}" class="card-title-link">
+                        <h2>Pendências Abertas</h2>
+                    </a>
+                    {% if pendencias_abertas %}
+                    <table class="widget-table">
+                        <thead><tr><th style="width: 40%;">Cliente</th><th style="width: 35%;">Sistema</th><th style="width: 25%;">Data de Registro</th></tr></thead>
+                        <tbody>
+                         {% for pendencia in pendencias_abertas %}
+                            <tr>
+                                <td>{{ pendencia['cliente'] }}</td>
+                                <td>{{ pendencia['sistema'] }}</td>
+                                <td>{{ pendencia['data_registro'] | dateformat }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="empty-state">Nenhuma pendência aberta.</p>
+                    {% endif %}
+                </div>
+
                 
                 <div class="card">
                     <a href="{{ url_for('ferias') }}" class="card-title-link">
