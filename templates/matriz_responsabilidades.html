@@ -21,8 +21,10 @@
         <div class="header-actions">
             <h1>Matriz de Responsabilidades</h1>
             <div class="actions-group">
-                <a href="{{ url_for('new_matriz_responsabilidade') }}" class="button new">Novo Registo</a>
-                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+                {% if check_permission('cadastros', 'can_create') %}
+                    <a href="{{ url_for('new_matriz_responsabilidade') }}" class="button new">Novo Registo</a>
+                    <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+                {% endif %}
             </div>
         </div>
 

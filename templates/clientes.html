@@ -19,7 +19,7 @@
         <div class="header-actions">
             <h1>Módulo de Clientes</h1>
             <div class="actions-group">
-                {% if check_permission('cadastros', 'can_edit') %}
+                {% if check_permission('cadastros', 'can_create') %}
                     <a href="{{ url_for('new_cliente') }}" class="button new">Novo Cliente</a>
                 {% endif %}
                 <a href="{{ url_for('cadastros') }}" class="button">Voltar</a>

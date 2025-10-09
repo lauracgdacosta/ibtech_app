@@ -535,7 +535,7 @@ def clientes():
 
 @app.route('/new_cliente', methods=['GET', 'POST'])
 @login_required
-@role_required(module='cadastros', action='can_edit')
+@role_required(module='cadastros', action='can_create')
 def new_cliente():
     conn = get_db_connection()
     sistemas_para_selecao = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas').fetchall()]
@@ -590,7 +590,7 @@ def equipes():
 
 @app.route('/new_equipe', methods=['GET', 'POST'])
 @login_required
-@role_required(module='cadastros', action='can_edit')
+@role_required(module='cadastros', action='can_create')
 def new_equipe():
     conn = get_db_connection()
     tecnicos = conn.execute('SELECT nome FROM tecnicos').fetchall()
@@ -640,7 +640,7 @@ def sistemas():
 
 @app.route('/new_sistema', methods=['GET', 'POST'])
 @login_required
-@role_required(module='cadastros', action='can_edit')
+@role_required(module='cadastros', action='can_create')
 def new_sistema():
     if request.method == 'POST':
         conn = get_db_connection()
@@ -704,7 +704,7 @@ def projetos():
 
 @app.route('/new_projeto', methods=['GET', 'POST'])
 @login_required
-@role_required(module='projetos', action='can_edit')
+@role_required(module='projetos', action='can_create')
 def new_projeto():
     conn = get_db_connection()
     if request.method == 'POST':
@@ -843,7 +843,7 @@ def toggle_tarefa_status(tarefa_id):
 
 @app.route('/projeto/<int:projeto_id>/new_tarefa', methods=['GET', 'POST'])
 @login_required
-@role_required(module='projetos', action='can_edit')
+@role_required(module='projetos', action='can_create')
 def new_tarefa(projeto_id):
     conn = get_db_connection()
     if request.method == 'POST':
@@ -863,7 +863,7 @@ def new_tarefa(projeto_id):
 
 @app.route('/projeto/<int:projeto_id>/new_titulo', methods=['GET', 'POST'])
 @login_required
-@role_required(module='projetos', action='can_edit')
+@role_required(module='projetos', action='can_create')
 def new_titulo(projeto_id):
     conn = get_db_connection()
     if request.method == 'POST':
@@ -988,7 +988,7 @@ def build_pendencias_redirect_url():
 
 @app.route('/new_pendencia', methods=['GET', 'POST'])
 @login_required
-@role_required(module='pendencias', action='can_edit')
+@role_required(module='pendencias', action='can_create')
 def new_pendencia():
     args = request.args.to_dict()
     if request.method == 'POST':
@@ -1169,7 +1169,7 @@ def ferias():
 
 @app.route('/new_ferias', methods=['GET', 'POST'])
 @login_required
-@role_required(module='ferias', action='can_edit')
+@role_required(module='ferias', action='can_create')
 def new_ferias():
     args = request.args.to_dict()
     conn = get_db_connection()
@@ -1224,7 +1224,7 @@ def agenda():
 
 @app.route('/new_agenda', methods=['GET', 'POST'])
 @login_required
-@role_required(module='agenda', action='can_edit')
+@role_required(module='agenda', action='can_create')
 def new_agenda():
     conn = get_db_connection()
     if request.method == 'POST':
@@ -1350,7 +1350,7 @@ def prestacao_contas():
 
 @app.route('/new_prestacao', methods=['GET', 'POST'])
 @login_required
-@role_required(module='prestacao_contas', action='can_edit')
+@role_required(module='prestacao_contas', action='can_create')
 def new_prestacao():
     args = request.args.to_dict()
     if request.method == 'POST':
@@ -1430,7 +1430,7 @@ def usuarios():
 
 @app.route('/new_usuario', methods=['GET', 'POST'])
 @login_required
-@role_required(module='admin_only', action='can_edit')
+@role_required(module='admin_only', action='can_create')
 def new_usuario():
     if request.method == 'POST':
         nome = request.form['nome']

@@ -50,8 +50,10 @@
         <div class="header-actions">
             <h1>Módulo de Prestação de Contas</h1>
             <div class="actions-group">
-                <a href="{{ url_for('new_prestacao', **pagination_args) }}" class="button new">Nova Prestação</a>
-                <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+                {% if check_permission('cadastros', 'can_create') %}
+                    <a href="{{ url_for('new_prestacao', **pagination_args) }}" class="button new">Nova Prestação</a>
+                    <a href="{{ url_for('index') }}" class="button">Voltar ao Início</a>
+                {% endif %}
             </div>
         </div>
 
