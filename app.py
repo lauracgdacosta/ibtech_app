@@ -1012,8 +1012,22 @@ def pendencias():
                            pagination_args=pagination_args,
                            sorting_args=sorting_args)
 
+# SUBSTITUA A SUA FUNÇÃO build_pendencias_redirect_url POR ESTA
+
 def build_pendencias_redirect_url():
-    # ... (código inalterado)
+    args = {}
+    # Esta lista contém todos os possíveis filtros e parâmetros de paginação/ordenação
+    valid_state_keys = [
+        'search_protocolo', 'search_cliente', 'search_sistema', 
+        'search_responsavel', 'search_fase', 'search_status', 
+        'search_prioridade', 'page', 'sort_by', 'order'
+    ]
+    for key in valid_state_keys:
+        # CORREÇÃO: Usar request.values.get() para buscar tanto de
+        # parâmetros de formulário (POST) quanto de URL (GET).
+        value = request.values.get(key)
+        if value:
+            args[key] = value
     return url_for('pendencias', **args)
 
 @app.route('/new_pendencia', methods=['GET', 'POST'])
