@@ -1097,7 +1097,6 @@ def delete_pendencia(id):
     # ... (código inalterado)
     return redirect(build_pendencias_redirect_url())
 
-
 # --- MÓDULO DE FÉRIAS ---
 # SUBSTITUA TODA A SUA FUNÇÃO ferias() POR ESTA VERSÃO CORRIGIDA
 
@@ -1671,14 +1670,16 @@ def api_agendamentos():
 def force_db_fix():
     print("--- INICIANDO CORREÇÃO MANUAL DO BANCO DE DADOS ---")
     try:
-        # Re-executa a migração que adiciona a coluna 'can_create'
+        # Re-executa as migrações importantes
         migrate_permissions_for_create()
+        # --- ALTERAÇÃO APLICADA AQUI: Adicionada a migração de pendencias ---
+        migrate_pendencias_add_prioridade() 
         flash('A verificação e correção da estrutura do banco de dados foi executada com sucesso!', 'success')
         print("--- CORREÇÃO MANUAL DO BANCO DE DADOS CONCLUÍDA ---")
     except Exception as e:
         flash(f'Ocorreu um erro durante a correção da estrutura: {e}', 'danger')
         print(f"--- ERRO NA CORREÇÃO MANUAL DA ESTRUTURA: {e} ---")
-    return redirect(url_for('gerenciar_permissoes'))
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
