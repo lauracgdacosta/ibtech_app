@@ -51,12 +51,9 @@
 
             <label for="motivo">Motivo</label>
             <select id="motivo" name="motivo">
-                <option value="Treinamento" {% if agendamento['motivo'] == 'Treinamento' %}selected{% endif %}>Treinamento</option>
-                <option value="Visita Contratual" {% if agendamento['motivo'] == 'Visita Contratual' %}selected{% endif %}>Visita Contratual</option>
-                <option value="Visita Cortesia" {% if agendamento['motivo'] == 'Visita Cortesia' %}selected{% endif %}>Visita Cortesia</option>
-                <option value="Atendimento Externo" {% if agendamento['motivo'] == 'Atendimento Externo' %}selected{% endif %}>Atendimento Externo</option>
+                <option value="Reunião" {% if agendamento['motivo'] == 'Reunião' %}selected{% endif %}>Reunião</option>
                 <option value="Apresentação" {% if agendamento['motivo'] == 'Apresentação' %}selected{% endif %}>Apresentação</option>
-                <option value="Outros Motivos" {% if agendamento['motivo'] == 'Outros Motivos' %}selected{% endif %}>Outros Motivos</option>
+                <option value="Implantação" {% if agendamento['motivo'] == 'Implantação' %}selected{% endif %}>Implantação</option>
             </select>
             
             <label for="descricao">Descrição da Tarefa</label>
