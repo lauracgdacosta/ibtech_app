@@ -7,6 +7,9 @@
     
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
     
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    
     <style>
         .container {
             max-width: 95%;
@@ -23,20 +26,22 @@
             cursor: pointer;
         }
 
-        /* --- INÍCIO DA CORREÇÃO DE CSS --- */
-        /* Anula os estilos globais da tabela apenas para o calendário */
         .fc th, .fc td {
-            text-align: center; /* Centraliza os dias da semana (seg, ter, etc.) */
-            padding: 2px;       /* Reduz o padding para dar espaço aos números */
-            vertical-align: top;/* Alinha o conteúdo ao topo */
+            text-align: center;
+            padding: 2px;
+            vertical-align: top;
         }
         
-        /* Força o alinhamento do número do dia para a direita */
         .fc .fc-daygrid-day-top {
-            justify-content: flex-end; /* Usa flexbox para alinhar à direita */
+            justify-content: flex-end;
             padding: 4px;
         }
-        /* --- FIM DA CORREÇÃO DE CSS --- */
+
+        /* Estilo para o tooltip */
+        .tippy-box[data-theme~='light-border'] {
+            border: 2px solid #3498db;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -51,7 +56,6 @@
         <div class="header-actions">
             <h1>Módulo de Agenda</h1>
             <div class="actions-group">
-                
                 {% if check_permission('agenda', 'can_create') %}
                     <a href="{{ url_for('new_agenda') }}" class="button new">Novo Agendamento</a>
                 {% endif %}
@@ -81,7 +85,6 @@
                 day: 'Dia'
             },
             events: '/api/agendamentos',
-
             selectable: true, 
             
             dateClick: function(info) {
@@ -89,6 +92,25 @@
                 var newEventUrl = `/new_agenda?data_agendamento=${clickedDate}`;
                 window.location.href = newEventUrl;
             },
+
+            // --- ALTERAÇÃO APLICADA AQUI: Lógica para exibir tooltip ao passar o mouse ---
+            eventMouseEnter: function(info) {
+                tippy(info.el, {
+                    content: `
+                        <div style="text-align: left; padding: 5px;">
+                            <strong>Motivo:</strong> ${info.event.extendedProps.motivo || 'Não informado'}<br>
+                            <strong>Status:</strong> ${info.event.extendedProps.status || 'Não informado'}<br>
+                            <hr style="margin: 4px 0; border-top: 1px solid #eee;">
+                            <strong>Descrição:</strong> ${info.event.extendedProps.descricao || 'Nenhuma'}
+                        </div>
+                    `,
+                    allowHTML: true,
+                    placement: 'auto',
+                    theme: 'light-border', // Tema com borda para melhor visualização
+                    animation: 'scale-subtle'
+                });
+            },
+            // --- FIM DA ALTERAÇÃO ---
 
             eventClick: function(info) {
                 info.jsEvent.preventDefault(); 
