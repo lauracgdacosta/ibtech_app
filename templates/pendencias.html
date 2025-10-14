@@ -21,6 +21,11 @@
         table { table-layout: fixed; width: 100%; }
         .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .detalhamento-clicavel { cursor: pointer; }
+        /* --- ALTERAÇÃO APLICADA AQUI: Estilos para o novo seletor --- */
+        .page-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .per-page-form { display: flex; align-items: center; gap: 8px; }
+        .per-page-form label { margin-bottom: 0; }
+        .per-page-form select { width: auto; margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -35,9 +40,33 @@
             </div>
         </div>
 
+        <div class="page-controls">
+            <form method="get" action="{{ url_for('pendencias') }}" class="per-page-form">
+                <input type="hidden" name="sort_by" value="{{ sort_by }}">
+                <input type="hidden" name="order" value="{{ order }}">
+                <input type="hidden" name="search_protocolo" value="{{ search_protocolo }}">
+                <input type="hidden" name="search_cliente" value="{{ search_cliente }}">
+                <input type="hidden" name="search_sistema" value="{{ search_sistema }}">
+                <input type="hidden" name="search_responsavel" value="{{ search_responsavel }}">
+                <input type="hidden" name="search_fase" value="{{ search_fase }}">
+                <input type="hidden" name="search_status" value="{{ search_status }}">
+                <input type="hidden" name="search_prioridade" value="{{ search_prioridade }}">
+
+                <label for="per_page">Registros por página:</label>
+                <select name="per_page" id="per_page" onchange="this.form.submit()">
+                    <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == '20' %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
+                    <option value="All" {% if per_page.lower() == 'all' %}selected{% endif %}>Todos</option>
+                </select>
+            </form>
+        </div>
+
         <form method="get" action="{{ url_for('pendencias') }}">
             <input type="hidden" name="sort_by" value="{{ sort_by }}">
             <input type="hidden" name="order" value="{{ order }}">
+            <input type="hidden" name="per_page" value="{{ per_page }}">
             
             <table>
                 <thead>
@@ -138,7 +167,14 @@
 
         {% if total_pages > 1 %}
         <div class="pagination">
-            </div>
+            {% if page > 1 %}<a href="{{ url_for('pendencias', page=page-1, **pagination_args) }}">&laquo; Anterior</a>{% endif %}
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}<span class="current">{{ p }}</span>
+                {% elif p > page - 3 and p < page + 3 %}<a href="{{ url_for('pendencias', page=p, **pagination_args) }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page < total_pages %}<a href="{{ url_for('pendencias', page=page+1, **pagination_args) }}">Próximo &raquo;</a>{% endif %}
+        </div>
         {% endif %}
     </div>
 </body>

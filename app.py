@@ -934,8 +934,19 @@ def edit_titulo(tarefa_id):
 def pendencias():
     conn = get_db_connection()
     
-    per_page = 20
+    # --- ALTERAÇÃO APLICADA AQUI: Lógica de paginação dinâmica ---
     page = request.args.get('page', 1, type=int)
+    per_page_str = request.args.get('per_page', '20', type=str)
+
+    if per_page_str.lower() == 'all':
+        per_page = -1  # Usamos -1 como um sinalizador para "todos"
+    else:
+        try:
+            per_page = int(per_page_str)
+        except ValueError:
+            per_page = 20 # Valor padrão caso o input seja inválido
+    # --- FIM DA ALTERAÇÃO ---
+
     sort_by = request.args.get('sort_by', 'data_registro', type=str)
     order = request.args.get('order', 'desc', type=str)
     
@@ -946,17 +957,14 @@ def pendencias():
     search_responsavel = request.args.get('search_responsavel', '', type=str)
     search_fase = request.args.get('search_fase', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
-    # --- ALTERAÇÃO APLICADA AQUI: Adicionado filtro de prioridade ---
     search_prioridade = request.args.get('search_prioridade', '', type=str)
 
-    # --- ALTERAÇÃO APLICADA AQUI: Adicionada 'prioridade' às colunas ordenáveis ---
     allowed_sort_columns = ['protocolo', 'data_registro', 'cliente', 'sistema', 'responsavel', 'fase', 'status', 'prioridade']
     if sort_by not in allowed_sort_columns:
         sort_by = 'data_registro'
     if order.lower() not in ['asc', 'desc']:
         order = 'desc'
 
-    offset = (page - 1) * per_page
     base_query = "FROM pendencias WHERE 1=1"
     params = []
 
@@ -978,17 +986,27 @@ def pendencias():
     if search_status:
         base_query += " AND status = ?"
         params.append(search_status)
-    # --- ALTERAÇÃO APLICADA AQUI: Adicionada lógica de filtro para prioridade ---
     if search_prioridade:
         base_query += " AND prioridade = ?"
         params.append(search_prioridade)
     
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
-    total_pages = (total_results + per_page - 1) // per_page
-    data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order} LIMIT ? OFFSET ?"
-    params.extend([per_page, offset])
+    
+    # --- ALTERAÇÃO APLICADA AQUI: Ajuste na consulta e cálculo de páginas ---
+    data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order}"
+    
+    if per_page == -1:
+        total_pages = 1
+        page = 1 # Se "todos", estamos sempre na página 1
+    else:
+        total_pages = (total_results + per_page - 1) // per_page
+        offset = (page - 1) * per_page
+        data_query += " LIMIT ? OFFSET ?"
+        params.extend([per_page, offset])
+    
     pendencias_data = conn.execute(data_query, tuple(params)).fetchall()
+    # --- FIM DA ALTERAÇÃO ---
     
     conn.close()
 
@@ -1008,10 +1026,11 @@ def pendencias():
                            search_responsavel=search_responsavel,
                            search_fase=search_fase,
                            search_status=search_status,
-                           # --- ALTERAÇÃO APLICADA AQUI: Passando o filtro para o template ---
                            search_prioridade=search_prioridade,
                            pagination_args=pagination_args,
-                           sorting_args=sorting_args)
+                           sorting_args=sorting_args,
+                           # --- ALTERAÇÃO APLICADA AQUI: Passa a variável per_page para o template ---
+                           per_page=per_page_str)
 
 # SUBSTITUA A SUA FUNÇÃO build_pendencias_redirect_url POR ESTA
 
