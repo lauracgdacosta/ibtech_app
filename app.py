@@ -1664,25 +1664,20 @@ def api_agendamentos():
     for agendamento in agendamentos_db:
         start_datetime = agendamento['data_agendamento']
         
+        # --- ALTERAÇÃO APLICADA AQUI ---
+        
+        # 1. O título agora é APENAS a descrição do evento, sem o horário.
         titulo = f"{agendamento['cliente']} ({agendamento['tecnico']})"
         
-        # --- ALTERAÇÃO APLICADA AQUI: Lógica para limpar o horário ---
+        # 2. Limpamos o horário e o usamos APENAS para definir a data/hora de início do evento.
         raw_horario = agendamento['horario_agendamento']
         if raw_horario:
-            # Usa expressão regular para encontrar o padrão de hora (HH:MM)
+            # Usa expressão regular para encontrar um padrão de hora (ex: 14:00 ou 9:30)
             match = re.search(r'\d{1,2}:\d{2}', raw_horario)
             if match:
-                horario_limpo = match.group(0) # Pega apenas a parte que corresponde à hora
-                titulo = f"{horario_limpo} - {titulo}"
+                horario_limpo = match.group(0)
                 start_datetime += f"T{horario_limpo}"
-            else:
-                # Se não encontrar um padrão de hora, não adiciona prefixo de hora ao título
-                if agendamento['horario_agendamento']:
-                     start_datetime += f"T{agendamento['horario_agendamento']}"
-
-        else: # Se não houver horário, apenas ajusta o título
-            if agendamento['horario_agendamento']:
-                 start_datetime += f"T{agendamento['horario_agendamento']}"
+        
         # --- FIM DA ALTERAÇÃO ---
 
         event_color = color_map.get(agendamento['status'], '#808080')
