@@ -36,6 +36,14 @@
             border: 2px solid #3498db;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        
+        /* --- ALTERAÇÃO APLICADA AQUI: Permite que o texto do evento quebre a linha --- */
+        .fc-event-title {
+            white-space: normal !important;
+            overflow: visible !important;
+            font-size: 0.85em;
+            padding: 2px 4px;
+        }
     </style>
 </head>
 <body>
@@ -79,15 +87,10 @@
                 day: 'Dia'
             },
             
-            // --- ALTERAÇÃO APLICADA AQUI ---
-            eventDisplay: 'block', // Garante a cor de fundo sólida
-            displayEventTime: true, // Força a exibição do horário no modo de mês
-            eventTimeFormat: { // Formata a hora para o padrão HH:mm
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            },
-            // --- FIM DA ALTERAÇÃO ---
+            eventDisplay: 'block',
+            
+            // --- ALTERAÇÃO APLICADA AQUI: Removemos a exibição automática do horário ---
+            displayEventTime: false, 
 
             events: '/api/agendamentos',
             selectable: true, 
@@ -98,16 +101,19 @@
                 window.location.href = newEventUrl;
             },
 
+            // Lógica do tooltip ao passar o mouse (inalterada)
             eventMouseEnter: function(info) {
+                let content = `<div style="text-align: left; padding: 5px; font-size: 0.9em;">`;
+                if (info.event.extendedProps.horario) {
+                    content += `<strong>Horário:</strong> ${info.event.extendedProps.horario}<br>`;
+                }
+                content += `<strong>Cliente:</strong> ${info.event.extendedProps.cliente || 'Não informado'}<br>`;
+                content += `<strong>Técnico:</strong> ${info.event.extendedProps.tecnico || 'Não informado'}<br>`;
+                content += `<strong>Motivo:</strong> ${info.event.extendedProps.motivo || 'Não informado'}`;
+                content += `</div>`;
+
                 tippy(info.el, {
-                    content: `
-                        <div style="text-align: left; padding: 5px;">
-                            <strong>Motivo:</strong> ${info.event.extendedProps.motivo || 'Não informado'}<br>
-                            <strong>Status:</strong> ${info.event.extendedProps.status || 'Não informado'}<br>
-                            <hr style="margin: 4px 0; border-top: 1px solid #eee;">
-                            <strong>Descrição:</strong> ${info.event.extendedProps.descricao || 'Nenhuma'}
-                        </div>
-                    `,
+                    content: content,
                     allowHTML: true,
                     placement: 'auto',
                     theme: 'light-border',

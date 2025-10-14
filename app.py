@@ -1664,10 +1664,7 @@ def api_agendamentos():
     for agendamento in agendamentos_db:
         start_datetime = agendamento['data_agendamento']
         
-        # O título agora é APENAS a descrição do evento, sem o horário.
-        titulo = f"{agendamento['cliente']} ({agendamento['tecnico']})"
-        
-        # Limpamos o horário e o usamos APENAS para definir a data/hora de início do evento.
+        horario_limpo = None
         raw_horario = agendamento['horario_agendamento']
         if raw_horario:
             # Usa expressão regular para encontrar um padrão de hora (ex: 14:00 ou 9:30)
@@ -1675,12 +1672,25 @@ def api_agendamentos():
             if match:
                 horario_limpo = match.group(0)
                 start_datetime += f"T{horario_limpo}"
+
+        # --- ALTERAÇÃO APLICADA AQUI: Construção do título completo ---
+        title_parts = []
+        if horario_limpo:
+            title_parts.append(f"{horario_limpo} -")
+        
+        title_parts.append(f"{agendamento['cliente']} ({agendamento['tecnico']})")
+        
+        if agendamento['motivo']:
+            title_parts.append(f"- {agendamento['motivo']}")
+            
+        titulo_completo = " ".join(title_parts)
+        # --- FIM DA ALTERAÇÃO ---
         
         event_color = color_map.get(agendamento['status'], '#808080')
             
         eventos.append({
             'id': agendamento['id'],
-            'title': titulo,
+            'title': titulo_completo, # Usa o novo título completo
             'start': start_datetime,
             'backgroundColor': event_color,
             'borderColor': event_color,
@@ -1688,7 +1698,10 @@ def api_agendamentos():
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
-                'status': agendamento['status']
+                'status': agendamento['status'],
+                'cliente': agendamento['cliente'],
+                'tecnico': agendamento['tecnico'],
+                'horario': horario_limpo
             }
         })
         
