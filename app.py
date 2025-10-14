@@ -1652,7 +1652,6 @@ def api_agendamentos():
     agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
     conn.close()
     
-    # --- ALTERAÇÃO APLICADA AQUI: Cores ajustadas conforme solicitado ---
     color_map = {
         'Planejada': '#3498db',                            # Azul
         'Realizada': '#2ecc71',                            # Verde
@@ -1669,18 +1668,26 @@ def api_agendamentos():
         titulo = f"{agendamento['cliente']} ({agendamento['tecnico']})"
         if agendamento['horario_agendamento']:
             titulo = f"{agendamento['horario_agendamento']} - {titulo}"
+
+        # --- ALTERAÇÃO APLICADA AQUI ---
+        # Define a cor do evento a partir do mapa
+        event_color = color_map.get(agendamento['status'], '#808080')
             
         eventos.append({
             'id': agendamento['id'],
             'title': titulo,
             'start': start_datetime,
-            'color': color_map.get(agendamento['status'], '#808080'), # Usa a cor do mapa ou cinza como padrão
+            # Propriedades explícitas para garantir o fundo sólido
+            'backgroundColor': event_color,
+            'borderColor': event_color,
+            'textColor': '#ffffff', # Define a cor do texto como branco para melhor contraste
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
                 'status': agendamento['status']
             }
         })
+        # --- FIM DA ALTERAÇÃO ---
         
     return jsonify(eventos)
 # --- ROTA TEMPORÁRIA PARA CORREÇÃO DO BANCO DE DADOS ---
