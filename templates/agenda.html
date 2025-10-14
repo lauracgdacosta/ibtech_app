@@ -78,10 +78,16 @@
                 week: 'Semana',
                 day: 'Dia'
             },
-
+            
             // --- ALTERAÇÃO APLICADA AQUI ---
-            // Força a exibição dos eventos como blocos de cor sólida
-            eventDisplay: 'block',
+            eventDisplay: 'block', // Garante a cor de fundo sólida
+            displayEventTime: true, // Força a exibição do horário no modo de mês
+            eventTimeFormat: { // Formata a hora para o padrão HH:mm
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            },
+            // --- FIM DA ALTERAÇÃO ---
 
             events: '/api/agendamentos',
             selectable: true, 
