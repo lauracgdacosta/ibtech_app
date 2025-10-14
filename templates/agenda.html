@@ -6,7 +6,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
-    
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
     
@@ -18,26 +17,21 @@
             max-width: 100%;
             margin: 20px auto;
         }
-        
         .fc-event-main {
             cursor: pointer;
         }
         .fc-daygrid-day {
             cursor: pointer;
         }
-
         .fc th, .fc td {
             text-align: center;
             padding: 2px;
             vertical-align: top;
         }
-        
         .fc .fc-daygrid-day-top {
             justify-content: flex-end;
             padding: 4px;
         }
-
-        /* Estilo para o tooltip */
         .tippy-box[data-theme~='light-border'] {
             border: 2px solid #3498db;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -84,6 +78,11 @@
                 week: 'Semana',
                 day: 'Dia'
             },
+
+            // --- ALTERAÇÃO APLICADA AQUI ---
+            // Força a exibição dos eventos como blocos de cor sólida
+            eventDisplay: 'block',
+
             events: '/api/agendamentos',
             selectable: true, 
             
@@ -93,7 +92,6 @@
                 window.location.href = newEventUrl;
             },
 
-            // --- ALTERAÇÃO APLICADA AQUI: Lógica para exibir tooltip ao passar o mouse ---
             eventMouseEnter: function(info) {
                 tippy(info.el, {
                     content: `
@@ -106,11 +104,10 @@
                     `,
                     allowHTML: true,
                     placement: 'auto',
-                    theme: 'light-border', // Tema com borda para melhor visualização
+                    theme: 'light-border',
                     animation: 'scale-subtle'
                 });
             },
-            // --- FIM DA ALTERAÇÃO ---
 
             eventClick: function(info) {
                 info.jsEvent.preventDefault(); 
@@ -122,9 +119,7 @@
                     if (confirm("ATENÇÃO: Deseja EXCLUIR este agendamento? A ação não pode ser desfeita.")) {
                         fetch(`/delete_agenda/${eventId}`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
+                            headers: { 'Content-Type': 'application/json' }
                         }).then(response => {
                             if (response.ok) {
                                 info.event.remove();

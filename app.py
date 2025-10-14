@@ -1669,25 +1669,21 @@ def api_agendamentos():
         if agendamento['horario_agendamento']:
             titulo = f"{agendamento['horario_agendamento']} - {titulo}"
 
-        # --- ALTERAÇÃO APLICADA AQUI ---
-        # Define a cor do evento a partir do mapa
         event_color = color_map.get(agendamento['status'], '#808080')
             
         eventos.append({
             'id': agendamento['id'],
             'title': titulo,
             'start': start_datetime,
-            # Propriedades explícitas para garantir o fundo sólido
             'backgroundColor': event_color,
             'borderColor': event_color,
-            'textColor': '#ffffff', # Define a cor do texto como branco para melhor contraste
+            'textColor': '#ffffff',
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
                 'status': agendamento['status']
             }
         })
-        # --- FIM DA ALTERAÇÃO ---
         
     return jsonify(eventos)
 # --- ROTA TEMPORÁRIA PARA CORREÇÃO DO BANCO DE DADOS ---
