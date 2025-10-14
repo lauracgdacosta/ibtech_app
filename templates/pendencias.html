@@ -25,6 +25,21 @@
         .per-page-form { display: flex; align-items: center; gap: 8px; }
         .per-page-form label { margin-bottom: 0; }
         .per-page-form select { width: auto; margin-bottom: 0; }
+
+        /* --- ALTERAÇÃO APLICADA AQUI: Estilos para as cores do status --- */
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.9em;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .status-arquivado { background-color: #28a745; } /* Verde */
+        .status-pendente { background-color: #dc3545; } /* Vermelho */
+        .status-concluido { background-color: #ffc107; color: #212529; } /* Amarelo com texto escuro */
+
     </style>
 </head>
 <body>
@@ -162,7 +177,17 @@
                         </td>
                         <td>{{ pendencia.responsavel }}</td>
                         <td>{{ pendencia.fase }}</td>
-                        <td>{{ pendencia.status }}</td>
+                        <td>
+                            {% if pendencia.status == 'Arquivado' %}
+                                <span class="status-badge status-arquivado">{{ pendencia.status }}</span>
+                            {% elif pendencia.status == 'Pendente' %}
+                                <span class="status-badge status-pendente">{{ pendencia.status }}</span>
+                            {% elif pendencia.status == 'Concluído não arquivado' %}
+                                <span class="status-badge status-concluido">{{ pendencia.status }}</span>
+                            {% else %}
+                                {{ pendencia.status }}
+                            {% endif %}
+                        </td>
                         <td>{{ pendencia.prioridade or '---' }}</td>
                         <td class="actions">
                             {% if check_permission('pendencias', 'can_edit') %}
