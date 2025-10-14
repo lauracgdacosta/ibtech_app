@@ -1145,7 +1145,11 @@ def edit_pendencia(id):
 @login_required
 @role_required(module='pendencias', action='can_delete')
 def delete_pendencia(id):
-    # ... (código inalterado)
+    conn = get_db_connection()
+    conn.execute('DELETE FROM pendencias WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    flash('Demanda excluída com sucesso.', 'success')
     return redirect(build_pendencias_redirect_url())
 
 # --- MÓDULO DE FÉRIAS ---
