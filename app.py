@@ -1651,33 +1651,38 @@ def api_agendamentos():
     conn = get_db_connection()
     agendamentos_db = conn.execute('SELECT * FROM agenda').fetchall()
     conn.close()
+    
+    # --- ALTERAÇÃO APLICADA AQUI: Cores ajustadas conforme solicitado ---
     color_map = {
-        'Planejada': '#3498db',
-        'Realizada': '#2ecc71',
-        'Cancelada': '#f1c40f',
-        'Aguardando Confirmação do Cliente': '#f39c12'
+        'Planejada': '#3498db',                            # Azul
+        'Realizada': '#2ecc71',                            # Verde
+        'Cancelada': '#95a5a6',                            # Cinza
+        'Aguardando Confirmação do Cliente': '#f1c40f'     # Amarelo
     }
+    
     eventos = []
     for agendamento in agendamentos_db:
         start_datetime = agendamento['data_agendamento']
         if agendamento['horario_agendamento']:
             start_datetime += f"T{agendamento['horario_agendamento']}"
+        
         titulo = f"{agendamento['cliente']} ({agendamento['tecnico']})"
         if agendamento['horario_agendamento']:
             titulo = f"{agendamento['horario_agendamento']} - {titulo}"
+            
         eventos.append({
             'id': agendamento['id'],
             'title': titulo,
             'start': start_datetime,
-            'color': color_map.get(agendamento['status'], '#808080'),
+            'color': color_map.get(agendamento['status'], '#808080'), # Usa a cor do mapa ou cinza como padrão
             'extendedProps': {
                 'motivo': agendamento['motivo'],
                 'descricao': agendamento['descricao'],
                 'status': agendamento['status']
             }
         })
+        
     return jsonify(eventos)
-
 # --- ROTA TEMPORÁRIA PARA CORREÇÃO DO BANCO DE DADOS ---
 @app.route('/force_db_fix')
 @login_required
