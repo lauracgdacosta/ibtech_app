@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from functools import wraps
 import datetime
+import re
 
 app = Flask(__name__)
 app.secret_key = '18T3ch'
@@ -1662,12 +1663,27 @@ def api_agendamentos():
     eventos = []
     for agendamento in agendamentos_db:
         start_datetime = agendamento['data_agendamento']
-        if agendamento['horario_agendamento']:
-            start_datetime += f"T{agendamento['horario_agendamento']}"
         
         titulo = f"{agendamento['cliente']} ({agendamento['tecnico']})"
-        if agendamento['horario_agendamento']:
-            titulo = f"{agendamento['horario_agendamento']} - {titulo}"
+        
+        # --- ALTERAÇÃO APLICADA AQUI: Lógica para limpar o horário ---
+        raw_horario = agendamento['horario_agendamento']
+        if raw_horario:
+            # Usa expressão regular para encontrar o padrão de hora (HH:MM)
+            match = re.search(r'\d{1,2}:\d{2}', raw_horario)
+            if match:
+                horario_limpo = match.group(0) # Pega apenas a parte que corresponde à hora
+                titulo = f"{horario_limpo} - {titulo}"
+                start_datetime += f"T{horario_limpo}"
+            else:
+                # Se não encontrar um padrão de hora, não adiciona prefixo de hora ao título
+                if agendamento['horario_agendamento']:
+                     start_datetime += f"T{agendamento['horario_agendamento']}"
+
+        else: # Se não houver horário, apenas ajusta o título
+            if agendamento['horario_agendamento']:
+                 start_datetime += f"T{agendamento['horario_agendamento']}"
+        # --- FIM DA ALTERAÇÃO ---
 
         event_color = color_map.get(agendamento['status'], '#808080')
             
