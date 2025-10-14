@@ -934,32 +934,33 @@ def edit_titulo(tarefa_id):
 def pendencias():
     conn = get_db_connection()
     
-    # --- ALTERAÇÃO APLICADA AQUI: Lógica de paginação dinâmica ---
     page = request.args.get('page', 1, type=int)
     per_page_str = request.args.get('per_page', '20', type=str)
 
     if per_page_str.lower() == 'all':
-        per_page = -1  # Usamos -1 como um sinalizador para "todos"
+        per_page = -1
     else:
         try:
             per_page = int(per_page_str)
         except ValueError:
-            per_page = 20 # Valor padrão caso o input seja inválido
-    # --- FIM DA ALTERAÇÃO ---
+            per_page = 20
 
     sort_by = request.args.get('sort_by', 'data_registro', type=str)
     order = request.args.get('order', 'desc', type=str)
     
-    # Filtros
+    # --- ALTERAÇÃO APLICADA AQUI: Adicionados todos os campos de filtro ---
     search_protocolo = request.args.get('search_protocolo', '', type=str)
+    search_data_registro = request.args.get('search_data_registro', '', type=str)
     search_cliente = request.args.get('search_cliente', '', type=str)
     search_sistema = request.args.get('search_sistema', '', type=str)
+    search_detalhamento = request.args.get('search_detalhamento', '', type=str)
     search_responsavel = request.args.get('search_responsavel', '', type=str)
     search_fase = request.args.get('search_fase', '', type=str)
     search_status = request.args.get('search_status', '', type=str)
     search_prioridade = request.args.get('search_prioridade', '', type=str)
 
-    allowed_sort_columns = ['protocolo', 'data_registro', 'cliente', 'sistema', 'responsavel', 'fase', 'status', 'prioridade']
+    # --- ALTERAÇÃO APLICADA AQUI: Adicionadas todas as colunas para ordenação ---
+    allowed_sort_columns = ['protocolo', 'data_registro', 'cliente', 'sistema', 'detalhamento', 'responsavel', 'fase', 'status', 'prioridade']
     if sort_by not in allowed_sort_columns:
         sort_by = 'data_registro'
     if order.lower() not in ['asc', 'desc']:
@@ -968,18 +969,25 @@ def pendencias():
     base_query = "FROM pendencias WHERE 1=1"
     params = []
 
+    # --- ALTERAÇÃO APLICADA AQUI: Lógica de filtro para todos os campos ---
     if search_protocolo:
-        base_query += " AND protocolo = ?"
-        params.append(search_protocolo)
+        base_query += " AND protocolo LIKE ?"
+        params.append(f"%{search_protocolo}%")
+    if search_data_registro:
+        base_query += " AND data_registro = ?"
+        params.append(search_data_registro)
     if search_cliente:
-        base_query += " AND cliente LIKE ?"
-        params.append(f"%{search_cliente}%")
+        base_query += " AND cliente = ?"
+        params.append(search_cliente)
     if search_sistema:
-        base_query += " AND sistema LIKE ?"
-        params.append(f"%{search_sistema}%")
+        base_query += " AND sistema = ?"
+        params.append(search_sistema)
+    if search_detalhamento:
+        base_query += " AND detalhamento LIKE ?"
+        params.append(f"%{search_detalhamento}%")
     if search_responsavel:
-        base_query += " AND responsavel LIKE ?"
-        params.append(f"%{search_responsavel}%")
+        base_query += " AND responsavel = ?"
+        params.append(search_responsavel)
     if search_fase:
         base_query += " AND fase = ?"
         params.append(search_fase)
@@ -993,12 +1001,11 @@ def pendencias():
     total_query = "SELECT COUNT(id) " + base_query
     total_results = conn.execute(total_query, tuple(params)).fetchone()[0]
     
-    # --- ALTERAÇÃO APLICADA AQUI: Ajuste na consulta e cálculo de páginas ---
     data_query = f"SELECT * {base_query} ORDER BY {sort_by} {order}"
     
     if per_page == -1:
         total_pages = 1
-        page = 1 # Se "todos", estamos sempre na página 1
+        page = 1
     else:
         total_pages = (total_results + per_page - 1) // per_page
         offset = (page - 1) * per_page
@@ -1006,7 +1013,11 @@ def pendencias():
         params.extend([per_page, offset])
     
     pendencias_data = conn.execute(data_query, tuple(params)).fetchall()
-    # --- FIM DA ALTERAÇÃO ---
+    
+    # --- ALTERAÇÃO APLICADA AQUI: Busca de dados para os filtros de seleção ---
+    clientes_list = conn.execute("SELECT DISTINCT cliente FROM pendencias WHERE cliente IS NOT NULL ORDER BY cliente").fetchall()
+    sistemas_list = conn.execute("SELECT DISTINCT sistema FROM pendencias WHERE sistema IS NOT NULL ORDER BY sistema").fetchall()
+    responsaveis_list = conn.execute("SELECT DISTINCT responsavel FROM pendencias WHERE responsavel IS NOT NULL ORDER BY responsavel").fetchall()
     
     conn.close()
 
@@ -1020,16 +1031,22 @@ def pendencias():
                            pendencias=pendencias_data,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
+                           # Passa todas as variáveis de filtro para o template
                            search_protocolo=search_protocolo,
+                           search_data_registro=search_data_registro,
                            search_cliente=search_cliente,
                            search_sistema=search_sistema,
+                           search_detalhamento=search_detalhamento,
                            search_responsavel=search_responsavel,
                            search_fase=search_fase,
                            search_status=search_status,
                            search_prioridade=search_prioridade,
+                           # Passa as listas para os menus de seleção
+                           clientes_list=clientes_list,
+                           sistemas_list=sistemas_list,
+                           responsaveis_list=responsaveis_list,
                            pagination_args=pagination_args,
                            sorting_args=sorting_args,
-                           # --- ALTERAÇÃO APLICADA AQUI: Passa a variável per_page para o template ---
                            per_page=per_page_str)
 
 # SUBSTITUA A SUA FUNÇÃO build_pendencias_redirect_url POR ESTA
