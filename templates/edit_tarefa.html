@@ -33,6 +33,16 @@
             {% for tecnico in tecnicos %}<option value="{{ tecnico }}" {% if tecnico == tarefa['responsavel_cm'] %}selected{% endif %}>{{ tecnico }}</option>{% endfor %}
         </select>
 
+        <label for="predecessoras">Predecessoras (Depende de):</label>
+        <select name="predecessoras" id="predecessoras" multiple size="8">
+            {% for task in all_tasks %}
+                <option value="{{ task.atividade_id }}" {% if task.atividade_id in (tarefa.predecessoras or '') %}selected{% endif %}>
+                    {{ task.atividade_id }} - {{ task.descricao }}
+                </option>
+            {% endfor %}
+        </select>
+        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de uma.</small>
+
         <label for="local_execucao">Local de Execução</label>
         <select name="local_execucao">
             <option value="">Selecione</option>
@@ -43,7 +53,6 @@
         <select name="status" required>
             <option value="Planejada" {% if tarefa['status'] == 'Planejada' %}selected{% endif %}>Planejada</option>
             <option value="Em Andamento" {% if tarefa['status'] == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
-            
             <option value="Atrasada" {% if tarefa['status'] == 'Atrasada' %}selected{% endif %}>Atrasada</option>
             <option value="Suspensa" {% if tarefa['status'] == 'Suspensa' %}selected{% endif %}>Suspensa</option>
             <option value="Concluída" {% if tarefa['status'] == 'Concluída' %}selected{% endif %}>Concluída</option>

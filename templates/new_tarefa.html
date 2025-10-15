@@ -30,6 +30,14 @@
                 <option value="{{ tecnico }}">{{ tecnico }}</option>
             {% endfor %}
         </select>
+
+        <label for="predecessoras">Predecessoras (Depende de):</label>
+        <select name="predecessoras" id="predecessoras" multiple size="8">
+            {% for task in all_tasks %}
+                <option value="{{ task.atividade_id }}">{{ task.atividade_id }} - {{ task.descricao }}</option>
+            {% endfor %}
+        </select>
+        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de uma.</small>
         
         <button type="submit">Salvar Tarefa</button>
     </form>

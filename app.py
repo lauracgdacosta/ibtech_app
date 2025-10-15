@@ -1,3 +1,5 @@
+
+
 import sqlite3
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -96,14 +98,13 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS tecnicos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT, telefone TEXT, funcao TEXT, equipe TEXT, contrato TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS clientes (id INTEGER PRIMARY KEY AUTOINCREMENT, municipio TEXT NOT NULL, orgao TEXT, contrato TEXT, sistemas TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS equipes (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT, lider TEXT)''')
-    # --- ALTERAÇÃO APLICADA AQUI: Adicionada a coluna 'prioridade' ---
     cursor.execute('''CREATE TABLE IF NOT EXISTS pendencias (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo TEXT, data_registro TEXT, cliente TEXT, sistema TEXT, detalhamento TEXT, responsavel TEXT, fase TEXT, status TEXT, prioridade TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS ferias (id INTEGER PRIMARY KEY AUTOINCREMENT, funcionario TEXT NOT NULL, admissao TEXT, contrato TEXT, ano INTEGER, data_inicio TEXT, data_termino TEXT, obs TEXT, status TEXT NOT NULL DEFAULT 'Planejada')''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS sistemas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, sigla TEXT NOT NULL)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, horario_agendamento TEXT, motivo TEXT, descricao TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS projetos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cliente TEXT, data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, predecessoras TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL, role TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS matriz_responsabilidades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,7 +155,6 @@ def migrate_ferias_table():
     finally:
         conn.close()
         
-# --- ALTERAÇÃO APLICADA AQUI: Nova função de migração para 'pendencias' ---
 def migrate_pendencias_add_prioridade():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -168,6 +168,36 @@ def migrate_pendencias_add_prioridade():
             print("MIGRATE: Coluna 'prioridade' adicionada com sucesso.")
     except Exception as e:
         print(f"ERRO ao migrar a tabela pendencias para 'prioridade': {e}")
+    finally:
+        conn.close()
+
+def migrate_pendencias_add_unique_protocolo():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        print("MIGRATE: Verificando/Criando índice único para 'protocolo' na tabela 'pendencias'.")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_pendencias_protocolo ON pendencias(protocolo)")
+        conn.commit()
+        print("MIGRATE: Índice único para 'protocolo' garantido.")
+    except Exception as e:
+        print(f"ERRO ao criar índice único para 'protocolo': {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
+def migrate_tarefas_add_predecessoras():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(tarefas)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'predecessoras' not in columns:
+            print("MIGRATE: Adicionando coluna 'predecessoras' à tabela 'tarefas'.")
+            cursor.execute("ALTER TABLE tarefas ADD COLUMN predecessoras TEXT")
+            conn.commit()
+            print("MIGRATE: Coluna 'predecessoras' adicionada com sucesso.")
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela tarefas para 'predecessoras': {e}")
     finally:
         conn.close()
 
@@ -262,8 +292,9 @@ with app.app_context():
     migrate_ferias_table()
     migrate_pendencias_table()
     migrate_permissions_for_create()
-    # --- ALTERAÇÃO APLICADA AQUI: Chamada da nova função de migração ---
     migrate_pendencias_add_prioridade()
+    migrate_pendencias_add_unique_protocolo()
+    migrate_tarefas_add_predecessoras()
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
@@ -309,28 +340,25 @@ def index():
     proximos_agendamentos = conn.execute('SELECT * FROM agenda WHERE data_agendamento >= ? ORDER BY data_agendamento ASC LIMIT 5', (hoje_str,)).fetchall()
     pendencias_abertas = conn.execute("SELECT * FROM pendencias WHERE status = 'Pendente' ORDER BY data_registro DESC LIMIT 5").fetchall()
     tecnicos_em_ferias = conn.execute('SELECT * FROM ferias WHERE data_inicio <= ? AND data_termino >= ?', (hoje_str, hoje_str)).fetchall()
-
-    # Dados para o gráfico de pizza (por sistema)
+    
     protocolos_por_sistema_data = conn.execute(
         "SELECT sistema, COUNT(id) as total FROM pendencias GROUP BY sistema ORDER BY total DESC"
     ).fetchall()
     protocolos_por_sistema = [{'sistema': row['sistema'], 'total': row['total']} for row in protocolos_por_sistema_data]
 
-    # --- NOVA LÓGICA PARA O GRÁFICO DE BARRAS ---
     protocolos_por_cliente_data = conn.execute(
         "SELECT cliente, COUNT(id) as total FROM pendencias GROUP BY cliente ORDER BY total DESC"
     ).fetchall()
     protocolos_por_cliente = [{'cliente': row['cliente'], 'total': row['total']} for row in protocolos_por_cliente_data]
-    # --- FIM DA NOVA LÓGICA ---
-
+    
     conn.close()
-
-    return render_template('index.html',
-                           proximos_agendamentos=proximos_agendamentos,
-                           pendencias_abertas=pendencias_abertas,
+    
+    return render_template('index.html', 
+                           proximos_agendamentos=proximos_agendamentos, 
+                           pendencias_abertas=pendencias_abertas, 
                            tecnicos_em_ferias=tecnicos_em_ferias,
                            protocolos_por_sistema=protocolos_por_sistema,
-                           protocolos_por_cliente=protocolos_por_cliente) # <-- Nova variável
+                           protocolos_por_cliente=protocolos_por_cliente)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -353,6 +381,37 @@ def logout():
     session.clear()
     flash('Você saiu do sistema.', 'info')
     return redirect(url_for('login'))
+    
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        senha_atual = request.form['senha_atual']
+        nova_senha = request.form['nova_senha']
+        confirmacao_nova_senha = request.form['confirmacao_nova_senha']
+
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM usuarios WHERE id = ?', (session['user_id'],)).fetchone()
+        
+        if not user or not check_password_hash(user['senha'], senha_atual):
+            flash('Senha atual incorreta.', 'danger')
+            conn.close()
+            return redirect(url_for('change_password'))
+        
+        if nova_senha != confirmacao_nova_senha:
+            flash('A nova senha e a confirmação não correspondem.', 'danger')
+            conn.close()
+            return redirect(url_for('change_password'))
+
+        nova_senha_hash = generate_password_hash(nova_senha)
+        conn.execute('UPDATE usuarios SET senha = ? WHERE id = ?', (nova_senha_hash, session['user_id']))
+        conn.commit()
+        conn.close()
+        
+        flash('Senha alterada com sucesso!', 'success')
+        return redirect(url_for('index'))
+        
+    return render_template('change_password.html')
 
 # --- ROTAS DE GESTÃO (Admin) ---
 @app.route('/gerenciar_permissoes')
@@ -360,14 +419,12 @@ def logout():
 @role_required(module='admin_only', action='can_edit')
 def gerenciar_permissoes():
     conn = get_db_connection()
-    # Adicionado can_create à consulta para garantir que está sendo lido
     permissions_data = conn.execute('SELECT role_name, module_name, can_read, can_create, can_edit, can_delete FROM role_permissions').fetchall()
     conn.close()
     permissions = {}
     for p in permissions_data:
         role, module = p['role_name'], p['module_name']
         if role not in permissions: permissions[role] = {}
-        # CORREÇÃO: Adicionando 'can_create' ao dicionário que é enviado para o template
         permissions[role][module] = {
             'can_read': p['can_read'], 
             'can_create': p['can_create'], 
@@ -376,6 +433,7 @@ def gerenciar_permissoes():
         }
     roles_to_manage = ['coordenacao', 'tecnico']
     return render_template('gerenciar_permissoes.html', modules=AVAILABLE_MODULES, roles=roles_to_manage, current_permissions=permissions)
+
 @app.route('/salvar_permissoes', methods=['POST'])
 @login_required
 @role_required(module='admin_only', action='can_edit')
@@ -385,10 +443,8 @@ def salvar_permissoes():
     roles_to_manage = ['coordenacao', 'tecnico']
     
     try:
-        # Primeiro, deleta todas as permissões antigas para os grupos gerenciáveis
         cursor.execute(f"DELETE FROM role_permissions WHERE role_name IN ({','.join('?'*len(roles_to_manage))})", roles_to_manage)
         
-        # Depois, insere as novas permissões baseadas no formulário
         for role in roles_to_manage:
             for module_key in AVAILABLE_MODULES.keys():
                 can_read = 1 if f'permission_{role}_{module_key}_can_read' in request.form else 0
@@ -396,7 +452,6 @@ def salvar_permissoes():
                 can_edit = 1 if f'permission_{role}_{module_key}_can_edit' in request.form else 0
                 can_delete = 1 if f'permission_{role}_{module_key}_can_delete' in request.form else 0
                 
-                # Insere um novo registro para cada módulo que tiver pelo menos uma permissão
                 if can_read or can_create or can_edit or can_delete:
                     cursor.execute('INSERT INTO role_permissions (role_name, module_name, can_read, can_create, can_edit, can_delete) VALUES (?, ?, ?, ?, ?, ?)', 
                                    (role, module_key, can_read, can_create, can_edit, can_delete))
@@ -413,6 +468,23 @@ def salvar_permissoes():
         conn.close()
         
     return redirect(url_for('gerenciar_permissoes'))
+    
+# Rota temporária para correção do banco de dados
+@app.route('/force_db_fix')
+@login_required
+def force_db_fix():
+    print("--- INICIANDO CORREÇÃO MANUAL DO BANCO DE DADOS ---")
+    try:
+        migrate_permissions_for_create()
+        migrate_pendencias_add_prioridade() 
+        migrate_pendencias_add_unique_protocolo()
+        migrate_tarefas_add_predecessoras()
+        flash('A verificação e correção da estrutura do banco de dados foi executada com sucesso!', 'success')
+        print("--- CORREÇÃO MANUAL DO BANCO DE DADOS CONCLUÍDA ---")
+    except Exception as e:
+        flash(f'Ocorreu um erro durante a correção da estrutura: {e}', 'danger')
+        print(f"--- ERRO NA CORREÇÃO MANUAL DA ESTRUTURA: {e} ---")
+    return redirect(url_for('index'))
 
 # --- MÓDULOS DE CADASTRO ---
 @app.route('/cadastros')
@@ -703,7 +775,7 @@ def delete_sistema(id):
     conn.close()
     return redirect(url_for('sistemas'))
 
-# --- MÓDULO DE PROJETOS ---
+# --- MÓDULO DE PROJETOS (com as novas alterações) ---
 @app.route('/projetos')
 @login_required
 @role_required(module='projetos', action='can_read')
@@ -724,7 +796,7 @@ def projetos():
             projeto['status'] = 'Concluído'
         elif data_inicio and hoje >= data_inicio:
             projeto['status'] = 'Em Andamento'
-
+        
         projetos_processados.append(projeto)
 
     return render_template('projetos.html', projetos=projetos_processados)
@@ -747,7 +819,7 @@ def new_projeto():
         conn.close()
         flash('Projeto criado com sucesso e checklist padrão adicionado!', 'success')
         return redirect(url_for('projetos'))
-
+    
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     conn.close()
@@ -767,7 +839,7 @@ def edit_projeto(projeto_id):
         conn.close()
         flash('Projeto atualizado com sucesso!', 'success')
         return redirect(url_for('projetos'))
-
+        
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     clientes = [f"{row['municipio']} - {row['orgao']}" for row in clientes_data]
     conn.close()
@@ -791,7 +863,7 @@ def checklist_projeto(projeto_id):
     conn = get_db_connection()
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
-
+    
     tarefas_processadas = []
     for tarefa_row in tarefas_from_db:
         tarefa = dict(tarefa_row)
@@ -816,7 +888,7 @@ def checklist_projeto(projeto_id):
     if not projeto:
         flash('Projeto não encontrado.', 'danger')
         return redirect(url_for('projetos'))
-
+    
     return render_template('checklist_projeto.html', projeto=projeto, tarefas=tarefas_processadas)
 
 @app.route('/tarefa/edit/<int:tarefa_id>', methods=['GET', 'POST'])
@@ -827,20 +899,26 @@ def edit_tarefa(tarefa_id):
     tarefa = conn.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
     if request.method == 'POST':
         form = request.form
+        predecessoras_list = form.getlist('predecessoras')
+        predecessoras_str = ', '.join(predecessoras_list)
+        
         conn.execute('''
-            UPDATE tarefas SET atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?,
-            responsavel_pm = ?, responsavel_cm = ?, status = ?, local_execucao = ?, observacoes = ? WHERE id = ?
-        ''', (form['atividade_id'], form['descricao'], form['data_inicio'] or None, form['data_termino'] or None,
-              form['responsavel_pm'], form['responsavel_cm'], form['status'], form['local_execucao'], form['observacoes'], tarefa_id))
+            UPDATE tarefas SET atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, 
+            responsavel_pm = ?, responsavel_cm = ?, status = ?, local_execucao = ?, observacoes = ?, predecessoras = ? WHERE id = ?
+        ''', (form['atividade_id'], form['descricao'], form['data_inicio'] or None, form['data_termino'] or None, 
+              form['responsavel_pm'], form['responsavel_cm'], form['status'], form['local_execucao'], form['observacoes'], 
+              predecessoras_str, tarefa_id))
         conn.commit()
         conn.close()
         flash('Tarefa atualizada!', 'success')
         return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
+    
+    all_tasks = conn.execute("SELECT atividade_id, descricao FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' AND id != ? ORDER BY atividade_id", (tarefa['projeto_id'], tarefa_id)).fetchall()
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
     conn.close()
-    return render_template('edit_tarefa.html', tarefa=tarefa, tecnicos=tecnicos, locais=locais)
+    return render_template('edit_tarefa.html', tarefa=tarefa, tecnicos=tecnicos, locais=locais, all_tasks=all_tasks)
 
 @app.route('/tarefa/delete/<int:tarefa_id>', methods=['POST'])
 @login_required
@@ -875,18 +953,23 @@ def new_tarefa(projeto_id):
     conn = get_db_connection()
     if request.method == 'POST':
         form = request.form
+        predecessoras_list = form.getlist('predecessoras')
+        predecessoras_str = ', '.join(predecessoras_list)
+        
         conn.execute(
-            'INSERT INTO tarefas (projeto_id, tipo, status, atividade_id, descricao, responsavel_pm, responsavel_cm) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            (projeto_id, 'tarefa', 'Planejada', form['atividade_id'], form['descricao'], form['responsavel_pm'], form['responsavel_cm'])
+            'INSERT INTO tarefas (projeto_id, tipo, status, atividade_id, descricao, responsavel_pm, responsavel_cm, predecessoras) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            (projeto_id, 'tarefa', 'Planejada', form['atividade_id'], form['descricao'], form['responsavel_pm'], form['responsavel_cm'], predecessoras_str)
         )
         conn.commit()
         conn.close()
         flash('Nova tarefa adicionada com sucesso!', 'success')
         return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
+    
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
+    all_tasks = conn.execute("SELECT atividade_id, descricao FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' ORDER BY atividade_id", (projeto_id,)).fetchall()
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
-    return render_template('new_tarefa.html', projeto=projeto, tecnicos=tecnicos)
+    return render_template('new_tarefa.html', projeto=projeto, tecnicos=tecnicos, all_tasks=all_tasks)
 
 @app.route('/projeto/<int:projeto_id>/new_titulo', methods=['GET', 'POST'])
 @login_required
@@ -925,9 +1008,8 @@ def edit_titulo(tarefa_id):
     conn.close()
     return render_template('edit_titulo.html', projeto=projeto, tarefa=tarefa)
 
-# --- MÓDULO DE PENDÊNCIAS ---
-# --- MÓDULO DE PENDÊNCIAS (Atualizado como Controle de Demandas) ---
 
+# --- MÓDULO DE PENDÊNCIAS (com validação e todas as melhorias) ---
 @app.route('/pendencias')
 @login_required
 @role_required(module='pendencias', action='can_read')
@@ -948,7 +1030,6 @@ def pendencias():
     sort_by = request.args.get('sort_by', 'data_registro', type=str)
     order = request.args.get('order', 'desc', type=str)
     
-    # --- ALTERAÇÃO APLICADA AQUI: Adicionados todos os campos de filtro ---
     search_protocolo = request.args.get('search_protocolo', '', type=str)
     search_data_registro = request.args.get('search_data_registro', '', type=str)
     search_cliente = request.args.get('search_cliente', '', type=str)
@@ -959,7 +1040,6 @@ def pendencias():
     search_status = request.args.get('search_status', '', type=str)
     search_prioridade = request.args.get('search_prioridade', '', type=str)
 
-    # --- ALTERAÇÃO APLICADA AQUI: Adicionadas todas as colunas para ordenação ---
     allowed_sort_columns = ['protocolo', 'data_registro', 'cliente', 'sistema', 'detalhamento', 'responsavel', 'fase', 'status', 'prioridade']
     if sort_by not in allowed_sort_columns:
         sort_by = 'data_registro'
@@ -969,7 +1049,6 @@ def pendencias():
     base_query = "FROM pendencias WHERE 1=1"
     params = []
 
-    # --- ALTERAÇÃO APLICADA AQUI: Lógica de filtro para todos os campos ---
     if search_protocolo:
         base_query += " AND protocolo LIKE ?"
         params.append(f"%{search_protocolo}%")
@@ -1014,7 +1093,6 @@ def pendencias():
     
     pendencias_data = conn.execute(data_query, tuple(params)).fetchall()
     
-    # --- ALTERAÇÃO APLICADA AQUI: Busca de dados para os filtros de seleção ---
     clientes_list = conn.execute("SELECT DISTINCT cliente FROM pendencias WHERE cliente IS NOT NULL ORDER BY cliente").fetchall()
     sistemas_list = conn.execute("SELECT DISTINCT sistema FROM pendencias WHERE sistema IS NOT NULL ORDER BY sistema").fetchall()
     responsaveis_list = conn.execute("SELECT DISTINCT responsavel FROM pendencias WHERE responsavel IS NOT NULL ORDER BY responsavel").fetchall()
@@ -1031,7 +1109,6 @@ def pendencias():
                            pendencias=pendencias_data,
                            page=page, total_pages=total_pages,
                            sort_by=sort_by, order=order,
-                           # Passa todas as variáveis de filtro para o template
                            search_protocolo=search_protocolo,
                            search_data_registro=search_data_registro,
                            search_cliente=search_cliente,
@@ -1041,7 +1118,6 @@ def pendencias():
                            search_fase=search_fase,
                            search_status=search_status,
                            search_prioridade=search_prioridade,
-                           # Passa as listas para os menus de seleção
                            clientes_list=clientes_list,
                            sistemas_list=sistemas_list,
                            responsaveis_list=responsaveis_list,
@@ -1049,19 +1125,14 @@ def pendencias():
                            sorting_args=sorting_args,
                            per_page=per_page_str)
 
-# SUBSTITUA A SUA FUNÇÃO build_pendencias_redirect_url POR ESTA
-
 def build_pendencias_redirect_url():
     args = {}
-    # Esta lista contém todos os possíveis filtros e parâmetros de paginação/ordenação
     valid_state_keys = [
         'search_protocolo', 'search_cliente', 'search_sistema', 
         'search_responsavel', 'search_fase', 'search_status', 
         'search_prioridade', 'page', 'sort_by', 'order'
     ]
     for key in valid_state_keys:
-        # CORREÇÃO: Usar request.values.get() para buscar tanto de
-        # parâmetros de formulário (POST) quanto de URL (GET).
         value = request.values.get(key)
         if value:
             args[key] = value
@@ -1072,23 +1143,43 @@ def build_pendencias_redirect_url():
 @role_required(module='pendencias', action='can_create')
 def new_pendencia():
     args = request.args.to_dict()
+    conn = get_db_connection()
+
     if request.method == 'POST':
         form = request.form
-        conn = get_db_connection()
         
         numero_digitado = form['protocolo']
         ano_atual = str(datetime.date.today().year)
         protocolo_final = f"{numero_digitado.zfill(6)}/{ano_atual}"
 
-        # --- ALTERAÇÃO APLICADA AQUI: Adicionada 'prioridade' ao INSERT ---
-        conn.execute('INSERT INTO pendencias (protocolo, data_registro, cliente, sistema, detalhamento, responsavel, fase, status, prioridade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], form['prioridade']))
-        conn.commit()
-        conn.close()
-        flash(f'Nova demanda criada com sucesso! Protocolo: {protocolo_final}', 'success')
+        existing_pendencia = conn.execute('SELECT id FROM pendencias WHERE protocolo = ?', (protocolo_final,)).fetchone()
+        if existing_pendencia:
+            flash('Erro: O protocolo informado já existe no sistema.', 'danger')
+            clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
+            sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
+            responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+            conn.close()
+            return render_template('new_pendencia.html', 
+                                   form_data=form,
+                                   clientes=clientes,
+                                   sistemas=sistemas,
+                                   responsaveis=responsaveis,
+                                   args=args, 
+                                   ano_atual=ano_atual)
+
+        try:
+            conn.execute('INSERT INTO pendencias (protocolo, data_registro, cliente, sistema, detalhamento, responsavel, fase, status, prioridade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                         (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], form['prioridade']))
+            conn.commit()
+            flash(f'Nova demanda criada com sucesso! Protocolo: {protocolo_final}', 'success')
+        except sqlite3.IntegrityError:
+            conn.rollback()
+            flash('Erro: O protocolo informado já existe no sistema. (Erro de banco de dados)', 'danger')
+        finally:
+            conn.close()
+            
         return redirect(build_pendencias_redirect_url())
     
-    conn = get_db_connection()
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
@@ -1096,7 +1187,7 @@ def new_pendencia():
     
     ano_atual = str(datetime.date.today().year)
     
-    return render_template('new_pendencia.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args, ano_atual=ano_atual)
+    return render_template('new_pendencia.html', clientes=clientes, sistemas=sistemas, responsaveis=responsaveis, args=args, ano_atual=ano_atual, form_data={})
 
 @app.route('/edit_pendencia/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -1104,7 +1195,6 @@ def new_pendencia():
 def edit_pendencia(id):
     args = request.args.to_dict()
     conn = get_db_connection()
-    pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
     
     if request.method == 'POST':
         form = request.form
@@ -1113,14 +1203,26 @@ def edit_pendencia(id):
         ano_protocolo = form['protocolo_ano']
         protocolo_final = f"{numero_protocolo_editado.zfill(6)}/{ano_protocolo}"
 
-        # --- ALTERAÇÃO APLICADA AQUI: Adicionada 'prioridade' ao UPDATE ---
-        conn.execute('UPDATE pendencias SET protocolo=?, data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=?, prioridade=? WHERE id=?',
-                     (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], form['prioridade'], id))
-        conn.commit()
-        conn.close()
-        flash('Demanda atualizada com sucesso!', 'success')
+        existing_pendencia = conn.execute('SELECT id FROM pendencias WHERE protocolo = ? AND id != ?', (protocolo_final, id)).fetchone()
+        if existing_pendencia:
+            flash('Erro: O protocolo informado já pertence a outra demanda.', 'danger')
+            conn.close()
+            return redirect(url_for('edit_pendencia', id=id, **args))
+
+        try:
+            conn.execute('UPDATE pendencias SET protocolo=?, data_registro=?, cliente=?, sistema=?, detalhamento=?, responsavel=?, fase=?, status=?, prioridade=? WHERE id=?',
+                         (protocolo_final, form['data_registro'], form['cliente'], form['sistema'], form['detalhamento'], form['responsavel'], form['fase'], form['status'], form['prioridade'], id))
+            conn.commit()
+            flash('Demanda atualizada com sucesso!', 'success')
+        except sqlite3.IntegrityError:
+            conn.rollback()
+            flash('Erro: O protocolo informado já pertence a outra demanda. (Erro de banco de dados)', 'danger')
+        finally:
+            conn.close()
+            
         return redirect(build_pendencias_redirect_url())
         
+    pendencia = conn.execute('SELECT * FROM pendencias WHERE id = ?', (id,)).fetchone()
     clientes = [f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()]
     sistemas = [row['nome'] for row in conn.execute('SELECT nome FROM sistemas ORDER BY nome').fetchall()]
     responsaveis = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
@@ -1140,6 +1242,7 @@ def edit_pendencia(id):
                            args=args,
                            numero_protocolo=numero_protocolo,
                            ano_protocolo=ano_protocolo)
+
 
 @app.route('/delete_pendencia/<int:id>', methods=['POST'])
 @login_required
