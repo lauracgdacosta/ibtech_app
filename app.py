@@ -897,7 +897,9 @@ def edit_tarefa(tarefa_id):
         flash('Tarefa atualizada!', 'success')
         return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
     
-    all_tasks = conn.execute("SELECT atividade_id, descricao FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' AND id != ? ORDER BY atividade_id", (tarefa['projeto_id'], tarefa_id)).fetchall()
+    # --- ALTERAÇÃO APLICADA AQUI: Busca também a 'data_termino' ---
+    all_tasks = conn.execute("SELECT atividade_id, descricao, data_termino FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' AND id != ? ORDER BY atividade_id", (tarefa['projeto_id'], tarefa_id)).fetchall()
+    
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
@@ -950,10 +952,12 @@ def new_tarefa(projeto_id):
         return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
     
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
-    all_tasks = conn.execute("SELECT atividade_id, descricao FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' ORDER BY atividade_id", (projeto_id,)).fetchall()
+    # --- ALTERAÇÃO APLICADA AQUI: Busca também a 'data_termino' ---
+    all_tasks = conn.execute("SELECT atividade_id, descricao, data_termino FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' ORDER BY atividade_id", (projeto_id,)).fetchall()
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()
     return render_template('new_tarefa.html', projeto=projeto, tecnicos=tecnicos, all_tasks=all_tasks)
+
 
 @app.route('/projeto/<int:projeto_id>/new_titulo', methods=['GET', 'POST'])
 @login_required

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Editar Tarefa</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -16,7 +17,7 @@
         <textarea name="descricao" required>{{ tarefa['descricao'] }}</textarea>
 
         <label for="data_inicio">Data Início</label>
-        <input type="date" name="data_inicio" value="{{ tarefa['data_inicio'] }}">
+        <input type="date" id="data_inicio" name="data_inicio" value="{{ tarefa['data_inicio'] }}">
 
         <label for="data_termino">Data Término</label>
         <input type="date" name="data_termino" value="{{ tarefa['data_termino'] }}">
@@ -36,7 +37,9 @@
         <label for="predecessoras">Predecessoras (Depende de):</label>
         <select name="predecessoras" id="predecessoras" multiple size="8">
             {% for task in all_tasks %}
-                <option value="{{ task.atividade_id }}" {% if task.atividade_id in (tarefa.predecessoras or '') %}selected{% endif %}>
+                <option value="{{ task.atividade_id }}" 
+                        data-end-date="{{ task.data_termino or '' }}" 
+                        {% if task.atividade_id in (tarefa.predecessoras or '') %}selected{% endif %}>
                     {{ task.atividade_id }} - {{ task.descricao }}
                 </option>
             {% endfor %}
@@ -66,5 +69,41 @@
         <a href="{{ url_for('checklist_projeto', projeto_id=tarefa['projeto_id']) }}" class="button">Cancelar</a>
     </form>
 </div>
+
+<script>
+$(document).ready(function() {
+    $('#predecessoras').on('change', function() {
+        let latestEndDate = null;
+        
+        // Itera sobre todas as opções selecionadas
+        $(this).find('option:selected').each(function() {
+            const endDateStr = $(this).data('end-date');
+            if (endDateStr) {
+                // Converte a string de data YYYY-MM-DD para um objeto Date, evitando problemas de fuso horário
+                const parts = endDateStr.split('-');
+                const endDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+                // Encontra a maior data de término entre as selecionadas
+                if (latestEndDate === null || endDate > latestEndDate) {
+                    latestEndDate = endDate;
+                }
+            }
+        });
+
+        // Se uma data de término válida foi encontrada
+        if (latestEndDate) {
+            // Adiciona 1 dia à maior data
+            latestEndDate.setDate(latestEndDate.getDate() + 1);
+
+            // Formata a nova data de volta para YYYY-MM-DD
+            const newStartDate = latestEndDate.toISOString().split('T')[0];
+
+            // Define o valor do campo Data Início
+            $('#data_inicio').val(newStartDate);
+        }
+    });
+});
+</script>
+
 </body>
 </html>
