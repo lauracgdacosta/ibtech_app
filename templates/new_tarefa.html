@@ -20,20 +20,20 @@
         <input type="date" id="data_inicio" name="data_inicio">
 
         <label for="responsavel_pm">Responsável PM</label>
-        <select name="responsavel_pm" id="responsavel_pm">
-            <option value="">Selecione</option>
+        <select name="responsavel_pm" id="responsavel_pm" multiple size="5">
             {% for tecnico in tecnicos %}
                 <option value="{{ tecnico }}">{{ tecnico }}</option>
             {% endfor %}
         </select>
+        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de um.</small>
 
         <label for="responsavel_cm">Responsável CM</label>
-        <select name="responsavel_cm" id="responsavel_cm">
-            <option value="">Selecione</option>
+        <select name="responsavel_cm" id="responsavel_cm" multiple size="5">
             {% for tecnico in tecnicos %}
                 <option value="{{ tecnico }}">{{ tecnico }}</option>
             {% endfor %}
         </select>
+        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de um.</small>
         
         <label for="predecessoras">Predecessoras (Depende de):</label>
         <select name="predecessoras" id="predecessoras" multiple size="8">
@@ -43,7 +43,7 @@
                 </option>
             {% endfor %}
         </select>
-        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de uma.</small>
+        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de um.</small>
         
         <button type="submit">Salvar Tarefa</button>
     </form>

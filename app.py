@@ -886,25 +886,32 @@ def edit_tarefa(tarefa_id):
         predecessoras_list = form.getlist('predecessoras')
         predecessoras_str = ', '.join(predecessoras_list)
         
+        # --- ALTERAÇÃO APLICADA AQUI: Salva múltiplos técnicos por campo ---
+        responsaveis_pm_list = form.getlist('responsavel_pm')
+        responsaveis_pm_str = ', '.join(responsaveis_pm_list)
+        
+        responsaveis_cm_list = form.getlist('responsavel_cm')
+        responsaveis_cm_str = ', '.join(responsaveis_cm_list)
+        
+        # A query UPDATE agora usa os campos originais, mas com os múltiplos valores
         conn.execute('''
             UPDATE tarefas SET atividade_id = ?, descricao = ?, data_inicio = ?, data_termino = ?, 
             responsavel_pm = ?, responsavel_cm = ?, status = ?, local_execucao = ?, observacoes = ?, predecessoras = ? WHERE id = ?
         ''', (form['atividade_id'], form['descricao'], form['data_inicio'] or None, form['data_termino'] or None, 
-              form['responsavel_pm'], form['responsavel_cm'], form['status'], form['local_execucao'], form['observacoes'], 
+              responsaveis_pm_str, responsaveis_cm_str, form['status'], form['local_execucao'], form['observacoes'], 
               predecessoras_str, tarefa_id))
         conn.commit()
         conn.close()
         flash('Tarefa atualizada!', 'success')
         return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
     
-    # --- ALTERAÇÃO APLICADA AQUI: Busca também a 'data_termino' ---
     all_tasks = conn.execute("SELECT atividade_id, descricao, data_termino FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' AND id != ? ORDER BY atividade_id", (tarefa['projeto_id'], tarefa_id)).fetchall()
-    
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     clientes_data = conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()
     locais = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in clientes_data] + ['Ibtech'])))
     conn.close()
     return render_template('edit_tarefa.html', tarefa=tarefa, tecnicos=tecnicos, locais=locais, all_tasks=all_tasks)
+
 
 @app.route('/tarefa/delete/<int:tarefa_id>', methods=['POST'])
 @login_required
@@ -932,6 +939,7 @@ def toggle_tarefa_status(tarefa_id):
     conn.close()
     return redirect(url_for('checklist_projeto', projeto_id=tarefa['projeto_id']))
 
+
 @app.route('/projeto/<int:projeto_id>/new_tarefa', methods=['GET', 'POST'])
 @login_required
 @role_required(module='projetos', action='can_create')
@@ -941,10 +949,18 @@ def new_tarefa(projeto_id):
         form = request.form
         predecessoras_list = form.getlist('predecessoras')
         predecessoras_str = ', '.join(predecessoras_list)
+
+        # --- ALTERAÇÃO APLICADA AQUI: Salva múltiplos técnicos por campo ---
+        responsaveis_pm_list = form.getlist('responsavel_pm')
+        responsaveis_pm_str = ', '.join(responsaveis_pm_list)
         
+        responsaveis_cm_list = form.getlist('responsavel_cm')
+        responsaveis_cm_str = ', '.join(responsaveis_cm_list)
+        
+        # A query INSERT agora usa os campos originais, mas com os múltiplos valores
         conn.execute(
             'INSERT INTO tarefas (projeto_id, tipo, status, atividade_id, descricao, responsavel_pm, responsavel_cm, predecessoras) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            (projeto_id, 'tarefa', 'Planejada', form['atividade_id'], form['descricao'], form['responsavel_pm'], form['responsavel_cm'], predecessoras_str)
+            (projeto_id, 'tarefa', 'Planejada', form['atividade_id'], form['descricao'], responsaveis_pm_str, responsaveis_cm_str, predecessoras_str)
         )
         conn.commit()
         conn.close()
@@ -952,7 +968,6 @@ def new_tarefa(projeto_id):
         return redirect(url_for('checklist_projeto', projeto_id=projeto_id))
     
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
-    # --- ALTERAÇÃO APLICADA AQUI: Busca também a 'data_termino' ---
     all_tasks = conn.execute("SELECT atividade_id, descricao, data_termino FROM tarefas WHERE projeto_id = ? AND tipo = 'tarefa' ORDER BY atividade_id", (projeto_id,)).fetchall()
     tecnicos = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
     conn.close()

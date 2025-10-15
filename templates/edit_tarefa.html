@@ -23,16 +23,20 @@
         <input type="date" name="data_termino" value="{{ tarefa['data_termino'] }}">
 
         <label for="responsavel_pm">Responsável PM</label>
-        <select name="responsavel_pm">
-            <option value="">Selecione</option>
-            {% for tecnico in tecnicos %}<option value="{{ tecnico }}" {% if tecnico == tarefa['responsavel_pm'] %}selected{% endif %}>{{ tecnico }}</option>{% endfor %}
+        <select name="responsavel_pm" id="responsavel_pm" multiple size="5">
+            {% for tecnico in tecnicos %}
+                <option value="{{ tecnico }}" {% if tecnico in (tarefa.responsavel_pm or '') %}selected{% endif %}>{{ tecnico }}</option>
+            {% endfor %}
         </select>
+        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de um.</small>
 
         <label for="responsavel_cm">Responsável CM</label>
-        <select name="responsavel_cm">
-            <option value="">Selecione</option>
-            {% for tecnico in tecnicos %}<option value="{{ tecnico }}" {% if tecnico == tarefa['responsavel_cm'] %}selected{% endif %}>{{ tecnico }}</option>{% endfor %}
+        <select name="responsavel_cm" id="responsavel_cm" multiple size="5">
+            {% for tecnico in tecnicos %}
+                <option value="{{ tecnico }}" {% if tecnico in (tarefa.responsavel_cm or '') %}selected{% endif %}>{{ tecnico }}</option>
+            {% endfor %}
         </select>
+        <small>Segure Ctrl (ou Cmd em Mac) para selecionar mais de um.</small>
 
         <label for="predecessoras">Predecessoras (Depende de):</label>
         <select name="predecessoras" id="predecessoras" multiple size="8">
@@ -75,30 +79,21 @@ $(document).ready(function() {
     $('#predecessoras').on('change', function() {
         let latestEndDate = null;
         
-        // Itera sobre todas as opções selecionadas
         $(this).find('option:selected').each(function() {
             const endDateStr = $(this).data('end-date');
             if (endDateStr) {
-                // Converte a string de data YYYY-MM-DD para um objeto Date, evitando problemas de fuso horário
                 const parts = endDateStr.split('-');
                 const endDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-                // Encontra a maior data de término entre as selecionadas
                 if (latestEndDate === null || endDate > latestEndDate) {
                     latestEndDate = endDate;
                 }
             }
         });
 
-        // Se uma data de término válida foi encontrada
         if (latestEndDate) {
-            // Adiciona 1 dia à maior data
             latestEndDate.setDate(latestEndDate.getDate() + 1);
-
-            // Formata a nova data de volta para YYYY-MM-DD
             const newStartDate = latestEndDate.toISOString().split('T')[0];
-
-            // Define o valor do campo Data Início
             $('#data_inicio').val(newStartDate);
         }
     });
