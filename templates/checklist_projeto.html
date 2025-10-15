@@ -50,7 +50,6 @@
         <div class="header-actions">
             <h1>Checklist: {{ projeto['nome'] }}</h1>
             <div class="actions-group">
-                
                 {% if check_permission('projetos', 'can_create') %}
                     <a href="{{ url_for('new_titulo', projeto_id=projeto.id) }}" class="button new" style="background-color: #5bc0de;">Adicionar Título</a>
                     <a href="{{ url_for('new_tarefa', projeto_id=projeto.id) }}" class="button new">Adicionar Tarefa</a>
@@ -118,7 +117,7 @@
                             </td>
                         </tr>
                     {% else %}
-                        <tr class="task-header">
+                        <tr class="task-header" data-id="{{ tarefa.atividade_id }}">
                             <td colspan="7">
                                 {{ tarefa['atividade_id'] }} {{ tarefa['descricao'] }}
                             </td>
@@ -143,10 +142,42 @@
 
     <script>
         $(document).ready(function() {
-            // A função de expandir/recolher continua a mesma
-            $('tbody tr').not('.task-header').hide();
+            // Define uma chave única para o localStorage deste projeto específico
+            const storagePrefix = 'checklistState_projeto_{{ projeto.id }}_';
+
+            // 1. Restaura o estado de cada grupo ao carregar a página
+            $('.task-header').each(function() {
+                const headerId = $(this).data('id');
+                const storageKey = storagePrefix + headerId;
+                const savedState = localStorage.getItem(storageKey);
+
+                // Por padrão, se não houver estado salvo, o grupo fica retraído.
+                if (savedState === 'retracted' || savedState === null) {
+                    $(this).nextUntil('.task-header').hide();
+                } else {
+                    // Se o estado salvo for 'expanded', exibe as tarefas.
+                    $(this).nextUntil('.task-header').show();
+                }
+            });
+
+            // 2. Salva o novo estado de um grupo quando ele é clicado
             $('.task-header').on('click', function() {
-                $(this).nextUntil('.task-header').slideToggle('fast');
+                const headerId = $(this).data('id');
+                const storageKey = storagePrefix + headerId;
+                const tasks = $(this).nextUntil('.task-header');
+
+                // Verifica o estado atual ANTES da animação
+                const isCurrentlyVisible = tasks.first().is(':visible');
+                
+                // Salva o estado OPOSTO no localStorage
+                if (isCurrentlyVisible) {
+                    localStorage.setItem(storageKey, 'retracted');
+                } else {
+                    localStorage.setItem(storageKey, 'expanded');
+                }
+                
+                // Executa a animação de expandir/retrair
+                tasks.slideToggle('fast');
             });
         });
     </script>
