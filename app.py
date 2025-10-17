@@ -1126,7 +1126,7 @@ def checklist_inline(projeto_id):
 
 # --- API Endpoint for Inline Task Updates ---
 
-
+# --- API Endpoint for Inline Task Updates ---
 @app.route('/api/tarefa_inline/update/<int:tarefa_id>', methods=['POST'])
 @login_required
 @role_required(module='projetos', action='can_edit')
@@ -1144,45 +1144,47 @@ def update_tarefa_inline(tarefa_id):
         field_name = data.get('field')
         new_value = data.get('value')
 
-        if field_name is None or new_value is None:
-            return jsonify({'success': False, 'message': 'Dados inválidos (campo ou valor ausente).'}), 400
+        if field_name is None: # Permite valor vazio '' mas não None
+             return jsonify({'success': False, 'message': 'Dados inválidos (campo ausente).'}), 400
 
-        # Adiciona 'duracao' aos campos permitidos
-        allowed_fields = ['descricao', 'data_inicio', 'data_termino', 'responsaveis', 'status', 'local_execucao', 'observacoes', 'duracao', 'atividade_id']
+        # --- ALTERAÇÃO APLICADA AQUI: Adicionado 'predecessoras' ---
+        allowed_fields = ['descricao', 'data_inicio', 'data_termino', 'responsaveis', 
+                          'status', 'local_execucao', 'observacoes', 'duracao', 
+                          'atividade_id', 'predecessoras'] 
         
+        # Validações específicas
         if tarefa['tipo'] != 'titulo' and field_name == 'atividade_id':
              return jsonify({'success': False, 'message': f'Campo "atividade_id" não pode ser editado para tarefas.'}), 400
         
         if field_name not in allowed_fields:
             return jsonify({'success': False, 'message': f'Campo "{field_name}" não pode ser editado inline.'}), 400
             
-        # Campos a serem atualizados
         update_fields = {}
-        update_fields[field_name] = new_value
+        update_fields[field_name] = new_value if new_value is not None else '' # Garante que None vira string vazia se aplicável
 
-        # Lógica de cálculo automático da Data de Término
+        # Lógica de cálculo automático da Data de Término (inalterada)
         if field_name == 'data_inicio':
             current_duracao = tarefa['duracao']
             new_start_date = new_value if new_value else None
             if new_start_date and isinstance(current_duracao, int) and current_duracao > 0:
                 calculated_end_date = calculate_end_date(new_start_date, current_duracao)
                 update_fields['data_termino'] = calculated_end_date
-            elif not new_start_date: # Se apagar a data de início, apaga a de término também
+            elif not new_start_date: 
                 update_fields['data_termino'] = None
         elif field_name == 'duracao':
             try:
                 new_duracao = int(new_value) if new_value else None
-                if isinstance(new_duracao, int) and new_duracao < 1: new_duracao = 1 # Duração mínima de 1
-                update_fields[field_name] = new_duracao # Garante que está salvando INT ou NULL
+                if isinstance(new_duracao, int) and new_duracao < 1: new_duracao = 1 
+                update_fields[field_name] = new_duracao 
                 
                 current_start_date = tarefa['data_inicio']
                 if current_start_date and new_duracao:
                     calculated_end_date = calculate_end_date(current_start_date, new_duracao)
                     update_fields['data_termino'] = calculated_end_date
-                elif not new_duracao: # Se apagar a duração, apaga a data de término
+                elif not new_duracao:
                      update_fields['data_termino'] = None
             except (ValueError, TypeError):
-                 update_fields[field_name] = None # Salva NULL se a duração for inválida
+                 update_fields[field_name] = None 
                  update_fields['data_termino'] = None
 
         # Trata valores vazios para datas como NULL (se não foram calculados)
@@ -1190,7 +1192,6 @@ def update_tarefa_inline(tarefa_id):
              if field in update_fields and update_fields[field] == '':
                  update_fields[field] = None
 
-        # Monta a query de UPDATE dinamicamente
         set_clause = ", ".join([f"{field} = ?" for field in update_fields.keys()])
         query_params = list(update_fields.values())
         query_params.append(tarefa_id)
@@ -1201,14 +1202,13 @@ def update_tarefa_inline(tarefa_id):
         cursor.execute(query, tuple(query_params))
         conn.commit()
         
-        # Retorna os valores atualizados (importante para o JS atualizar a tela)
         updated_tarefa = conn.execute('SELECT data_inicio, data_termino, duracao FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
 
         print(f"--- Atualização da tarefa {tarefa_id} COM SUCESSO ---") # DEBUG
         return jsonify({
             'success': True, 
             'message': 'Tarefa atualizada com sucesso.',
-            'updated_fields': dict(updated_tarefa) # Retorna os campos que podem ter sido recalculados
+            'updated_fields': dict(updated_tarefa) 
         })
 
     except Exception as e:
@@ -1217,8 +1217,6 @@ def update_tarefa_inline(tarefa_id):
         return jsonify({'success': False, 'message': f'Erro ao salvar no banco de dados: {e}'}), 500
     finally:
         if conn: conn.close()
-
-# --- API Endpoint for Creating Inline Tasks/Titles ---
 
 # --- API Endpoint for Creating Inline Tasks/Titles ---
 @app.route('/api/tarefa_inline/create/<int:projeto_id>', methods=['POST'])
