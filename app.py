@@ -2001,12 +2001,13 @@ def force_db_fix():
         migrate_pendencias_add_prioridade() 
         migrate_pendencias_add_unique_protocolo()
         migrate_tarefas_add_predecessoras()
+        migrate_tarefas_add_responsaveis() # GARANTA QUE ESTA LINHA ESTÁ AQUI
         flash('A verificação e correção da estrutura do banco de dados foi executada com sucesso!', 'success')
         print("--- CORREÇÃO MANUAL DO BANCO DE DADOS CONCLUÍDA ---")
     except Exception as e:
         flash(f'Ocorreu um erro durante a correção da estrutura: {e}', 'danger')
         print(f"--- ERRO NA CORREÇÃO MANUAL DA ESTRUTURA: {e} ---")
-    return redirect(url_for('index'))
+    return redirect(url_for('index')) # Redireciona para o Index
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
