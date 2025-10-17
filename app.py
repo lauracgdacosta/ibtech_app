@@ -283,6 +283,35 @@ def migrate_permissions_for_create():
     finally:
         conn.close()
 
+def migrate_tarefas_add_responsaveis():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(tarefas)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        # Verifica se 'responsaveis' NÃO existe E se 'responsavel_pm' AINDA existe (para evitar rodar de novo desnecessariamente)
+        if 'responsaveis' not in columns and 'responsavel_pm' in columns: 
+            print("MIGRATE: Adicionando coluna 'responsaveis' e migrando dados antigos.")
+            cursor.execute("ALTER TABLE tarefas ADD COLUMN responsaveis TEXT")
+
+            # Copia dados (esta lógica pode ser ajustada se necessário, mas o importante é criar a coluna)
+            cursor.execute("UPDATE tarefas SET responsaveis = responsavel_pm WHERE responsavel_pm IS NOT NULL AND responsavel_pm != ''")
+            cursor.execute("UPDATE tarefas SET responsaveis = responsaveis || ', ' || responsavel_cm WHERE responsaveis IS NOT NULL AND responsavel_cm IS NOT NULL AND responsavel_cm != '' AND responsaveis NOT LIKE '%' || responsavel_cm || '%'") # Evita duplicar se já existir
+            cursor.execute("UPDATE tarefas SET responsaveis = responsavel_cm WHERE (responsaveis IS NULL OR responsaveis = '') AND responsavel_cm IS NOT NULL AND responsavel_cm != ''")
+
+            conn.commit()
+            print("MIGRATE: Coluna 'responsaveis' adicionada e dados migrados com sucesso.")
+        elif 'responsaveis' in columns:
+             print("MIGRATE: Coluna 'responsaveis' já existe.")
+        else:
+             print("MIGRATE: Colunas antigas ('responsavel_pm'/'responsavel_cm') não encontradas, migração para 'responsaveis' pulada.")
+
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela tarefas para 'responsaveis': {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
 
 with app.app_context():
     init_db()
