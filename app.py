@@ -1014,6 +1014,8 @@ def edit_titulo(tarefa_id):
 
 # Adicione esta nova rota dentro da seção MÓDULO DE PROJETOS
 
+# Arquivo: app.py
+
 @app.route('/projeto/<int:projeto_id>/checklist_inline')
 @login_required
 @role_required(module='projetos', action='can_read') # Ou 'can_edit'
@@ -1022,13 +1024,11 @@ def checklist_inline(projeto_id):
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
     tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
     
-    # --- ALTERAÇÃO APLICADA AQUI: Busca técnicos e define status ---
     tecnicos_list = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
-    status_list = ['Planejada', 'Em Andamento', 'Atrasada', 'Suspensa', 'Concluída', 'Cancelada'] # Lista de status possíveis
+    status_list = ['Planejada', 'Em Andamento', 'Atrasada', 'Suspensa', 'Concluída', 'Cancelada']
     locais_list = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()] + ['Ibtech'])))
-    # --- FIM DA ALTERAÇÃO ---
-
-    conn.close()
+    
+    conn.close() # Fecha a conexão mais cedo se o projeto não for encontrado
 
     if not projeto:
         flash('Projeto não encontrado.', 'danger')
@@ -1038,8 +1038,10 @@ def checklist_inline(projeto_id):
     for tarefa_row in tarefas_from_db:
         tarefa = dict(tarefa_row)
         duracao = "N/D"
-        if tarefa['data_inicio'] and tarefa['data_termino']:
-            try:
+        
+        # --- ADICIONADO TRATAMENTO DE ERRO AQUI ---
+        try:
+            if tarefa['data_inicio'] and tarefa['data_termino']:
                 inicio = datetime.datetime.strptime(tarefa['data_inicio'], '%Y-%m-%d')
                 termino = datetime.datetime.strptime(tarefa['data_termino'], '%Y-%m-%d')
                 delta = (termino - inicio).days
@@ -1049,12 +1051,15 @@ def checklist_inline(projeto_id):
                     dias_totais = delta + 1
                     sufixo = 's' if dias_totais > 1 else ''
                     duracao = f"{dias_totais} dia{sufixo}"
-            except (ValueError, TypeError):
-                duracao = "Inválido"
+        except (ValueError, TypeError) as e:
+            # Registra o erro se necessário, mas não quebra a página
+            print(f"Aviso: Não foi possível calcular a duração para a tarefa {tarefa.get('id', 'N/A')} devido a erro no formato da data: {e}")
+            duracao = "Erro Data" 
+        # --- FIM DO TRATAMENTO DE ERRO ---
+            
         tarefa['duracao_calculada'] = duracao
         tarefas_processadas.append(tarefa)
     
-    # --- ALTERAÇÃO APLICADA AQUI: Passa as listas para o template ---
     return render_template('checklist_inline.html', 
                            projeto=projeto, 
                            tarefas=tarefas_processadas,
