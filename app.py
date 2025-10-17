@@ -1016,12 +1016,18 @@ def edit_titulo(tarefa_id):
 
 @app.route('/projeto/<int:projeto_id>/checklist_inline')
 @login_required
-@role_required(module='projetos', action='can_read') # Ou 'can_edit' se a edição for restrita
+@role_required(module='projetos', action='can_read') # Ou 'can_edit'
 def checklist_inline(projeto_id):
     conn = get_db_connection()
     projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
-    # Busca todas as colunas necessárias, incluindo a nova 'responsaveis'
     tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
+    
+    # --- ALTERAÇÃO APLICADA AQUI: Busca técnicos e define status ---
+    tecnicos_list = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
+    status_list = ['Planejada', 'Em Andamento', 'Atrasada', 'Suspensa', 'Concluída', 'Cancelada'] # Lista de status possíveis
+    locais_list = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()] + ['Ibtech'])))
+    # --- FIM DA ALTERAÇÃO ---
+
     conn.close()
 
     if not projeto:
@@ -1048,8 +1054,13 @@ def checklist_inline(projeto_id):
         tarefa['duracao_calculada'] = duracao
         tarefas_processadas.append(tarefa)
     
-    return render_template('checklist_inline.html', projeto=projeto, tarefas=tarefas_processadas)
-
+    # --- ALTERAÇÃO APLICADA AQUI: Passa as listas para o template ---
+    return render_template('checklist_inline.html', 
+                           projeto=projeto, 
+                           tarefas=tarefas_processadas,
+                           tecnicos_list=tecnicos_list,
+                           status_list=status_list,
+                           locais_list=locais_list)
 # --- MÓDULO DE PENDÊNCIAS (com validação e todas as melhorias) ---
 @app.route('/pendencias')
 @login_required
