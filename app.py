@@ -1012,6 +1012,44 @@ def edit_titulo(tarefa_id):
     return render_template('edit_titulo.html', projeto=projeto, tarefa=tarefa)
 
 
+# Adicione esta nova rota dentro da seção MÓDULO DE PROJETOS
+
+@app.route('/projeto/<int:projeto_id>/checklist_inline')
+@login_required
+@role_required(module='projetos', action='can_read') # Ou 'can_edit' se a edição for restrita
+def checklist_inline(projeto_id):
+    conn = get_db_connection()
+    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
+    # Busca todas as colunas necessárias, incluindo a nova 'responsaveis'
+    tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
+    conn.close()
+
+    if not projeto:
+        flash('Projeto não encontrado.', 'danger')
+        return redirect(url_for('projetos'))
+
+    tarefas_processadas = []
+    for tarefa_row in tarefas_from_db:
+        tarefa = dict(tarefa_row)
+        duracao = "N/D"
+        if tarefa['data_inicio'] and tarefa['data_termino']:
+            try:
+                inicio = datetime.datetime.strptime(tarefa['data_inicio'], '%Y-%m-%d')
+                termino = datetime.datetime.strptime(tarefa['data_termino'], '%Y-%m-%d')
+                delta = (termino - inicio).days
+                if delta < 0:
+                    duracao = "Inválido"
+                else:
+                    dias_totais = delta + 1
+                    sufixo = 's' if dias_totais > 1 else ''
+                    duracao = f"{dias_totais} dia{sufixo}"
+            except (ValueError, TypeError):
+                duracao = "Inválido"
+        tarefa['duracao_calculada'] = duracao
+        tarefas_processadas.append(tarefa)
+    
+    return render_template('checklist_inline.html', projeto=projeto, tarefas=tarefas_processadas)
+
 # --- MÓDULO DE PENDÊNCIAS (com validação e todas as melhorias) ---
 @app.route('/pendencias')
 @login_required

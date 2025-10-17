@@ -51,14 +51,12 @@
                     <td>{{ projeto['status'] }}</td>
                     
                     <td class="actions">
-                        {% if check_permission('projetos', 'can_read') %}
-                            <a href="{{ url_for('checklist_projeto', projeto_id=projeto['id']) }}" class="button checklist">Checklist</a>
-                        {% endif %}
-                        
+                        <a href="{{ url_for('checklist_projeto', projeto_id=projeto['id']) }}" class="button checklist">Checklist</a>
+                        <a href="{{ url_for('checklist_inline', projeto_id=projeto['id']) }}" class="button" style="background-color: #ffc107; color: #212529;">Checklist Editável</a> 
+    
                         {% if check_permission('projetos', 'can_edit') %}
                             <a href="{{ url_for('edit_projeto', projeto_id=projeto['id']) }}" class="button edit">Editar</a>
                         {% endif %}
-                        
                         {% if check_permission('projetos', 'can_delete') %}
                             <form action="{{ url_for('delete_projeto', projeto_id=projeto['id']) }}" method="post" onsubmit="return confirm('ATENÇÃO: Isso excluirá o projeto e TODAS as suas tarefas. Deseja continuar?');">
                                 <button type="submit" class="button delete">Excluir</button>
