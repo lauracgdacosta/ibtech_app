@@ -104,7 +104,22 @@ def init_db():
     cursor.execute('''CREATE TABLE IF NOT EXISTS agenda (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT NOT NULL, tecnico TEXT NOT NULL, sistema TEXT, data_agendamento DATE NOT NULL, horario_agendamento TEXT, motivo TEXT, descricao TEXT, status TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS prestacao_contas (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente TEXT, sistema TEXT, responsavel TEXT, modulo TEXT, competencia TEXT, status TEXT, observacao TEXT, atualizado_por TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS projetos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, cliente TEXT, data_inicio_previsto DATE, data_termino_previsto DATE, status TEXT NOT NULL)''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (id INTEGER PRIMARY KEY AUTOINCREMENT, projeto_id INTEGER NOT NULL, tipo TEXT NOT NULL, atividade_id TEXT, descricao TEXT NOT NULL, data_inicio DATE, data_termino DATE, responsavel_pm TEXT, responsavel_cm TEXT, status TEXT NOT NULL, local_execucao TEXT, observacoes TEXT, predecessoras TEXT, FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS tarefas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            projeto_id INTEGER NOT NULL, 
+            tipo TEXT NOT NULL, 
+            atividade_id TEXT, 
+            descricao TEXT NOT NULL, 
+            data_inicio DATE, 
+            data_termino DATE, 
+            responsaveis TEXT, 
+            status TEXT NOT NULL, 
+            local_execucao TEXT, 
+            observacoes TEXT, 
+            predecessoras TEXT,
+            duracao INTEGER, 
+            FOREIGN KEY (projeto_id) REFERENCES projetos (id) ON DELETE CASCADE
+        )''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL, role TEXT)''')
     cursor.execute('''CREATE TABLE IF NOT EXISTS matriz_responsabilidades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -312,6 +327,29 @@ def migrate_tarefas_add_responsaveis():
     finally:
         conn.close()
 
+def migrate_tarefas_add_duracao():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(tarefas)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'duracao' not in columns:
+            print("MIGRATE: Adicionando coluna 'duracao' (INTEGER) à tabela 'tarefas'.")
+            cursor.execute("ALTER TABLE tarefas ADD COLUMN duracao INTEGER")
+            # Tenta preencher a duração inicial com base nas datas existentes
+            cursor.execute("""
+                UPDATE tarefas 
+                SET duracao = CAST(JULIANDAY(data_termino) - JULIANDAY(data_inicio) + 1 AS INTEGER)
+                WHERE data_inicio IS NOT NULL AND data_termino IS NOT NULL AND DATE(data_termino) >= DATE(data_inicio)
+            """)
+            conn.commit()
+            print("MIGRATE: Coluna 'duracao' adicionada e preenchida inicialmente.")
+    except Exception as e:
+        print(f"ERRO ao migrar a tabela tarefas para 'duracao': {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
 
 with app.app_context():
     init_db()
@@ -324,6 +362,19 @@ with app.app_context():
     migrate_pendencias_add_prioridade()
     migrate_pendencias_add_unique_protocolo()
     migrate_tarefas_add_predecessoras()
+    migrate_tarefas_add_duracao()
+
+def calculate_end_date(start_date_str, duration_days):
+    """Calcula a data final baseada na data inicial e duração (em dias)."""
+    if not start_date_str or not isinstance(duration_days, int) or duration_days < 1:
+        return None
+    try:
+        start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        # Adiciona (duração - 1) dias à data inicial
+        end_date = start_date + datetime.timedelta(days=duration_days - 1)
+        return end_date.strftime('%Y-%m-%d')
+    except (ValueError, TypeError):
+        return None
 
 # --- LÓGICA E DECORADORES DE PERMISSÃO ---
 def check_permission(module_name, action):
@@ -1057,37 +1108,14 @@ def checklist_inline(projeto_id):
     status_list = ['Planejada', 'Em Andamento', 'Atrasada', 'Suspensa', 'Concluída', 'Cancelada']
     locais_list = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()] + ['Ibtech'])))
     
-    conn.close() # Fecha a conexão mais cedo se o projeto não for encontrado
+    conn.close()
 
     if not projeto:
         flash('Projeto não encontrado.', 'danger')
         return redirect(url_for('projetos'))
 
-    tarefas_processadas = []
-    for tarefa_row in tarefas_from_db:
-        tarefa = dict(tarefa_row)
-        duracao = "N/D"
-        
-        # --- ADICIONADO TRATAMENTO DE ERRO AQUI ---
-        try:
-            if tarefa['data_inicio'] and tarefa['data_termino']:
-                inicio = datetime.datetime.strptime(tarefa['data_inicio'], '%Y-%m-%d')
-                termino = datetime.datetime.strptime(tarefa['data_termino'], '%Y-%m-%d')
-                delta = (termino - inicio).days
-                if delta < 0:
-                    duracao = "Inválido"
-                else:
-                    dias_totais = delta + 1
-                    sufixo = 's' if dias_totais > 1 else ''
-                    duracao = f"{dias_totais} dia{sufixo}"
-        except (ValueError, TypeError) as e:
-            # Registra o erro se necessário, mas não quebra a página
-            print(f"Aviso: Não foi possível calcular a duração para a tarefa {tarefa.get('id', 'N/A')} devido a erro no formato da data: {e}")
-            duracao = "Erro Data" 
-        # --- FIM DO TRATAMENTO DE ERRO ---
-            
-        tarefa['duracao_calculada'] = duracao
-        tarefas_processadas.append(tarefa)
+    # Remove o cálculo de 'duracao_calculada' daqui, pois agora é um campo
+    tarefas_processadas = [dict(row) for row in tarefas_from_db] 
     
     return render_template('checklist_inline.html', 
                            projeto=projeto, 
@@ -1095,128 +1123,156 @@ def checklist_inline(projeto_id):
                            tecnicos_list=tecnicos_list,
                            status_list=status_list,
                            locais_list=locais_list)
+
 # --- API Endpoint for Inline Task Updates ---
+
+
 @app.route('/api/tarefa_inline/update/<int:tarefa_id>', methods=['POST'])
 @login_required
-@role_required(module='projetos', action='can_edit') # Ensure only editors can save
+@role_required(module='projetos', action='can_edit')
 def update_tarefa_inline(tarefa_id):
-    conn = get_db_connection()
-    tarefa = conn.execute('SELECT id, projeto_id FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
-
-    if not tarefa:
-        conn.close()
-        return jsonify({'success': False, 'message': 'Tarefa não encontrada.'}), 404
-
-    # Verifica permissão no projeto específico (se necessário, adicione essa lógica)
-    
-    data = request.json
-    field_name = data.get('field')
-    new_value = data.get('value')
-
-    if field_name is None or new_value is None:
-        conn.close()
-        return jsonify({'success': False, 'message': 'Dados inválidos (campo ou valor ausente).'}), 400
-
-    # Lista de campos permitidos para edição inline
-    allowed_fields = ['descricao', 'data_inicio', 'data_termino', 'responsaveis', 'status', 'local_execucao', 'observacoes']
-    
-    # Tratamento especial para o campo 'atividade_id' (Item) de Títulos
-    tarefa_type = conn.execute('SELECT tipo FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()['tipo']
-    if tarefa_type == 'titulo' and field_name == 'atividade_id':
-        allowed_fields.append('atividade_id') # Permite editar 'atividade_id' apenas para títulos
-
-    if field_name not in allowed_fields:
-        conn.close()
-        return jsonify({'success': False, 'message': f'Campo "{field_name}" não pode ser editado inline.'}), 400
-
-    # Trata valores vazios para datas como NULL
-    if field_name in ['data_inicio', 'data_termino'] and new_value == '':
-        new_value = None
-        
-    # Trata valores múltiplos (responsaveis) - já deve vir como string separada por vírgula do JS
-    # if field_name == 'responsaveis' and isinstance(new_value, list):
-    #     new_value = ', '.join(new_value)
-
-    try:
-        # Cria a query dinamicamente de forma segura
-        query = f"UPDATE tarefas SET {field_name} = ? WHERE id = ?"
-        conn.execute(query, (new_value, tarefa_id))
-        conn.commit()
-        conn.close()
-        return jsonify({'success': True, 'message': 'Tarefa atualizada com sucesso.'})
-    except Exception as e:
-        conn.rollback()
-        conn.close()
-        print(f"Erro ao atualizar tarefa {tarefa_id}, campo {field_name}: {e}")
-        return jsonify({'success': False, 'message': f'Erro ao salvar no banco de dados: {e}'}), 500
-
-# --- API Endpoint for Creating Inline Tasks/Titles ---
-@app.route('/api/tarefa_inline/create/<int:projeto_id>', methods=['POST'])
-@login_required
-@role_required(module='projetos', action='can_create') # Ensure only creators can add
-def create_tarefa_inline(projeto_id):
-    print(f"--- Recebida requisição para criar tarefa no projeto ID: {projeto_id} ---") # DEBUG
     conn = None
     try:
         conn = get_db_connection()
+        cursor = conn.cursor() 
         
-        # Verifica se o projeto existe
+        tarefa = cursor.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
+        if not tarefa:
+            return jsonify({'success': False, 'message': 'Tarefa não encontrada.'}), 404
+
+        data = request.json
+        field_name = data.get('field')
+        new_value = data.get('value')
+
+        if field_name is None or new_value is None:
+            return jsonify({'success': False, 'message': 'Dados inválidos (campo ou valor ausente).'}), 400
+
+        # Adiciona 'duracao' aos campos permitidos
+        allowed_fields = ['descricao', 'data_inicio', 'data_termino', 'responsaveis', 'status', 'local_execucao', 'observacoes', 'duracao', 'atividade_id']
+        
+        if tarefa['tipo'] != 'titulo' and field_name == 'atividade_id':
+             return jsonify({'success': False, 'message': f'Campo "atividade_id" não pode ser editado para tarefas.'}), 400
+        
+        if field_name not in allowed_fields:
+            return jsonify({'success': False, 'message': f'Campo "{field_name}" não pode ser editado inline.'}), 400
+            
+        # Campos a serem atualizados
+        update_fields = {}
+        update_fields[field_name] = new_value
+
+        # Lógica de cálculo automático da Data de Término
+        if field_name == 'data_inicio':
+            current_duracao = tarefa['duracao']
+            new_start_date = new_value if new_value else None
+            if new_start_date and isinstance(current_duracao, int) and current_duracao > 0:
+                calculated_end_date = calculate_end_date(new_start_date, current_duracao)
+                update_fields['data_termino'] = calculated_end_date
+            elif not new_start_date: # Se apagar a data de início, apaga a de término também
+                update_fields['data_termino'] = None
+        elif field_name == 'duracao':
+            try:
+                new_duracao = int(new_value) if new_value else None
+                if isinstance(new_duracao, int) and new_duracao < 1: new_duracao = 1 # Duração mínima de 1
+                update_fields[field_name] = new_duracao # Garante que está salvando INT ou NULL
+                
+                current_start_date = tarefa['data_inicio']
+                if current_start_date and new_duracao:
+                    calculated_end_date = calculate_end_date(current_start_date, new_duracao)
+                    update_fields['data_termino'] = calculated_end_date
+                elif not new_duracao: # Se apagar a duração, apaga a data de término
+                     update_fields['data_termino'] = None
+            except (ValueError, TypeError):
+                 update_fields[field_name] = None # Salva NULL se a duração for inválida
+                 update_fields['data_termino'] = None
+
+        # Trata valores vazios para datas como NULL (se não foram calculados)
+        for field in ['data_inicio', 'data_termino']:
+             if field in update_fields and update_fields[field] == '':
+                 update_fields[field] = None
+
+        # Monta a query de UPDATE dinamicamente
+        set_clause = ", ".join([f"{field} = ?" for field in update_fields.keys()])
+        query_params = list(update_fields.values())
+        query_params.append(tarefa_id)
+        
+        query = f"UPDATE tarefas SET {set_clause} WHERE id = ?"
+        print(f"--- Executando Query: {query} com valores {tuple(query_params)} ---") # DEBUG
+        
+        cursor.execute(query, tuple(query_params))
+        conn.commit()
+        
+        # Retorna os valores atualizados (importante para o JS atualizar a tela)
+        updated_tarefa = conn.execute('SELECT data_inicio, data_termino, duracao FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
+
+        print(f"--- Atualização da tarefa {tarefa_id} COM SUCESSO ---") # DEBUG
+        return jsonify({
+            'success': True, 
+            'message': 'Tarefa atualizada com sucesso.',
+            'updated_fields': dict(updated_tarefa) # Retorna os campos que podem ter sido recalculados
+        })
+
+    except Exception as e:
+        print(f"!!! ERRO GERAL ao atualizar tarefa {tarefa_id}: {e} !!!") # DEBUG
+        if conn: conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao salvar no banco de dados: {e}'}), 500
+    finally:
+        if conn: conn.close()
+
+# --- API Endpoint for Creating Inline Tasks/Titles ---
+
+@app.route('/api/tarefa_inline/create/<int:projeto_id>', methods=['POST'])
+@login_required
+@role_required(module='projetos', action='can_create')
+def create_tarefa_inline(projeto_id):
+    conn = None
+    try:
+        conn = get_db_connection()
         projeto = conn.execute('SELECT id FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
         if not projeto:
-            print(f"!!! ERRO: Projeto {projeto_id} não encontrado.") # DEBUG
             return jsonify({'success': False, 'message': 'Projeto não encontrado.'}), 404
 
         data = request.json
-        print(f"--- Dados recebidos para nova tarefa: {data} ---") # DEBUG
-
-        # Extrai os dados (com valores padrão se ausentes)
-        tipo = data.get('tipo', 'tarefa') # Default para 'tarefa'
+        tipo = data.get('tipo', 'tarefa')
         atividade_id = data.get('atividade_id', None)
         descricao = data.get('descricao', '')
-        data_inicio = data.get('data_inicio') or None # Converte '' para None
-        data_termino = data.get('data_termino') or None # Converte '' para None
-        responsaveis_str = data.get('responsaveis', '') # Já deve vir como string
-        status = data.get('status', 'Planejada') if tipo == 'tarefa' else 'N/A' # Default para tarefas, N/A para títulos
+        data_inicio = data.get('data_inicio') or None
+        data_termino = data.get('data_termino') or None # Mantém se fornecido
+        responsaveis_str = data.get('responsaveis', '')
+        status = data.get('status', 'Planejada') if tipo == 'tarefa' else 'N/A'
         local_execucao = data.get('local_execucao') or None
         observacoes = data.get('observacoes', '')
-        predecessoras_str = data.get('predecessoras', '') # Já deve vir como string
+        predecessoras_str = data.get('predecessoras', '')
+        # Pega a duração
+        duracao = None
+        try:
+             duracao_val = data.get('duracao')
+             if duracao_val:
+                 duracao = int(duracao_val)
+                 if duracao < 1: duracao = 1 # Mínimo 1 dia
+        except (ValueError, TypeError):
+             duracao = None # Ignora se inválido
 
-        # Validação básica
         if not descricao:
-             print("!!! ERRO: Descrição é obrigatória.") # DEBUG
              return jsonify({'success': False, 'message': 'Descrição é obrigatória.'}), 400
+
+        # Calcula a data de término SE duração e data de início forem válidas e data_termino não foi fornecida
+        if data_inicio and duracao and not data_termino:
+            data_termino = calculate_end_date(data_inicio, duracao)
+            print(f"--- Data de término calculada para nova tarefa: {data_termino} ---") # DEBUG
 
         cursor = conn.cursor()
         cursor.execute(
             '''INSERT INTO tarefas (projeto_id, tipo, atividade_id, descricao, data_inicio, data_termino, 
-                                 responsaveis, status, local_execucao, observacoes, predecessoras) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                                 responsaveis, status, local_execucao, observacoes, predecessoras, duracao) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             (projeto_id, tipo, atividade_id, descricao, data_inicio, data_termino, 
-             responsaveis_str, status, local_execucao, observacoes, predecessoras_str)
+             responsaveis_str, status, local_execucao, observacoes, predecessoras_str, duracao)
         )
-        new_task_id = cursor.lastrowid # Pega o ID da tarefa recém-criada
+        new_task_id = cursor.lastrowid
         conn.commit()
         
-        # Busca a tarefa recém-criada para retornar os dados completos
         new_task = conn.execute('SELECT * FROM tarefas WHERE id = ?', (new_task_id,)).fetchone()
         
-        # Calcula a duração para retornar (opcional, mas bom para consistência)
-        duracao = "N/D"
-        if new_task['data_inicio'] and new_task['data_termino']:
-            try:
-                inicio = datetime.datetime.strptime(new_task['data_inicio'], '%Y-%m-%d')
-                termino = datetime.datetime.strptime(new_task['data_termino'], '%Y-%m-%d')
-                delta = (termino - inicio).days
-                if delta >= 0:
-                    dias_totais = delta + 1
-                    sufixo = 's' if dias_totais > 1 else ''
-                    duracao = f"{dias_totais} dia{sufixo}"
-            except (ValueError, TypeError):
-                pass # Ignora erro de data
-                
-        print(f"--- Tarefa {new_task_id} criada com sucesso ---") # DEBUG
-        
-        # Retorna os dados da nova tarefa (incluindo o ID e a duração calculada)
         return jsonify({
             'success': True, 
             'message': 'Tarefa criada com sucesso.',
@@ -1226,8 +1282,8 @@ def create_tarefa_inline(projeto_id):
                 'atividade_id': new_task['atividade_id'],
                 'descricao': new_task['descricao'],
                 'data_inicio': new_task['data_inicio'],
-                'data_termino': new_task['data_termino'],
-                'duracao_calculada': duracao,
+                'data_termino': new_task['data_termino'], # Retorna a data calculada ou inserida
+                'duracao': new_task['duracao'], # Retorna a duração inserida
                 'responsaveis': new_task['responsaveis'],
                 'status': new_task['status'],
                 'local_execucao': new_task['local_execucao'],
@@ -1236,15 +1292,6 @@ def create_tarefa_inline(projeto_id):
             }
         })
 
-    except Exception as e:
-        print(f"!!! ERRO GERAL ao criar tarefa no projeto {projeto_id}: {e} !!!") # DEBUG
-        if conn:
-            conn.rollback()
-        return jsonify({'success': False, 'message': f'Erro ao criar tarefa: {e}'}), 500
-    finally:
-        if conn:
-            conn.close()
-            print(f"--- Conexão com DB fechada para criação em {projeto_id} ---") # DEBUG
 
 # --- API Endpoint for Deleting Inline Tasks/Titles ---
 @app.route('/api/tarefa_inline/delete/<int:tarefa_id>', methods=['DELETE'])

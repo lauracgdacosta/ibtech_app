@@ -6,7 +6,43 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
-        /* ... (Estilos CSS da Fase 4 inalterados) ... */
+        .checklist-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .checklist-table th, .checklist-table td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        .checklist-table th { background-color: #f2f2f2; font-weight: bold; }
+
+        .task-header-inline td { background-color: #eef2f5; font-weight: bold; color: #2c3e50; cursor: default !important; }
+        .task-item-inline td:first-child { padding-left: 25px; cursor: default !important;}
+        .task-item-inline[data-level='2'] td:first-child { padding-left: 40px; }
+        .task-item-inline[data-level='3'] td:first-child { padding-left: 55px; }
+
+        .col-item { width: 80px; }
+        .col-atividade { width: auto; }
+        .col-data { width: 110px; text-align: center; }
+        .col-duracao { width: 80px; text-align: center; }
+        .col-responsavel { width: 150px; }
+        .col-status { width: 120px; }
+        .col-local { width: 120px; }
+        .col-obs { width: 200px; font-size: 0.9em; color: #555; }
+        .col-actions { width: 80px; text-align: center; cursor: default !important; }
+
+        .btn-delete-task { color: #dc3545; cursor: pointer; font-size: 1.2em; }
+        .btn-delete-task:hover { color: #c82333; }
+
+        .editable-cell input, .editable-cell select, .editable-cell textarea {
+            width: 100%; box-sizing: border-box; border: 1px solid #007bff; padding: 5px; font-family: inherit; font-size: inherit;
+        }
+        .editable-cell textarea { resize: vertical; min-height: 50px; }
+        .editable-cell select[multiple] { min-height: 80px; }
+        td.editable { cursor: text; }
+        .col-duracao.editable { cursor: text; } /* Torna duração editável */
+
+        .saving { background-color: #fff3cd !important; opacity: 0.7; }
+        .saved-success { background-color: #d4edda !important; transition: background-color 0.5s ease-out; }
+        .saved-error { background-color: #f8d7da !important; transition: background-color 0.5s ease-out; }
+
+        .new-task-row td { background-color: #eef2f5; }
+        .btn-save-new { background-color: #28a745; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-cancel-new { background-color: #dc3545; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;}
     </style>
 </head>
 <body>
@@ -22,7 +58,7 @@
             <h1>Checklist Editável: {{ projeto.nome }}</h1>
             <div class="actions-group">
                 <button id="add-task-btn" class="button new">Adicionar Tarefa</button>
-                <button id="add-title-btn" class="button new" style="background-color: #5bc0de;">Adicionar Título</button>
+                 <button id="add-title-btn" class="button new" style="background-color: #5bc0de;">Adicionar Título</button>
                 <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista</a>
             </div>
         </div>
@@ -34,19 +70,19 @@
                     <th class="col-atividade">Atividade</th>
                     <th class="col-data">Data Início</th>
                     <th class="col-data">Data Término</th>
-                    <th class="col-duracao">Duração</th>
-                    <th class="col-responsavel">Responsáveis</th> 
+                    <th class="col-duracao">Duração (dias)</th>
+                    <th class="col-responsavel">Responsáveis</th>
                     <th class="col-status">Status</th>
                     <th class="col-local">Local</th>
                     <th class="col-obs">Observações</th>
                     <th class="col-actions"></th>
                 </tr>
             </thead>
-            <tbody id="checklist-tbody"> 
+            <tbody id="checklist-tbody">
                 {% for tarefa in tarefas %}
                     {% if tarefa.tipo == 'titulo' %}
                         <tr class="task-header-inline" data-task-id="{{ tarefa.id }}" data-task-type="titulo">
-                            <td class="col-item editable" data-field="atividade_id">{{ tarefa.atividade_id }}</td> 
+                            <td class="col-item editable" data-field="atividade_id">{{ tarefa.atividade_id }}</td>
                             <td class="col-atividade editable" data-field="descricao">{{ tarefa.descricao }}</td>
                             <td class="col-data"></td> <td class="col-data"></td> <td class="col-duracao"></td>
                             <td class="col-responsavel"></td> <td class="col-status"></td> <td class="col-local"></td>
@@ -59,8 +95,8 @@
                             <td class="col-item editable" data-field="atividade_id">{{ tarefa.atividade_id }}</td>
                             <td class="col-atividade editable" data-field="descricao">{{ tarefa.descricao }}</td>
                             <td class="col-data editable" data-field="data_inicio">{{ tarefa.data_inicio | dateformat }}</td>
-                            <td class="col-data editable" data-field="data_termino">{{ tarefa.data_termino | dateformat }}</td>
-                            <td class="col-duracao">{{ tarefa.duracao_calculada }}</td>
+                            <td class="col-data" data-field="data_termino">{{ tarefa.data_termino | dateformat }}</td>
+                            <td class="col-duracao editable" data-field="duracao">{{ tarefa.duracao or '' }}</td>
                             <td class="col-responsavel editable" data-field="responsaveis">{{ tarefa.responsaveis or '---' }}</td>
                             <td class="col-status editable" data-field="status">{{ tarefa.status }}</td>
                             <td class="col-local editable" data-field="local_execucao">{{ tarefa.local_execucao or '---' }}</td>
@@ -69,9 +105,7 @@
                         </tr>
                     {% endif %}
                 {% else %}
-                    <tr id="no-tasks-row">
-                        <td colspan="10" style="text-align: center;">Nenhuma tarefa encontrada para este projeto.</td>
-                    </tr>
+                    <tr id="no-tasks-row"><td colspan="10" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -79,7 +113,6 @@
     </div>
 
     <script>
-        // Passa dados do Flask para o JavaScript
         const TECNICOS = {{ tecnicos_list | tojson }};
         const STATUS_LIST = {{ status_list | tojson }};
         const LOCAIS_LIST = {{ locais_list | tojson }};
@@ -87,22 +120,46 @@
 
         $(document).ready(function() {
             let activeInput = null;
-            let isAddingNewRow = false; 
+            let isAddingNewRow = false;
 
-            function revertToText(cell, displayValue) {
-                $(cell).empty().text(displayValue).addClass('editable');
-                activeInput = null;
-                setTimeout(() => { $(cell).removeClass('saved-success saved-error saving'); }, 1500);
+            // Função para formatar data (necessária para exibir)
+            function formatDate(dateString) {
+                if (!dateString || !dateString.includes('-')) return '';
+                const parts = dateString.split('-');
+                if (parts.length !== 3) return '';
+                if (parts[0] === '0000' || parts[1] === '00' || parts[2] === '00') return '';
+                return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
             }
 
-            // --- Lógica de Edição Inline (inalterada da Fase 4) ---
+            // Função para reverter célula para texto e atualizar campos calculados
+            function revertToText(cell, displayValue, updatedFields = null) {
+                const $cell = $(cell);
+                $cell.empty().text(displayValue).addClass('editable'); // Readiciona classe editable
+                activeInput = null;
+
+                // Atualiza outros campos se a API retornou valores recalculados
+                if (updatedFields) {
+                    const $row = $cell.closest('tr');
+                    if (updatedFields.data_termino !== undefined) {
+                        $row.find('td[data-field="data_termino"]').text(formatDate(updatedFields.data_termino));
+                    }
+                    if (updatedFields.duracao !== undefined) {
+                         $row.find('td[data-field="duracao"]').text(updatedFields.duracao || '');
+                    }
+                    // Adicione aqui outros campos se precisar no futuro
+                }
+
+                setTimeout(() => { $cell.removeClass('saved-success saved-error saving'); }, 1500);
+            }
+
+            // --- Lógica de Edição Inline (dblclick) ---
             $('#checklist-tbody').on('dblclick', 'td.editable', function() {
-                // ... (código completo da edição aqui) ...
                  if (isAddingNewRow) return;
+                 if ($(this).data('field') === 'data_termino') return; // Data Término não é editável
 
                 if (activeInput) {
                     const cell = $(activeInput).closest('td');
-                    $(activeInput).trigger('blur'); 
+                    $(activeInput).trigger('blur');
                     if ($(cell).find('input, select, textarea').length > 0) {
                         revertToText(cell, $(activeInput).data('original-value'));
                     }
@@ -114,62 +171,66 @@
                 const taskId = $(cell).closest('tr').data('task-id');
                 const taskType = $(cell).closest('tr').data('task-type');
 
+                // Validações de edição
                 if (taskType === 'titulo' && !['descricao', 'atividade_id'].includes(fieldName)) return;
-                if (!taskId) return; 
+                if (!taskId && fieldName !== 'atividade_id' && fieldName !== 'descricao') return; // Linhas novas não salvas
 
                 $(cell).removeClass('editable');
-                $(cell).empty(); 
+                $(cell).empty();
 
                 let inputElement;
                 let isMultiSelect = false;
 
+                // Criação do Input (incluindo tipo number para duracao)
                 if (fieldName === 'descricao' || fieldName === 'observacoes') {
                     inputElement = $('<textarea>').val(originalValue);
-                } else if (fieldName === 'data_inicio' || fieldName === 'data_termino') {
+                } else if (fieldName === 'data_inicio') {
                     let dateValue = originalValue;
                     if (originalValue.includes('/')) {
                         const parts = originalValue.split('/');
                         if(parts.length === 3) dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                     }
                     inputElement = $('<input type="date">').val(dateValue);
+                } else if (fieldName === 'duracao') {
+                    inputElement = $('<input type="number" min="1">').val(originalValue); // Input numérico
                 } else if (fieldName === 'status') {
                     inputElement = $('<select>');
-                    STATUS_LIST.forEach(status => {
-                        inputElement.append($('<option>', { value: status, text: status, selected: originalValue === status }));
-                    });
+                    STATUS_LIST.forEach(status => inputElement.append($('<option>', { value: status, text: status, selected: originalValue === status })));
                 } else if (fieldName === 'responsaveis') {
                     inputElement = $('<select multiple size="5">');
                     const selectedValues = originalValue.split(',').map(s => s.trim());
-                    TECNICOS.forEach(tecnico => {
-                        inputElement.append($('<option>', { value: tecnico, text: tecnico, selected: selectedValues.includes(tecnico) }));
-                    });
+                    TECNICOS.forEach(tecnico => inputElement.append($('<option>', { value: tecnico, text: tecnico, selected: selectedValues.includes(tecnico) })));
                     isMultiSelect = true;
                 } else if (fieldName === 'local_execucao') {
                      inputElement = $('<select>');
                      inputElement.append($('<option>', { value: '', text: 'Selecione' }));
-                     LOCAIS_LIST.forEach(local => {
-                        inputElement.append($('<option>', { value: local, text: local, selected: originalValue === local }));
-                     });
-                } else { 
+                     LOCAIS_LIST.forEach(local => inputElement.append($('<option>', { value: local, text: local, selected: originalValue === local })));
+                } else { // atividade_id
                     inputElement = $('<input type="text">').val(originalValue);
                 }
 
                 inputElement.data('original-value', originalValue);
                 $(cell).append(inputElement);
-                inputElement.focus(); 
+                inputElement.focus();
                 activeInput = inputElement;
 
+                // Lógica de Salvamento AJAX (blur)
                 inputElement.on('blur', function() {
                     let newValue = $(this).val();
                     const originalValueFromData = $(this).data('original-value');
-                    
+
                     if (isMultiSelect) {
                         newValue = $(this).val() ? $(this).val().join(', ') : '';
                     }
 
-                    if (newValue !== originalValueFromData) {
-                        $(cell).addClass('saving'); 
+                    if (fieldName === 'duracao') {
+                        const numVal = parseInt(newValue, 10);
+                        if (isNaN(numVal) || numVal < 1) newValue = '1';
+                        else newValue = numVal.toString();
+                    }
 
+                    if (newValue !== originalValueFromData) {
+                        $(cell).addClass('saving');
                         fetch(`/api/tarefa_inline/update/${taskId}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -180,85 +241,79 @@
                             if (data.success) {
                                 $(cell).removeClass('saving').addClass('saved-success');
                                 let displayValue = newValue;
-                                if (fieldName === 'data_inicio' || fieldName === 'data_termino') {
-                                    if (newValue && newValue.includes('-')) {
+                                if (fieldName === 'data_inicio') {
+                                     if (newValue && newValue.includes('-')) {
                                         const parts = newValue.split('-');
                                         if(parts.length === 3) displayValue = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
-                                    }
+                                     } else { displayValue = ''; }
                                 }
                                 if (displayValue === '' && (fieldName === 'responsaveis' || fieldName === 'local_execucao')) {
                                     displayValue = '---';
                                 }
-                                revertToText(cell, displayValue);
+                                // Passa os campos atualizados para a função revert
+                                revertToText(cell, displayValue, data.updated_fields);
                             } else {
-                                $(cell).removeClass('saving').addClass('saved-error'); 
+                                $(cell).removeClass('saving').addClass('saved-error');
                                 alert(`Erro ao salvar: ${data.message}`);
-                                revertToText(cell, originalValueFromData); 
+                                revertToText(cell, originalValueFromData);
                             }
                         })
                         .catch(error => {
-                            $(cell).removeClass('saving').addClass('saved-error'); 
-                            console.error('Erro na requisição:', error);
-                            alert('Erro de comunicação ao salvar.');
-                            revertToText(cell, originalValueFromData); 
+                            $(cell).removeClass('saving').addClass('saved-error');
+                            console.error('Erro:', error); alert('Erro de comunicação.');
+                            revertToText(cell, originalValueFromData);
                         });
                     } else {
                         revertToText(cell, originalValueFromData);
                     }
                 });
-                
-                 if (inputElement.prop('tagName') !== 'TEXTAREA' && !isMultiSelect) { 
+
+                // Listeners Enter/Esc
+                 if (inputElement.prop('tagName') !== 'TEXTAREA' && !isMultiSelect) {
                     inputElement.on('keydown', function(e) {
-                        if (e.key === 'Enter') { e.preventDefault(); $(this).trigger('blur'); } 
-                        else if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); } // Usa o valor original guardado
+                        if (e.key === 'Enter') { e.preventDefault(); $(this).trigger('blur'); }
+                        else if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); }
                     });
                 } else {
                      inputElement.on('keydown', function(e) {
-                         if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); } // Usa o valor original guardado
+                         if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); }
                      });
                 }
             });
 
-            // --- Lógica para Adicionar Nova Linha (inalterada da Fase 4) ---
-             function createNewRow(type = 'tarefa') {
-                 // ... (código completo da função createNewRow aqui) ...
-                 if (isAddingNewRow) return; 
+            // --- Lógica Adicionar Nova Linha ---
+            function createNewRow(type = 'tarefa') {
+                 if (isAddingNewRow) return;
                 isAddingNewRow = true;
-                 $('#no-tasks-row').remove(); 
+                 $('#no-tasks-row').remove();
 
                 const $tbody = $('#checklist-tbody');
-                const $newRow = $('<tr class="new-task-row">'); 
+                const $newRow = $('<tr class="new-task-row">');
 
                 $newRow.append('<td><input type="text" name="atividade_id" placeholder="Ex: 1.1"></td>');
                 $newRow.append('<td><textarea name="descricao" placeholder="Descrição da ' + type + '"></textarea></td>');
-                
+
                 if (type === 'tarefa') {
                     $newRow.append('<td><input type="date" name="data_inicio"></td>');
-                    $newRow.append('<td><input type="date" name="data_termino"></td>');
-                    $newRow.append('<td class="col-duracao">N/D</td>'); 
-                    
+                    $newRow.append('<td><input type="date" name="data_termino" disabled></td>'); // Data Término desabilitada
+                    $newRow.append('<td><input type="number" name="duracao" min="1" value="1"></td>'); // Duração editável
                     let respSelect = '<select name="responsaveis" multiple size="3">';
                     TECNICOS.forEach(t => { respSelect += `<option value="${t}">${t}</option>`; });
                     respSelect += '</select>';
                     $newRow.append(`<td>${respSelect}</td>`);
-                    
                     let statusSelect = '<select name="status">';
                     STATUS_LIST.forEach(s => { statusSelect += `<option value="${s}" ${s === 'Planejada' ? 'selected' : ''}>${s}</option>`; });
                     statusSelect += '</select>';
                     $newRow.append(`<td>${statusSelect}</td>`);
-
                     let localSelect = '<select name="local_execucao"><option value="">Selecione</option>';
                     LOCAIS_LIST.forEach(l => { localSelect += `<option value="${l}">${l}</option>`; });
                     localSelect += '</select>';
                     $newRow.append(`<td>${localSelect}</td>`);
-
                     $newRow.append('<td><textarea name="observacoes"></textarea></td>');
-                } else { 
-                     $newRow.append('<td colspan="7"></td>'); 
+                } else {
+                     $newRow.append('<td colspan="7"></td>');
                 }
-                
                 $newRow.append('<td class="col-actions"><button class="btn-save-new">Salvar</button><button class="btn-cancel-new">&times;</button></td>');
-
                 $tbody.append($newRow);
             }
 
@@ -268,18 +323,18 @@
                  $(this).closest('tr').remove();
                  isAddingNewRow = false;
                  if ($('#checklist-tbody tr').length === 0) {
-                     $('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="10" style="text-align: center;">Nenhuma tarefa encontrada para este projeto.</td></tr>');
+                     $('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="10" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>');
                  }
             });
             $('#checklist-tbody').on('click', '.btn-save-new', function() {
                 const $row = $(this).closest('tr');
                 const taskType = $row.find('textarea[name="descricao"]').attr('placeholder').includes('Título') ? 'titulo' : 'tarefa';
-                
+
                 const newData = { tipo: taskType, atividade_id: $row.find('input[name="atividade_id"]').val(), descricao: $row.find('textarea[name="descricao"]').val() };
-                
+
                 if (taskType === 'tarefa') {
                     newData.data_inicio = $row.find('input[name="data_inicio"]').val() || null;
-                    newData.data_termino = $row.find('input[name="data_termino"]').val() || null;
+                    newData.duracao = $row.find('input[name="duracao"]').val() || null; // Envia a duração
                     newData.responsaveis = $row.find('select[name="responsaveis"]').val() ? $row.find('select[name="responsaveis"]').val().join(', ') : '';
                     newData.status = $row.find('select[name="status"]').val();
                     newData.local_execucao = $row.find('select[name="local_execucao"]').val() || null;
@@ -300,83 +355,58 @@
                         $row.removeClass('new-task-row').addClass(newTask.tipo === 'titulo' ? 'task-header-inline' : 'task-item-inline');
                         $row.attr('data-task-id', newTask.id);
                         $row.attr('data-task-type', newTask.tipo);
-                        
+
                         $row.find('td').eq(0).text(newTask.atividade_id || '').addClass('editable').attr('data-field', 'atividade_id');
                         $row.find('td').eq(1).text(newTask.descricao).addClass('editable').attr('data-field', 'descricao');
 
                         if (newTask.tipo === 'tarefa') {
                             $row.find('td').eq(2).text(formatDate(newTask.data_inicio)).addClass('editable').attr('data-field', 'data_inicio');
-                            $row.find('td').eq(3).text(formatDate(newTask.data_termino)).addClass('editable').attr('data-field', 'data_termino');
-                            $row.find('td').eq(4).text(newTask.duracao_calculada);
+                            $row.find('td').eq(3).text(formatDate(newTask.data_termino)).attr('data-field', 'data_termino'); // Mostra data_termino calculada
+                            $row.find('td').eq(4).text(newTask.duracao || '').addClass('editable').attr('data-field', 'duracao'); // Mostra e torna duração editável
                             $row.find('td').eq(5).text(newTask.responsaveis || '---').addClass('editable').attr('data-field', 'responsaveis');
                             $row.find('td').eq(6).text(newTask.status).addClass('editable').attr('data-field', 'status');
                             $row.find('td').eq(7).text(newTask.local_execucao || '---').addClass('editable').attr('data-field', 'local_execucao');
                             $row.find('td').eq(8).text(newTask.observacoes || '').addClass('editable').attr('data-field', 'observacoes');
                         } else {
-                             $row.find('td').slice(2, 9).text(''); 
+                             $row.find('td').slice(2, 9).text('');
                         }
 
                         $row.find('td').last().empty().append('<span class="btn-delete-task" title="Excluir">&times;</span>');
-                        isAddingNewRow = false; 
-                    } else {
-                        alert(`Erro ao criar: ${data.message}`);
-                    }
+                        isAddingNewRow = false;
+                    } else { alert(`Erro ao criar: ${data.message}`); }
                 })
-                .catch(error => {
-                    console.error('Erro na requisição de criação:', error);
-                    alert('Erro de comunicação ao criar a tarefa.');
-                });
+                .catch(error => { console.error('Erro:', error); alert('Erro de comunicação.'); });
             });
 
-            // --- ALTERAÇÃO APLICADA AQUI: Lógica para Excluir Linha ---
+            // --- Lógica de Exclusão (inalterada da Fase 5) ---
             $('#checklist-tbody').on('click', '.btn-delete-task', function() {
-                const $row = $(this).closest('tr');
+                // ... (código completo da exclusão aqui) ...
+                 const $row = $(this).closest('tr');
                 const taskId = $row.data('task-id');
-                const taskDesc = $row.find('td').eq(1).text(); // Pega a descrição para a confirmação
+                const taskDesc = $row.find('td').eq(1).text();
 
-                // Se a linha ainda não foi salva (não tem ID), apenas remove
                 if (!taskId) {
                      $row.remove();
-                     isAddingNewRow = false; // Garante que pode adicionar outra
-                     return; 
+                     isAddingNewRow = false;
+                     return;
                 }
 
                 if (confirm(`Tem certeza que deseja excluir "${taskDesc}"? Esta ação não pode ser desfeita.`)) {
-                    fetch(`/api/tarefa_inline/delete/${taskId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            // Incluir CSRF token se necessário
-                        }
-                    })
+                    fetch(`/api/tarefa_inline/delete/${taskId}`, { method: 'DELETE' })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            $row.fadeOut(300, function() { 
-                                $(this).remove(); 
-                                // Se a tabela ficar vazia, adiciona a mensagem de volta
+                            $row.fadeOut(300, function() {
+                                $(this).remove();
                                  if ($('#checklist-tbody tr').length === 0) {
                                      $('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="10" style="text-align: center;">Nenhuma tarefa encontrada para este projeto.</td></tr>');
                                  }
                             });
-                        } else {
-                            alert(`Erro ao excluir: ${data.message}`);
-                        }
+                        } else { alert(`Erro ao excluir: ${data.message}`); }
                     })
-                    .catch(error => {
-                        console.error('Erro na requisição de exclusão:', error);
-                        alert('Erro de comunicação ao excluir a tarefa.');
-                    });
+                    .catch(error => { console.error('Erro:', error); alert('Erro de comunicação.'); });
                 }
             });
-            // --- Fim Excluir Linha ---
-
-            // Função helper para formatar data (inalterada)
-            function formatDate(dateString) {
-                if (!dateString || !dateString.includes('-')) return '';
-                const parts = dateString.split('-');
-                if (parts.length !== 3) return '';
-                return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
-            }
 
         });
     </script>
