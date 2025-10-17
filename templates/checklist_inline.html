@@ -6,10 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
-        /* ... (Estilos CSS da Fase 3 inalterados) ... */
-        .new-task-row td { background-color: #eef2f5; } /* Destaca a linha nova */
-        .btn-save-new { background-color: #28a745; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
-        .btn-cancel-new { background-color: #dc3545; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;}
+        /* ... (Estilos CSS da Fase 4 inalterados) ... */
     </style>
 </head>
 <body>
@@ -24,7 +21,9 @@
         <div class="header-actions">
             <h1>Checklist Editável: {{ projeto.nome }}</h1>
             <div class="actions-group">
-                <button id="add-task-btn" class="button new">Adicionar Tarefa</button> <button id="add-title-btn" class="button new" style="background-color: #5bc0de;">Adicionar Título</button> <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista</a>
+                <button id="add-task-btn" class="button new">Adicionar Tarefa</button>
+                <button id="add-title-btn" class="button new" style="background-color: #5bc0de;">Adicionar Título</button>
+                <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista</a>
             </div>
         </div>
 
@@ -47,7 +46,7 @@
                 {% for tarefa in tarefas %}
                     {% if tarefa.tipo == 'titulo' %}
                         <tr class="task-header-inline" data-task-id="{{ tarefa.id }}" data-task-type="titulo">
-                             <td class="col-item editable" data-field="atividade_id">{{ tarefa.atividade_id }}</td> 
+                            <td class="col-item editable" data-field="atividade_id">{{ tarefa.atividade_id }}</td> 
                             <td class="col-atividade editable" data-field="descricao">{{ tarefa.descricao }}</td>
                             <td class="col-data"></td> <td class="col-data"></td> <td class="col-duracao"></td>
                             <td class="col-responsavel"></td> <td class="col-status"></td> <td class="col-local"></td>
@@ -88,7 +87,7 @@
 
         $(document).ready(function() {
             let activeInput = null;
-            let isAddingNewRow = false; // Flag para evitar múltiplas linhas novas
+            let isAddingNewRow = false; 
 
             function revertToText(cell, displayValue) {
                 $(cell).empty().text(displayValue).addClass('editable');
@@ -96,16 +95,14 @@
                 setTimeout(() => { $(cell).removeClass('saved-success saved-error saving'); }, 1500);
             }
 
-            // --- Lógica de Edição Inline (ajustada levemente) ---
+            // --- Lógica de Edição Inline (inalterada da Fase 4) ---
             $('#checklist-tbody').on('dblclick', 'td.editable', function() {
-                // Não permite editar se estiver adicionando uma nova linha
+                // ... (código completo da edição aqui) ...
                  if (isAddingNewRow) return;
 
                 if (activeInput) {
                     const cell = $(activeInput).closest('td');
-                    // Tenta salvar antes de reverter
                     $(activeInput).trigger('blur'); 
-                    // Se o blur não reverteu (erro?), força a reversão
                     if ($(cell).find('input, select, textarea').length > 0) {
                         revertToText(cell, $(activeInput).data('original-value'));
                     }
@@ -118,7 +115,7 @@
                 const taskType = $(cell).closest('tr').data('task-type');
 
                 if (taskType === 'titulo' && !['descricao', 'atividade_id'].includes(fieldName)) return;
-                if (!taskId) return; // Não edita linhas que ainda não foram salvas
+                if (!taskId) return; 
 
                 $(cell).removeClass('editable');
                 $(cell).empty(); 
@@ -126,7 +123,6 @@
                 let inputElement;
                 let isMultiSelect = false;
 
-                // --- Criação do Input (sem grandes mudanças) ---
                 if (fieldName === 'descricao' || fieldName === 'observacoes') {
                     inputElement = $('<textarea>').val(originalValue);
                 } else if (fieldName === 'data_inicio' || fieldName === 'data_termino') {
@@ -154,17 +150,15 @@
                      LOCAIS_LIST.forEach(local => {
                         inputElement.append($('<option>', { value: local, text: local, selected: originalValue === local }));
                      });
-                } else { // atividade_id (para tarefas e títulos)
+                } else { 
                     inputElement = $('<input type="text">').val(originalValue);
                 }
-                // --- Fim Criação Input ---
 
                 inputElement.data('original-value', originalValue);
                 $(cell).append(inputElement);
                 inputElement.focus(); 
                 activeInput = inputElement;
 
-                // --- Lógica de Salvamento AJAX (blur) ---
                 inputElement.on('blur', function() {
                     let newValue = $(this).val();
                     const originalValueFromData = $(this).data('original-value');
@@ -212,41 +206,36 @@
                         revertToText(cell, originalValueFromData);
                     }
                 });
-                // --- Fim Salvamento AJAX ---
-
-                // --- Listeners Enter/Esc (sem mudanças) ---
+                
                  if (inputElement.prop('tagName') !== 'TEXTAREA' && !isMultiSelect) { 
                     inputElement.on('keydown', function(e) {
                         if (e.key === 'Enter') { e.preventDefault(); $(this).trigger('blur'); } 
-                        else if (e.key === 'Escape') { revertToText(cell, originalValue); }
+                        else if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); } // Usa o valor original guardado
                     });
                 } else {
                      inputElement.on('keydown', function(e) {
-                         if (e.key === 'Escape') { revertToText(cell, originalValue); }
+                         if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); } // Usa o valor original guardado
                      });
                 }
             });
-            // --- Fim Lógica Edição ---
 
-
-            // --- ALTERAÇÃO APLICADA AQUI: Lógica para Adicionar Nova Linha ---
-            function createNewRow(type = 'tarefa') {
-                if (isAddingNewRow) return; // Impede adicionar múltiplas linhas
+            // --- Lógica para Adicionar Nova Linha (inalterada da Fase 4) ---
+             function createNewRow(type = 'tarefa') {
+                 // ... (código completo da função createNewRow aqui) ...
+                 if (isAddingNewRow) return; 
                 isAddingNewRow = true;
-                 $('#no-tasks-row').remove(); // Remove a mensagem "Nenhuma tarefa" se existir
+                 $('#no-tasks-row').remove(); 
 
                 const $tbody = $('#checklist-tbody');
-                const $newRow = $('<tr class="new-task-row">'); // Classe para identificar e estilizar
+                const $newRow = $('<tr class="new-task-row">'); 
 
-                // Adiciona as células com os inputs/selects apropriados
                 $newRow.append('<td><input type="text" name="atividade_id" placeholder="Ex: 1.1"></td>');
                 $newRow.append('<td><textarea name="descricao" placeholder="Descrição da ' + type + '"></textarea></td>');
                 
-                // Campos específicos para TAREFA
                 if (type === 'tarefa') {
                     $newRow.append('<td><input type="date" name="data_inicio"></td>');
                     $newRow.append('<td><input type="date" name="data_termino"></td>');
-                    $newRow.append('<td class="col-duracao">N/D</td>'); // Duração não é editável na criação
+                    $newRow.append('<td class="col-duracao">N/D</td>'); 
                     
                     let respSelect = '<select name="responsaveis" multiple size="3">';
                     TECNICOS.forEach(t => { respSelect += `<option value="${t}">${t}</option>`; });
@@ -264,47 +253,29 @@
                     $newRow.append(`<td>${localSelect}</td>`);
 
                     $newRow.append('<td><textarea name="observacoes"></textarea></td>');
-                } else { // Campos vazios para TÍTULO
-                     $newRow.append('<td colspan="7"></td>'); // Ocupa 7 colunas vazias
+                } else { 
+                     $newRow.append('<td colspan="7"></td>'); 
                 }
-
-                // Botões Salvar/Cancelar
+                
                 $newRow.append('<td class="col-actions"><button class="btn-save-new">Salvar</button><button class="btn-cancel-new">&times;</button></td>');
 
-                $tbody.append($newRow); // Adiciona a linha ao final da tabela
+                $tbody.append($newRow);
             }
 
-            // Listener para o botão "Adicionar Tarefa"
-            $('#add-task-btn').on('click', function() {
-                createNewRow('tarefa');
-            });
-            
-             // Listener para o botão "Adicionar Título"
-            $('#add-title-btn').on('click', function() {
-                createNewRow('titulo');
-            });
-
-            // Listener para o botão "Cancelar Nova" (delegação de evento)
+            $('#add-task-btn').on('click', function() { createNewRow('tarefa'); });
+            $('#add-title-btn').on('click', function() { createNewRow('titulo'); });
             $('#checklist-tbody').on('click', '.btn-cancel-new', function() {
-                $(this).closest('tr').remove();
-                isAddingNewRow = false;
-                // Se a tabela ficar vazia, adiciona a mensagem de volta
+                 $(this).closest('tr').remove();
+                 isAddingNewRow = false;
                  if ($('#checklist-tbody tr').length === 0) {
                      $('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="10" style="text-align: center;">Nenhuma tarefa encontrada para este projeto.</td></tr>');
                  }
             });
-
-            // Listener para o botão "Salvar Nova" (delegação de evento)
             $('#checklist-tbody').on('click', '.btn-save-new', function() {
                 const $row = $(this).closest('tr');
                 const taskType = $row.find('textarea[name="descricao"]').attr('placeholder').includes('Título') ? 'titulo' : 'tarefa';
                 
-                // Coleta os dados da nova linha
-                const newData = {
-                    tipo: taskType,
-                    atividade_id: $row.find('input[name="atividade_id"]').val(),
-                    descricao: $row.find('textarea[name="descricao"]').val(),
-                };
+                const newData = { tipo: taskType, atividade_id: $row.find('input[name="atividade_id"]').val(), descricao: $row.find('textarea[name="descricao"]').val() };
                 
                 if (taskType === 'tarefa') {
                     newData.data_inicio = $row.find('input[name="data_inicio"]').val() || null;
@@ -313,18 +284,10 @@
                     newData.status = $row.find('select[name="status"]').val();
                     newData.local_execucao = $row.find('select[name="local_execucao"]').val() || null;
                     newData.observacoes = $row.find('textarea[name="observacoes"]').val();
-                    // Predecessoras podem ser adicionadas na edição
                 }
 
-                // Validação simples
-                if (!newData.descricao) {
-                    alert('A Descrição é obrigatória.');
-                    return;
-                }
+                if (!newData.descricao) { alert('A Descrição é obrigatória.'); return; }
 
-                console.log("Enviando para criar:", newData); // DEBUG
-
-                // Envia para a API de criação
                 fetch(`/api/tarefa_inline/create/${PROJETO_ID}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -334,7 +297,6 @@
                 .then(data => {
                     if (data.success) {
                         const newTask = data.tarefa;
-                        // Atualiza a linha com os dados salvos
                         $row.removeClass('new-task-row').addClass(newTask.tipo === 'titulo' ? 'task-header-inline' : 'task-item-inline');
                         $row.attr('data-task-id', newTask.id);
                         $row.attr('data-task-type', newTask.tipo);
@@ -345,20 +307,17 @@
                         if (newTask.tipo === 'tarefa') {
                             $row.find('td').eq(2).text(formatDate(newTask.data_inicio)).addClass('editable').attr('data-field', 'data_inicio');
                             $row.find('td').eq(3).text(formatDate(newTask.data_termino)).addClass('editable').attr('data-field', 'data_termino');
-                            $row.find('td').eq(4).text(newTask.duracao_calculada); // Duração calculada
+                            $row.find('td').eq(4).text(newTask.duracao_calculada);
                             $row.find('td').eq(5).text(newTask.responsaveis || '---').addClass('editable').attr('data-field', 'responsaveis');
                             $row.find('td').eq(6).text(newTask.status).addClass('editable').attr('data-field', 'status');
                             $row.find('td').eq(7).text(newTask.local_execucao || '---').addClass('editable').attr('data-field', 'local_execucao');
                             $row.find('td').eq(8).text(newTask.observacoes || '').addClass('editable').attr('data-field', 'observacoes');
                         } else {
-                            // Limpa colunas desnecessárias para títulos
                              $row.find('td').slice(2, 9).text(''); 
                         }
 
-                        // Substitui botões Salvar/Cancelar por Excluir
                         $row.find('td').last().empty().append('<span class="btn-delete-task" title="Excluir">&times;</span>');
-                        
-                        isAddingNewRow = false; // Permite adicionar outra linha
+                        isAddingNewRow = false; 
                     } else {
                         alert(`Erro ao criar: ${data.message}`);
                     }
@@ -368,11 +327,50 @@
                     alert('Erro de comunicação ao criar a tarefa.');
                 });
             });
-             // --- Fim Adicionar Nova Linha ---
 
-            // --- Lógica de Exclusão (Fase 5 - virá aqui) ---
+            // --- ALTERAÇÃO APLICADA AQUI: Lógica para Excluir Linha ---
+            $('#checklist-tbody').on('click', '.btn-delete-task', function() {
+                const $row = $(this).closest('tr');
+                const taskId = $row.data('task-id');
+                const taskDesc = $row.find('td').eq(1).text(); // Pega a descrição para a confirmação
 
-            // Função helper para formatar data (simples)
+                // Se a linha ainda não foi salva (não tem ID), apenas remove
+                if (!taskId) {
+                     $row.remove();
+                     isAddingNewRow = false; // Garante que pode adicionar outra
+                     return; 
+                }
+
+                if (confirm(`Tem certeza que deseja excluir "${taskDesc}"? Esta ação não pode ser desfeita.`)) {
+                    fetch(`/api/tarefa_inline/delete/${taskId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            // Incluir CSRF token se necessário
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            $row.fadeOut(300, function() { 
+                                $(this).remove(); 
+                                // Se a tabela ficar vazia, adiciona a mensagem de volta
+                                 if ($('#checklist-tbody tr').length === 0) {
+                                     $('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="10" style="text-align: center;">Nenhuma tarefa encontrada para este projeto.</td></tr>');
+                                 }
+                            });
+                        } else {
+                            alert(`Erro ao excluir: ${data.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro na requisição de exclusão:', error);
+                        alert('Erro de comunicação ao excluir a tarefa.');
+                    });
+                }
+            });
+            // --- Fim Excluir Linha ---
+
+            // Função helper para formatar data (inalterada)
             function formatDate(dateString) {
                 if (!dateString || !dateString.includes('-')) return '';
                 const parts = dateString.split('-');

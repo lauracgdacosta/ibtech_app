@@ -1246,6 +1246,37 @@ def create_tarefa_inline(projeto_id):
             conn.close()
             print(f"--- Conexão com DB fechada para criação em {projeto_id} ---") # DEBUG
 
+# --- API Endpoint for Deleting Inline Tasks/Titles ---
+@app.route('/api/tarefa_inline/delete/<int:tarefa_id>', methods=['DELETE'])
+@login_required
+@role_required(module='projetos', action='can_delete') # Ensure only deleters can remove
+def delete_tarefa_inline(tarefa_id):
+    print(f"--- Recebida requisição para EXCLUIR tarefa ID: {tarefa_id} ---") # DEBUG
+    conn = None
+    try:
+        conn = get_db_connection()
+        
+        # Verifica se a tarefa existe antes de tentar deletar
+        tarefa = conn.execute('SELECT id FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
+        if not tarefa:
+            print(f"!!! ERRO: Tarefa {tarefa_id} não encontrada para exclusão.") # DEBUG
+            return jsonify({'success': False, 'message': 'Tarefa não encontrada.'}), 404
+
+        conn.execute('DELETE FROM tarefas WHERE id = ?', (tarefa_id,))
+        conn.commit()
+        print(f"--- Tarefa {tarefa_id} excluída com sucesso ---") # DEBUG
+        return jsonify({'success': True, 'message': 'Tarefa excluída com sucesso.'})
+
+    except Exception as e:
+        print(f"!!! ERRO GERAL ao excluir tarefa {tarefa_id}: {e} !!!") # DEBUG
+        if conn:
+            conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao excluir tarefa: {e}'}), 500
+    finally:
+        if conn:
+            conn.close()
+            print(f"--- Conexão com DB fechada para exclusão da tarefa {tarefa_id} ---") # DEBUG
+
 # --- MÓDULO DE PENDÊNCIAS (com validação e todas as melhorias) ---
 @app.route('/pendencias')
 @login_required
