@@ -155,11 +155,12 @@
                     if (updatedFields.data_termino !== undefined) {
                         const formattedEndDate = formatDate(updatedFields.data_termino);
                         $row.find('td[data-field="data_termino"]').text(formattedEndDate);
-                        // Atualiza taskData para o cálculo de predecessoras futuras
-                        const activityId = $row.find('td[data-field="atividade_id"]').text().trim();
-                        if (activityId && taskData[activityId]) {
-                            taskData[activityId].endDate = updatedFields.data_termino || "";
-                        }
+                         // Atualiza taskData também
+                         const activityId = $row.find('td[data-field="atividade_id"]').text().trim();
+                         if (activityId && taskData[activityId]) {
+                             taskData[activityId].endDate = updatedFields.data_termino || "";
+                             // console.log("taskData atualizado:", activityId, taskData[activityId]); // DEBUG
+                         }
                     }
                     if (updatedFields.duracao !== undefined) {
                          $row.find('td[data-field="duracao"]').text(updatedFields.duracao || '');
@@ -171,6 +172,7 @@
 
              // Função para calcular Data Início a partir das Predecessoras
             function updateStartDateFromPredecessors(selectElement) {
+                // console.log("--- Calculando Data Início a partir das Predecessoras ---"); // DEBUG
                 const $select = $(selectElement);
                 const $row = $select.closest('tr');
                 const $startDateInput = $row.find('td[data-field="data_inicio"] input[type="date"]');
@@ -180,6 +182,7 @@
                 $select.find('option:selected').each(function() {
                     const predecessorId = $(this).val();
                     const endDateStr = taskData[predecessorId]?.endDate || $(this).data('end-date');
+                    // console.log(`Predecessora: ${predecessorId}, Data Fim: ${endDateStr}`); // DEBUG
 
                     if (endDateStr) {
                         const parts = endDateStr.split('-');
@@ -195,18 +198,19 @@
                 if (latestEndDate) {
                     latestEndDate.setUTCDate(latestEndDate.getUTCDate() + 1);
                     const newStartDate = latestEndDate.toISOString().split('T')[0];
+                    // console.log("Nova Data Início Calculada:", newStartDate); // DEBUG
 
-                    // Atualiza o input se estiver editando a célula Data Início
-                    if ($startDateInput.length > 0) {
+                    if ($startDateInput.length > 0) { // Se estiver editando Data Início
                         $startDateInput.val(newStartDate);
-                        $startDateInput.trigger('change'); // Trigger change para possível recálculo
+                        // console.log("Input data_inicio atualizado."); // DEBUG
+                        $startDateInput.trigger('change'); // Dispara change para possível recálculo (sem salvar ainda)
                     }
-                    // Se não estiver editando Data Início, salva via AJAX
-                    else {
-                        const taskId = $row.data('task-id');
-                        if (taskId) {
+                    else { // Se não estiver editando Data Início, salva via AJAX
+                         // console.log("Célula data_inicio não em edição. Salvando via AJAX..."); //DEBUG
+                         const taskId = $row.data('task-id');
+                         if (taskId) {
                              $startDateCell.addClass('saving');
-                             fetch(`/api/tarefa_inline/update/${taskId}`, { /* ... AJAX para salvar data_inicio ... */
+                             fetch(`/api/tarefa_inline/update/${taskId}`, {
                                  method: 'POST', headers: { 'Content-Type': 'application/json' },
                                  body: JSON.stringify({ field: 'data_inicio', value: newStartDate })
                              })
@@ -215,15 +219,19 @@
                                 if (data.success) {
                                     $startDateCell.removeClass('saving').addClass('saved-success');
                                      revertToText($startDateCell, formatDate(newStartDate), data.updated_fields);
-                                } else { $startDateCell.removeClass('saving').addClass('saved-error'); alert("Erro"); }
+                                     // console.log("Data início salva via AJAX."); // DEBUG
+                                } else { $startDateCell.removeClass('saving').addClass('saved-error'); alert("Erro ao salvar Data Início automaticamente."); }
                             })
-                            .catch(error => { $startDateCell.removeClass('saving').addClass('saved-error'); console.error("Erro:", error); alert("Erro."); });
-                        }
+                            .catch(error => { $startDateCell.removeClass('saving').addClass('saved-error'); console.error("Erro AJAX:", error); alert("Erro de comunicação."); });
+                         }
                     }
-                    // Salva as predecessoras também, disparando o blur
-                    if ($select.is(activeInput)) { // Só dispara blur se o select ainda for o input ativo
+                    // Salva as predecessoras também (importante!)
+                    if ($select.is(activeInput)) {
                         $select.trigger('blur');
                     }
+
+                } else {
+                    // console.log("Nenhuma data predecessora válida encontrada."); // DEBUG
                 }
             }
 
@@ -245,7 +253,12 @@
                 const taskType = $(cell).closest('tr').data('task-type');
 
                 if (taskType === 'titulo' && !['descricao', 'atividade_id'].includes(fieldName)) return;
-                if (!taskId && fieldName !== 'atividade_id' && fieldName !== 'descricao') return;
+                // Permite editar ID/Desc em linhas novas apenas se elas forem o activeInput
+                // if (!taskId && fieldName !== 'atividade_id' && fieldName !== 'descricao') return;
+                if (!taskId && !$(cell).find('input, textarea').length) { // Só permite editar ID/Desc se não estiver já editando
+                   if (fieldName !== 'atividade_id' && fieldName !== 'descricao') return;
+                }
+
 
                 $(cell).removeClass('editable').empty();
                 let inputElement, isMultiSelect = false;
@@ -264,7 +277,7 @@
                 } else if (fieldName === 'responsaveis') {
                     inputElement = $('<select multiple size="5">'); const sel = originalValue.split(',').map(s=>s.trim()); TECNICOS.forEach(t => inputElement.append($('<option>',{value:t,text:t,selected:sel.includes(t)}))); isMultiSelect=true;
                 } else if (fieldName === 'predecessoras') {
-                    inputElement = $('<select multiple size="5" name="predecessoras">'); const sel = originalValue.split(',').map(s=>s.trim()); const curId = $(cell).closest('tr').find('td[data-field="atividade_id"]').text().trim();
+                    inputElement = $('<select multiple size="5" name="predecessoras">'); const sel = originalValue.split(',').map(s=>s.trim()); const curId = $(cell).closest('tr').find('td[data-field="atividade_id"]').text().trim() || $(cell).closest('tr').find('input[name="atividade_id"]').val(); // Pega ID mesmo se estiver editando
                     Object.keys(taskData).forEach(k => { if(k && k != curId) inputElement.append($('<option>',{value:k,text:k,selected:sel.includes(k),'data-end-date':taskData[k]?.endDate||''}))}); isMultiSelect=true;
                     inputElement.on('change', function() { updateStartDateFromPredecessors(this); });
                 } else if (fieldName === 'local_execucao') {
@@ -282,7 +295,13 @@
                     if (isMultiSelect) newValue = $(this).val() ? $(this).val().join(', ') : '';
                     if (fieldName === 'duracao') { const n = parseInt(newValue,10); newValue = (isNaN(n)||n<1)?'1':n.toString(); }
 
-                    if (newValue !== originalValueFromData || fieldName === 'data_inicio') { // Salva se mudou ou se é data_inicio (pode ter sido alterada por predecessora)
+                    // Se a linha não tem ID, não tenta salvar (caso especial para ID/Desc da nova linha)
+                    if (!taskId) {
+                         revertToText(cell, newValue || originalValueFromData); // Apenas atualiza o texto na tela
+                         return;
+                    }
+
+                    if (newValue !== originalValueFromData || fieldName === 'data_inicio') { // Salva se mudou ou se é data_inicio
                         $(cell).addClass('saving');
                         fetch(`/api/tarefa_inline/update/${taskId}`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -295,12 +314,14 @@
                                 let displayValue = newValue;
                                 if(fieldName==='data_inicio') displayValue = formatDate(newValue) || '';
                                 if (displayValue===''&&(fieldName==='responsaveis'||fieldName==='local_execucao')) displayValue = '---';
-                                else if (displayValue===''&&fieldName==='predecessoras') displayValue = ''; // Predecessoras vazias ficam vazias
+                                else if (displayValue===''&&fieldName==='predecessoras') displayValue = '';
                                 revertToText(cell, displayValue, data.updated_fields);
                             } else { $(cell).removeClass('saving').addClass('saved-error'); alert(`Erro: ${data.message}`); revertToText(cell, originalValueFromData); }
                         })
                         .catch(error => { $(cell).removeClass('saving').addClass('saved-error'); console.error('Erro:', error); alert('Erro.'); revertToText(cell, originalValueFromData); });
-                    } else { revertToText(cell, originalValueFromData); }
+                    } else {
+                        revertToText(cell, originalValueFromData);
+                    }
                 });
 
                 // Listeners Enter/Esc
@@ -313,16 +334,19 @@
                 if (isAddingNewRow) return; isAddingNewRow = true; $('#no-tasks-row').remove();
                 const $tbody=$('#checklist-tbody'); const $newRow=$('<tr class="new-task-row">');
                 $newRow.append('<td><input type="text" name="atividade_id" placeholder="Ex: 1.1"></td><td><textarea name="descricao" placeholder="Descrição da '+type+'"></textarea></td>');
-                if(type==='tarefa'){$newRow.append('<td><input type="date" name="data_inicio"></td><td><input type="date" name="data_termino" disabled></td><td><input type="number" name="duracao" min="1" value="1"></td>');let rS='<select name="responsaveis" multiple size="3">';TECNICOS.forEach(t=>{rS+=`<option value="${t}">${t}</option>`});rS+='</select>';$newRow.append(`<td>${rS}</td>`);let pS='<select name="predecessoras" multiple size="3">';Object.keys(taskData).forEach(k=>{if(k)pS+=`<option value="${k}" data-end-date="${taskData[k]?.endDate||''}">${k}</option>`});pS+='</select>';$newRow.append(`<td>${pS}</td>`);let sS='<select name="status">';STATUS_LIST.forEach(s=>{sS+=`<option value="${s}" ${s==='Planejada'?'selected':''}>${s}</option>`});sS+='</select>';$newRow.append(`<td>${sS}</td>`);let lS='<select name="local_execucao"><option value="">Selecione</option>';LOCAIS_LIST.forEach(l=>{lS+=`<option value="${l}">${l}</option>`});lS+='</select>';$newRow.append(`<td>${lS}</td>`);$newRow.append('<td><textarea name="observacoes"></textarea></td>');} else{$newRow.append('<td colspan="8"></td>');}
-                $newRow.append('<td class="col-actions"><button class="btn-save-new">Salvar</button><button class="btn-cancel-new">&times;</button></td>'); $tbody.append($newRow);
+                if(type==='tarefa'){$newRow.append('<td><input type="date" name="data_inicio"></td><td><input type="date" name="data_termino" disabled></td><td><input type="number" name="duracao" min="1" value="1"></td>');let rS='<select name="responsaveis" multiple size="3">';TECNICOS.forEach(t=>{rS+=`<option value="${t}">${t}</option>`});rS+='</select>';$newRow.append(`<td>${rS}</td>`);let pS='<select name="predecessoras" multiple size="3">';Object.keys(taskData).forEach(k=>{if(k)pS+=`<option value="${k}" data-end-date="${taskData[k]?.endDate||''}">${k}</option>`});pS+='</select>';$newRow.append(`<td>${pS}</td>`);let sS='<select name="status">';STATUS_LIST.forEach(s=>{sS+=`<option value="${s}" ${s==='Planejada'?'selected':''}>${s}</option>`});sS+='</select>';$newRow.append(`<td>${sS}</td>`);let lS='<select name="local_execucao"><option value="">Selecione</option>';LOCAIS_LIST.forEach(l=>{lS+=`<option value="${l}">${l}</option>`});lS+='</select>';$newRow.append(`<td>${lS}</td>`);$newRow.append('<td><textarea name="observacoes"></textarea></td>');}else{$newRow.append('<td colspan="8"></td>');}
+                $newRow.append('<td class="col-actions"><button class="btn-save-new">Salvar</button><button class="btn-cancel-new">&times;</button></td>');
+                $tbody.prepend($newRow); // Adiciona no início
                 $newRow.find('select[name="predecessoras"]').on('change',function(){updateStartDateFromPredecessors(this);});
             }
             $('#add-task-btn').on('click', function(){createNewRow('tarefa');}); $('#add-title-btn').on('click',function(){createNewRow('titulo');});
             $('#checklist-tbody').on('click','.btn-cancel-new',function(){$(this).closest('tr').remove();isAddingNewRow=false;if($('#checklist-tbody tr:not(#no-tasks-row)').length===0)$('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="11" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>');});
+
+            // Lógica Salvar Nova
             $('#checklist-tbody').on('click','.btn-save-new',function(){ const $r=$(this).closest('tr');const tT=$r.find('textarea[name="descricao"]').attr('placeholder').includes('Título')?'titulo':'tarefa'; const nD={tipo:tT,atividade_id:$r.find('input[name="atividade_id"]').val(),descricao:$r.find('textarea[name="descricao"]').val()}; if(tT==='tarefa'){nD.data_inicio=$r.find('input[name="data_inicio"]').val()||null;nD.duracao=$r.find('input[name="duracao"]').val()||null;nD.responsaveis=$r.find('select[name="responsaveis"]').val()?$r.find('select[name="responsaveis"]').val().join(', '):'';nD.predecessoras=$r.find('select[name="predecessoras"]').val()?$r.find('select[name="predecessoras"]').val().join(', '):'';nD.status=$r.find('select[name="status"]').val();nD.local_execucao=$r.find('select[name="local_execucao"]').val()||null;nD.observacoes=$r.find('textarea[name="observacoes"]').val();} if(!nD.descricao){alert('Descrição obrigatória.');return;} fetch(`/api/tarefa_inline/create/${PROJETO_ID}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(nD)}).then(res=>res.json()).then(d=>{if(d.success){const nT=d.tarefa;$r.removeClass('new-task-row').addClass(nT.tipo==='titulo'?'task-header-inline':'task-item-inline').attr({'data-task-id':nT.id,'data-task-type':nT.tipo});$r.find('td').eq(0).text(nT.atividade_id||'').addClass('editable').attr('data-field','atividade_id');$r.find('td').eq(1).text(nT.descricao).addClass('editable').attr('data-field','descricao');if(nT.tipo==='tarefa'){$r.find('td').eq(2).text(formatDate(nT.data_inicio)).addClass('editable').attr('data-field','data_inicio');$r.find('td').eq(3).text(formatDate(nT.data_termino)).attr('data-field','data_termino');$r.find('td').eq(4).text(nT.duracao||'').addClass('editable').attr('data-field','duracao');$r.find('td').eq(5).text(nT.responsaveis||'---').addClass('editable').attr('data-field','responsaveis');$r.find('td').eq(6).text(nT.predecessoras||'').addClass('editable').attr('data-field','predecessoras');$r.find('td').eq(7).text(nT.status).addClass('editable').attr('data-field','status');$r.find('td').eq(8).text(nT.local_execucao||'---').addClass('editable').attr('data-field','local_execucao');$r.find('td').eq(9).text(nT.observacoes||'').addClass('editable').attr('data-field','observacoes');if(nT.atividade_id)taskData[nT.atividade_id]={endDate:nT.data_termino||""};}else{$r.find('td').slice(2,10).text('');}$r.find('td').last().empty().append('<span class="btn-delete-task" title="Excluir">&times;</span>');isAddingNewRow=false;}else{alert(`Erro: ${d.message}`);}}).catch(e=>{console.error('Erro:',e);alert('Erro.');}); });
 
             // Lógica de Exclusão
-            $('#checklist-tbody').on('click','.btn-delete-task',function(){ const $r=$(this).closest('tr');const tI=$r.data('task-id');const tD=$r.find('td').eq(1).text();if(!tI){$r.remove();isAddingNewRow=false;return;} if(confirm(`Tem certeza que deseja excluir "${tD}"?`)){fetch(`/api/tarefa_inline/delete/${tI}`,{method:'DELETE'}).then(res=>res.json()).then(d=>{if(d.success){$r.fadeOut(300,function(){$(this).remove();if($('#checklist-tbody tr:not(#no-tasks-row)').length===0)$('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="11" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>');});}else{alert(`Erro: ${d.message}`);}}).catch(e=>{console.error('Erro:',e);alert('Erro.');});}});
+            $('#checklist-tbody').on('click','.btn-delete-task',function(){ const $r=$(this).closest('tr');const tI=$r.data('task-id');const tD=$r.find('td').eq(1).text();if(!tI){$r.remove();isAddingNewRow=false;if($('#checklist-tbody tr:not(#no-tasks-row)').length===0)$('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="11" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>');return;} if(confirm(`Tem certeza que deseja excluir "${tD}"?`)){fetch(`/api/tarefa_inline/delete/${tI}`,{method:'DELETE'}).then(res=>res.json()).then(d=>{if(d.success){$r.fadeOut(300,function(){$(this).remove();if($('#checklist-tbody tr:not(#no-tasks-row)').length===0)$('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="11" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>');});}else{alert(`Erro: ${d.message}`);}}).catch(e=>{console.error('Erro:',e);alert('Erro.');});}});
 
         });
     </script>
