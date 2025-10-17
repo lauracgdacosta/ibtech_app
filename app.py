@@ -1134,8 +1134,8 @@ def update_tarefa_inline(tarefa_id):
     conn = None
     try:
         conn = get_db_connection()
-        cursor = conn.cursor() 
-        
+        cursor = conn.cursor()
+
         tarefa = cursor.execute('SELECT * FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
         if not tarefa:
             return jsonify({'success': False, 'message': 'Tarefa não encontrada.'}), 404
@@ -1144,23 +1144,25 @@ def update_tarefa_inline(tarefa_id):
         field_name = data.get('field')
         new_value = data.get('value')
 
-        if field_name is None: # Permite valor vazio '' mas não None
+        if field_name is None:
              return jsonify({'success': False, 'message': 'Dados inválidos (campo ausente).'}), 400
 
-        # --- ALTERAÇÃO APLICADA AQUI: Adicionado 'predecessoras' ---
-        allowed_fields = ['descricao', 'data_inicio', 'data_termino', 'responsaveis', 
-                          'status', 'local_execucao', 'observacoes', 'duracao', 
-                          'atividade_id', 'predecessoras'] 
-        
-        # Validações específicas
-        if tarefa['tipo'] != 'titulo' and field_name == 'atividade_id':
-             return jsonify({'success': False, 'message': f'Campo "atividade_id" não pode ser editado para tarefas.'}), 400
-        
+        # --- ALTERAÇÃO APLICADA AQUI: 'atividade_id' sempre permitido ---
+        allowed_fields = ['descricao', 'data_inicio', 'data_termino', 'responsaveis',
+                          'status', 'local_execucao', 'observacoes', 'duracao',
+                          'atividade_id', 'predecessoras']
+
+        # Removemos a verificação específica que impedia editar atividade_id para tarefas
         if field_name not in allowed_fields:
             return jsonify({'success': False, 'message': f'Campo "{field_name}" não pode ser editado inline.'}), 400
-            
+        # --- FIM DA ALTERAÇÃO ---
+
+        # Se for um título, impede a edição de campos que não se aplicam
+        if tarefa['tipo'] == 'titulo' and field_name not in ['atividade_id', 'descricao']:
+             return jsonify({'success': False, 'message': f'Campo "{field_name}" não pode ser editado para Títulos.'}), 400
+
         update_fields = {}
-        update_fields[field_name] = new_value if new_value is not None else '' # Garante que None vira string vazia se aplicável
+        update_fields[field_name] = new_value if new_value is not None else ''
 
         # Lógica de cálculo automático da Data de Término (inalterada)
         if field_name == 'data_inicio':
@@ -1169,14 +1171,14 @@ def update_tarefa_inline(tarefa_id):
             if new_start_date and isinstance(current_duracao, int) and current_duracao > 0:
                 calculated_end_date = calculate_end_date(new_start_date, current_duracao)
                 update_fields['data_termino'] = calculated_end_date
-            elif not new_start_date: 
+            elif not new_start_date:
                 update_fields['data_termino'] = None
         elif field_name == 'duracao':
             try:
                 new_duracao = int(new_value) if new_value else None
-                if isinstance(new_duracao, int) and new_duracao < 1: new_duracao = 1 
-                update_fields[field_name] = new_duracao 
-                
+                if isinstance(new_duracao, int) and new_duracao < 1: new_duracao = 1
+                update_fields[field_name] = new_duracao
+
                 current_start_date = tarefa['data_inicio']
                 if current_start_date and new_duracao:
                     calculated_end_date = calculate_end_date(current_start_date, new_duracao)
@@ -1184,10 +1186,9 @@ def update_tarefa_inline(tarefa_id):
                 elif not new_duracao:
                      update_fields['data_termino'] = None
             except (ValueError, TypeError):
-                 update_fields[field_name] = None 
+                 update_fields[field_name] = None
                  update_fields['data_termino'] = None
 
-        # Trata valores vazios para datas como NULL (se não foram calculados)
         for field in ['data_inicio', 'data_termino']:
              if field in update_fields and update_fields[field] == '':
                  update_fields[field] = None
@@ -1195,20 +1196,20 @@ def update_tarefa_inline(tarefa_id):
         set_clause = ", ".join([f"{field} = ?" for field in update_fields.keys()])
         query_params = list(update_fields.values())
         query_params.append(tarefa_id)
-        
+
         query = f"UPDATE tarefas SET {set_clause} WHERE id = ?"
-        print(f"--- Executando Query: {query} com valores {tuple(query_params)} ---") # DEBUG
-        
+        # print(f"--- Executando Query: {query} com valores {tuple(query_params)} ---") # DEBUG
+
         cursor.execute(query, tuple(query_params))
         conn.commit()
-        
+
         updated_tarefa = conn.execute('SELECT data_inicio, data_termino, duracao FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
 
-        print(f"--- Atualização da tarefa {tarefa_id} COM SUCESSO ---") # DEBUG
+        # print(f"--- Atualização da tarefa {tarefa_id} COM SUCESSO ---") # DEBUG
         return jsonify({
-            'success': True, 
+            'success': True,
             'message': 'Tarefa atualizada com sucesso.',
-            'updated_fields': dict(updated_tarefa) 
+            'updated_fields': dict(updated_tarefa) if updated_tarefa else {}
         })
 
     except Exception as e:
