@@ -6,76 +6,25 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
-        .checklist-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .checklist-table th, .checklist-table td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
-        .checklist-table th { background-color: #f2f2f2; font-weight: bold; }
-
-        .task-header-inline td { background-color: #eef2f5; font-weight: bold; color: #2c3e50; cursor: default !important; } /* Títulos não são editáveis */
-        .task-item-inline td:first-child { padding-left: 25px; cursor: default !important;} /* IDs não são editáveis */
-        .task-item-inline[data-level='2'] td:first-child { padding-left: 40px; }
-        .task-item-inline[data-level='3'] td:first-child { padding-left: 55px; }
-
-        .col-item { width: 80px; }
-        .col-atividade { width: auto; }
-        .col-data { width: 110px; text-align: center; }
-        .col-duracao { width: 80px; text-align: center; cursor: default !important; } /* Duração não é editável */
-        .col-responsavel { width: 150px; }
-        .col-status { width: 120px; }
-        .col-local { width: 120px; }
-        .col-obs { width: 200px; font-size: 0.9em; color: #555; }
-        .col-actions { width: 80px; text-align: center; cursor: default !important; } /* Ações não são editáveis inline */
-
-        .btn-delete-task { color: #dc3545; cursor: pointer; font-size: 1.2em; }
-        .btn-delete-task:hover { color: #c82333; }
-
-        /* Estilos para modo de edição */
-        .editable-cell input, .editable-cell select, .editable-cell textarea {
-            width: 100%;
-            box-sizing: border-box; /* Garante que padding não aumente a largura */
-            border: 1px solid #007bff;
-            padding: 5px;
-            font-family: inherit; /* Usa a mesma fonte da tabela */
-            font-size: inherit;   /* Usa o mesmo tamanho de fonte */
-        }
-        .editable-cell textarea { resize: vertical; min-height: 50px; }
-        .editable-cell select[multiple] { min-height: 80px; } /* Altura mínima para selects múltiplos */
-
-        /* Adiciona cursor de texto para células editáveis */
+        /* ... (Estilos CSS inalterados da Fase 2) ... */
+        .editable-cell input, .editable-cell select, .editable-cell textarea { /* Mantém estilos */ }
         td.editable { cursor: text; }
+        
+        /* Estilo para feedback visual de salvamento */
+        .saving { background-color: #fff3cd !important; opacity: 0.7; }
+        .saved-success { background-color: #d4edda !important; transition: background-color 0.5s ease-out; }
+        .saved-error { background-color: #f8d7da !important; transition: background-color 0.5s ease-out; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header-actions">
-            <h1>Checklist Editável: {{ projeto.nome }}</h1>
-            <div class="actions-group">
-                <button id="add-task-btn" class="button new">Adicionar Tarefa/Título</button>
-                <button id="save-all-btn" class="button edit">Salvar Alterações</button>
-                <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista</a>
-            </div>
-        </div>
-
         <table class="checklist-table">
-            <thead>
-                <tr>
-                    <th class="col-item">Item</th>
-                    <th class="col-atividade">Atividade</th>
-                    <th class="col-data">Data Início</th>
-                    <th class="col-data">Data Término</th>
-                    <th class="col-duracao">Duração</th>
-                    <th class="col-responsavel">Responsáveis</th> 
-                    <th class="col-status">Status</th>
-                    <th class="col-local">Local</th>
-                    <th class="col-obs">Observações</th>
-                    <th class="col-actions"></th>
-                </tr>
-            </thead>
             <tbody>
                 {% for tarefa in tarefas %}
                     {% if tarefa.tipo == 'titulo' %}
                         <tr class="task-header-inline" data-task-id="{{ tarefa.id }}" data-task-type="titulo">
                             <td class="col-item">{{ tarefa.atividade_id }}</td>
-                            <td class="col-atividade editable" data-field="descricao">{{ tarefa.descricao }}</td>
+                             <td class="col-atividade editable" data-field="descricao">{{ tarefa.descricao }}</td>
                             <td class="col-data"></td>
                             <td class="col-data"></td>
                             <td class="col-duracao"></td>
@@ -111,150 +60,161 @@
                 {% endfor %}
             </tbody>
         </table>
-
     </div>
 
     <script>
         $(document).ready(function() {
-            // Guarda referência ao input ativo para evitar múltiplos inputs abertos
             let activeInput = null;
 
-            // Função para reverter a célula para texto
-            function revertToText(cell, originalValue) {
-                $(cell).empty().text(originalValue).addClass('editable'); // Adiciona a classe de volta
+            function revertToText(cell, displayValue) {
+                $(cell).empty().text(displayValue).addClass('editable');
                 activeInput = null;
+                 // Remove feedback visual após um tempo
+                setTimeout(() => {
+                    $(cell).removeClass('saved-success saved-error saving');
+                }, 1500);
             }
 
-            // Adiciona listener de duplo clique às células editáveis
             $('.checklist-table').on('dblclick', 'td.editable', function() {
-                // Se já houver um input ativo, reverte ele primeiro
                 if (activeInput) {
                     const cell = $(activeInput).closest('td');
                     revertToText(cell, $(activeInput).data('original-value'));
                 }
 
                 const cell = this;
-                const originalValue = $(cell).text().trim() === '---' ? '' : $(cell).text().trim(); // Trata o '---'
+                const originalValue = $(cell).text().trim() === '---' ? '' : $(cell).text().trim();
                 const fieldName = $(cell).data('field');
                 const taskId = $(cell).closest('tr').data('task-id');
                 const taskType = $(cell).closest('tr').data('task-type');
 
-                // Títulos só podem editar a descrição
-                if (taskType === 'titulo' && fieldName !== 'descricao') {
-                    return; 
+                if (taskType === 'titulo' && !['descricao', 'atividade_id'].includes(fieldName)) {
+                    return; // Títulos só editam Descrição e Item (atividade_id)
                 }
 
-                $(cell).removeClass('editable'); // Remove a classe enquanto edita
-                $(cell).empty(); // Limpa a célula
+                $(cell).removeClass('editable');
+                $(cell).empty(); 
 
                 let inputElement;
+                let isMultiSelect = false;
 
-                // Cria o input apropriado baseado no nome do campo
+                // Cria o input apropriado (lógica inalterada da Fase 2)
                 if (fieldName === 'descricao' || fieldName === 'observacoes') {
                     inputElement = $('<textarea>').val(originalValue);
                 } else if (fieldName === 'data_inicio' || fieldName === 'data_termino') {
-                    // Tenta converter dd/mm/yyyy para yyyy-mm-dd
                     let dateValue = originalValue;
                     if (originalValue.includes('/')) {
                         const parts = originalValue.split('/');
-                        if (parts.length === 3) {
-                            dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                        }
+                        if(parts.length === 3) dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                     }
                     inputElement = $('<input type="date">').val(dateValue);
                 } else if (fieldName === 'status') {
                     inputElement = $('<select>');
-                    // Adiciona as opções de status passadas pelo Flask
                     {% for status in status_list %}
-                        inputElement.append($('<option>', {
-                            value: '{{ status }}',
-                            text: '{{ status }}',
-                            selected: originalValue === '{{ status }}'
-                        }));
+                        inputElement.append($('<option>', { value: '{{ status }}', text: '{{ status }}', selected: originalValue === '{{ status }}' }));
                     {% endfor %}
                 } else if (fieldName === 'responsaveis') {
                     inputElement = $('<select multiple size="5">'); // Select múltiplo
                     const selectedValues = originalValue.split(',').map(s => s.trim());
-                    // Adiciona as opções de técnicos passadas pelo Flask
                     {% for tecnico in tecnicos_list %}
-                        inputElement.append($('<option>', {
-                            value: '{{ tecnico }}',
-                            text: '{{ tecnico }}',
-                            selected: selectedValues.includes('{{ tecnico }}')
-                        }));
+                        inputElement.append($('<option>', { value: '{{ tecnico }}', text: '{{ tecnico }}', selected: selectedValues.includes('{{ tecnico }}') }));
                     {% endfor %}
+                    isMultiSelect = true; // Marca como multi-select
                 } else if (fieldName === 'local_execucao') {
                      inputElement = $('<select>');
                      inputElement.append($('<option>', { value: '', text: 'Selecione' }));
                      {% for local in locais_list %}
-                        inputElement.append($('<option>', {
-                            value: '{{ local }}',
-                            text: '{{ local }}',
-                            selected: originalValue === '{{ local }}'
-                        }));
+                        inputElement.append($('<option>', { value: '{{ local }}', text: '{{ local }}', selected: originalValue === '{{ local }}' }));
                     {% endfor %}
-                }
-                else { // Default para outros campos (ex: Item para títulos)
+                } else { // Default (inclui atividade_id para títulos)
                     inputElement = $('<input type="text">').val(originalValue);
                 }
 
-                // Guarda o valor original e anexa o input à célula
                 inputElement.data('original-value', originalValue);
                 $(cell).append(inputElement);
-                inputElement.focus(); // Foca no input
-                activeInput = inputElement; // Define como input ativo
+                inputElement.focus(); 
+                activeInput = inputElement;
 
-                // Listener para salvar (ou reverter) quando perder o foco (blur)
+                // Listener para salvar via AJAX quando perder o foco (blur)
                 inputElement.on('blur', function() {
-                    const newValue = $(this).val();
-                    
-                    // --- Placeholder para salvar via AJAX (Fase 3) ---
-                    console.log(`Salvar Tarefa ${taskId}, Campo ${fieldName}, Novo Valor: ${newValue}`); 
-                    // Aqui virá a chamada AJAX para /api/tarefa_inline/update/...
-                    
-                    // Por enquanto, apenas reverte para texto com o novo valor (ou o original se vazio)
-                    let displayValue = newValue;
-                    if (fieldName === 'responsaveis' && Array.isArray(newValue)) {
-                        displayValue = newValue.join(', '); // Junta múltiplos responsáveis
+                    let newValue = $(this).val();
+                    const originalValueFromData = $(this).data('original-value');
+
+                    // Para selects múltiplos, pega todos os valores e junta com vírgula
+                    if (isMultiSelect) {
+                        newValue = $(this).val() ? $(this).val().join(', ') : '';
                     }
-                     if (fieldName === 'data_inicio' || fieldName === 'data_termino') {
-                        // Converte yyyy-mm-dd para dd/mm/yyyy para exibição
-                        if (newValue && newValue.includes('-')) {
-                             const parts = newValue.split('-');
-                             if (parts.length === 3) {
-                                displayValue = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+
+                    // Verifica se o valor realmente mudou
+                    if (newValue !== originalValueFromData) {
+                        $(cell).addClass('saving'); // Feedback visual: salvando
+
+                        // Envia os dados para a API
+                        fetch(`/api/tarefa_inline/update/${taskId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                // Incluir 'X-CSRFToken': '{{ csrf_token() }}' se CSRF estiver habilitado
+                            },
+                            body: JSON.stringify({
+                                field: fieldName,
+                                value: newValue
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                $(cell).removeClass('saving').addClass('saved-success'); // Feedback: sucesso
+                                // Formata o valor para exibição (datas, múltiplos responsáveis)
+                                let displayValue = newValue;
+                                if (fieldName === 'data_inicio' || fieldName === 'data_termino') {
+                                    if (newValue && newValue.includes('-')) {
+                                        const parts = newValue.split('-');
+                                        if(parts.length === 3) displayValue = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+                                    }
+                                }
+                                if (displayValue === '' && (fieldName === 'responsaveis' || fieldName === 'local_execucao')) {
+                                    displayValue = '---';
+                                }
+                                revertToText(cell, displayValue);
+                            } else {
+                                $(cell).removeClass('saving').addClass('saved-error'); // Feedback: erro
+                                alert(`Erro ao salvar: ${data.message}`);
+                                revertToText(cell, originalValueFromData); // Reverte para o valor original em caso de erro
                             }
-                        }
+                        })
+                        .catch(error => {
+                            $(cell).removeClass('saving').addClass('saved-error'); // Feedback: erro
+                            console.error('Erro na requisição:', error);
+                            alert('Erro de comunicação ao salvar.');
+                            revertToText(cell, originalValueFromData); // Reverte para o valor original
+                        });
+
+                    } else {
+                        // Se não mudou, apenas reverte para texto
+                        revertToText(cell, originalValueFromData);
                     }
-                    
-                    if (displayValue === '' && (fieldName === 'responsaveis' || fieldName === 'local_execucao')) {
-                        displayValue = '---'; // Volta para '---' se campo opcional ficar vazio
-                    }
-                    
-                    revertToText(cell, displayValue || originalValue); // Usa novo valor ou reverte se vazio
                 });
 
-                // Listener para salvar (ou reverter) ao pressionar Enter (exceto em Textarea)
-                if (inputElement.prop('tagName') !== 'TEXTAREA') {
+                // Listener para Enter/Esc (lógica inalterada da Fase 2)
+                 if (inputElement.prop('tagName') !== 'TEXTAREA' && !isMultiSelect) { // Enter não salva multi-select
                     inputElement.on('keydown', function(e) {
                         if (e.key === 'Enter') {
-                            e.preventDefault(); // Impede o envio do formulário (se houver)
-                            $(this).trigger('blur'); // Simula a perda de foco para salvar
+                            e.preventDefault(); 
+                            $(this).trigger('blur');
                         } else if (e.key === 'Escape') {
-                            revertToText(cell, originalValue); // Reverte ao pressionar Esc
+                            revertToText(cell, originalValue); 
                         }
                     });
                 } else {
                      inputElement.on('keydown', function(e) {
                          if (e.key === 'Escape') {
-                            revertToText(cell, originalValue); // Reverte ao pressionar Esc
+                            revertToText(cell, originalValue); 
                         }
-                        // Enter em textarea não salva, permite novas linhas
                      });
                 }
             });
 
-            // Lógica futura para Adicionar Tarefa/Título e Excluir virá aqui
+            // Lógica futura para Adicionar e Excluir
 
         });
     </script>

@@ -1061,6 +1061,61 @@ def checklist_inline(projeto_id):
                            tecnicos_list=tecnicos_list,
                            status_list=status_list,
                            locais_list=locais_list)
+# --- API Endpoint for Inline Task Updates ---
+@app.route('/api/tarefa_inline/update/<int:tarefa_id>', methods=['POST'])
+@login_required
+@role_required(module='projetos', action='can_edit') # Ensure only editors can save
+def update_tarefa_inline(tarefa_id):
+    conn = get_db_connection()
+    tarefa = conn.execute('SELECT id, projeto_id FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()
+
+    if not tarefa:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Tarefa não encontrada.'}), 404
+
+    # Verifica permissão no projeto específico (se necessário, adicione essa lógica)
+    
+    data = request.json
+    field_name = data.get('field')
+    new_value = data.get('value')
+
+    if field_name is None or new_value is None:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Dados inválidos (campo ou valor ausente).'}), 400
+
+    # Lista de campos permitidos para edição inline
+    allowed_fields = ['descricao', 'data_inicio', 'data_termino', 'responsaveis', 'status', 'local_execucao', 'observacoes']
+    
+    # Tratamento especial para o campo 'atividade_id' (Item) de Títulos
+    tarefa_type = conn.execute('SELECT tipo FROM tarefas WHERE id = ?', (tarefa_id,)).fetchone()['tipo']
+    if tarefa_type == 'titulo' and field_name == 'atividade_id':
+        allowed_fields.append('atividade_id') # Permite editar 'atividade_id' apenas para títulos
+
+    if field_name not in allowed_fields:
+        conn.close()
+        return jsonify({'success': False, 'message': f'Campo "{field_name}" não pode ser editado inline.'}), 400
+
+    # Trata valores vazios para datas como NULL
+    if field_name in ['data_inicio', 'data_termino'] and new_value == '':
+        new_value = None
+        
+    # Trata valores múltiplos (responsaveis) - já deve vir como string separada por vírgula do JS
+    # if field_name == 'responsaveis' and isinstance(new_value, list):
+    #     new_value = ', '.join(new_value)
+
+    try:
+        # Cria a query dinamicamente de forma segura
+        query = f"UPDATE tarefas SET {field_name} = ? WHERE id = ?"
+        conn.execute(query, (new_value, tarefa_id))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Tarefa atualizada com sucesso.'})
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        print(f"Erro ao atualizar tarefa {tarefa_id}, campo {field_name}: {e}")
+        return jsonify({'success': False, 'message': f'Erro ao salvar no banco de dados: {e}'}), 500
+
 # --- MÓDULO DE PENDÊNCIAS (com validação e todas as melhorias) ---
 @app.route('/pendencias')
 @login_required
