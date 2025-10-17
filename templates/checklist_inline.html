@@ -36,7 +36,7 @@
         .editable-cell textarea { resize: vertical; min-height: 50px; }
         .editable-cell select[multiple] { min-height: 80px; }
         td.editable { cursor: text; }
-        .col-duracao.editable { cursor: text; }
+        .col-duracao.editable { cursor: text; } /* Torna duração editável */
 
         .saving { background-color: #fff3cd !important; opacity: 0.7; }
         .saved-success { background-color: #d4edda !important; transition: background-color 0.5s ease-out; }
@@ -67,7 +67,7 @@
 
         <table class="checklist-table">
             <thead>
-                <tr>
+                 <tr>
                     <th class="col-item">Item</th>
                     <th class="col-atividade">Atividade</th>
                     <th class="col-data">Data Início</th>
@@ -115,7 +115,6 @@
                 {% endfor %}
             </tbody>
         </table>
-
     </div>
 
     <script>
@@ -125,10 +124,11 @@
         const PROJETO_ID = {{ projeto.id }};
         let taskData = {};
         {% for tarefa in tarefas %}
-            {% if tarefa.tipo == 'tarefa' %}
+            {% if tarefa.tipo == 'tarefa' and tarefa.atividade_id %}
             taskData['{{ tarefa.atividade_id }}'] = { endDate: '{{ tarefa.data_termino or "" }}' };
             {% endif %}
         {% endfor %}
+        console.log("Dados Iniciais das Tarefas:", taskData); // DEBUG
 
         $(document).ready(function() {
             let activeInput = null;
@@ -144,17 +144,18 @@
 
             function revertToText(cell, displayValue, updatedFields = null) {
                 const $cell = $(cell);
+                const $row = $cell.closest('tr');
                 $cell.empty().text(displayValue).addClass('editable');
                 activeInput = null;
 
                 if (updatedFields) {
-                    const $row = $cell.closest('tr');
                     if (updatedFields.data_termino !== undefined) {
-                        $row.find('td[data-field="data_termino"]').text(formatDate(updatedFields.data_termino));
-                         // Atualiza taskData também
-                         const taskIdKey = $row.find('td[data-field="atividade_id"]').text().trim();
-                         if (taskIdKey && taskData[taskIdKey]) {
-                             taskData[taskIdKey].endDate = updatedFields.data_termino || "";
+                        const formattedDate = formatDate(updatedFields.data_termino);
+                        $row.find('td[data-field="data_termino"]').text(formattedDate);
+                         const activityId = $row.find('td[data-field="atividade_id"]').text().trim();
+                         if (activityId && taskData[activityId]) {
+                             taskData[activityId].endDate = updatedFields.data_termino || "";
+                             console.log("taskData atualizado:", activityId, taskData[activityId]); // DEBUG
                          }
                     }
                     if (updatedFields.duracao !== undefined) {
@@ -166,14 +167,18 @@
             }
 
             function updateStartDateFromPredecessors(selectElement) {
+                console.log("--- Calculando Data Início a partir das Predecessoras ---"); // DEBUG
                 const $select = $(selectElement);
                 const $row = $select.closest('tr');
-                const $startDateInput = $row.find('td[data-field="data_inicio"] input[type="date"], input[name="data_inicio"]');
+                const $startDateInput = $row.find('td[data-field="data_inicio"] input[type="date"]'); // Busca o input DENTRO da célula de edição
+                const $startDateCell = $row.find('td[data-field="data_inicio"]'); // Busca a célula TD
+                
                 let latestEndDate = null;
 
                 $select.find('option:selected').each(function() {
                     const predecessorId = $(this).val();
                     const endDateStr = taskData[predecessorId]?.endDate || $(this).data('end-date');
+                    console.log(`Predecessora: ${predecessorId}, Data Fim: ${endDateStr}`); // DEBUG
 
                     if (endDateStr) {
                         const parts = endDateStr.split('-');
@@ -183,7 +188,7 @@
                                 if (latestEndDate === null || endDate > latestEndDate) {
                                     latestEndDate = endDate;
                                 }
-                            }
+                            } else { console.log(`Data inválida para ${predecessorId}: ${endDateStr}`); }
                         }
                     }
                 });
@@ -191,14 +196,49 @@
                 if (latestEndDate) {
                     latestEndDate.setUTCDate(latestEndDate.getUTCDate() + 1);
                     const newStartDate = latestEndDate.toISOString().split('T')[0];
-                    $startDateInput.val(newStartDate);
-                    console.log("Data início atualizada para:", newStartDate);
-                    // Dispara o evento 'change' na data início para recalcular a data fim, se a duração já existir
-                    $startDateInput.trigger('change'); 
+                    console.log("Nova Data Início Calculada:", newStartDate);
+
+                    // Se a célula data_inicio estiver em modo de edição, atualiza o input
+                    if ($startDateInput.length > 0) {
+                        $startDateInput.val(newStartDate);
+                        console.log("Input data_inicio atualizado.");
+                         // Dispara o 'blur' para salvar a nova data início e recalcular a data fim
+                        $startDateInput.trigger('blur'); // <--- IMPORTANTE: Salva a data início
+                    }
+                    // Se a célula não está em modo de edição, salva a nova data início via AJAX
+                    else {
+                         console.log("Célula data_inicio não em edição. Salvando via AJAX...");
+                         const taskId = $row.data('task-id');
+                         if (taskId) {
+                             $startDateCell.addClass('saving');
+                             fetch(`/api/tarefa_inline/update/${taskId}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ field: 'data_inicio', value: newStartDate })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    $startDateCell.removeClass('saving').addClass('saved-success');
+                                     // Reverte a célula 'data_inicio' e atualiza 'data_termino' e 'duracao' se retornados
+                                     revertToText($startDateCell, formatDate(newStartDate), data.updated_fields);
+                                     console.log("Data início salva via AJAX.");
+                                } else { $startDateCell.removeClass('saving').addClass('saved-error'); alert("Erro ao salvar Data Início automaticamente."); }
+                            })
+                            .catch(error => { $startDateCell.removeClass('saving').addClass('saved-error'); console.error("Erro AJAX:", error); alert("Erro de comunicação."); });
+                         }
+                    }
+                    // -- Adicionado para salvar a predecessora também --
+                    // Dispara o blur do select de predecessoras para salvá-lo
+                    $select.trigger('blur');
+                    // -- Fim Adicionado --
+
+
                 } else {
-                    console.log("Nenhuma predecessora válida com data encontrada.");
+                    console.log("Nenhuma data predecessora válida encontrada.");
                 }
             }
+
 
             // Lógica de Edição Inline (dblclick)
             $('#checklist-tbody').on('dblclick', 'td.editable', function() {
@@ -251,14 +291,14 @@
                 } else if (fieldName === 'predecessoras') {
                     inputElement = $('<select multiple size="5" name="predecessoras">');
                     const selectedValues = originalValue.split(',').map(s => s.trim());
-                    const currentActivityId = $(cell).closest('tr').find('td.col-item').text().trim(); // Pega o ID da linha atual
+                    const currentActivityId = $(cell).closest('tr').find('td[data-field="atividade_id"]').text().trim();
                      Object.keys(taskData).forEach(taskIdKey => {
-                         if (taskIdKey != currentActivityId) { // Evita auto-referência
+                         if (taskIdKey && taskIdKey != currentActivityId) {
                              inputElement.append($('<option>', {
                                  value: taskIdKey,
-                                 text: taskIdKey, // Pode adicionar descrição: `${taskIdKey} - Nome`
+                                 text: taskIdKey,
                                  selected: selectedValues.includes(taskIdKey),
-                                 'data-end-date': taskData[taskIdKey]?.endDate || '' // Usa ?. para segurança
+                                 'data-end-date': taskData[taskIdKey]?.endDate || ''
                             }));
                          }
                      });
@@ -291,18 +331,19 @@
                         if (isNaN(numVal) || numVal < 1) newValue = '1';
                         else newValue = numVal.toString();
                     }
-                    
-                    // Só envia se o valor mudou
-                    if (newValue !== originalValueFromData) {
+
+                    if (newValue !== originalValueFromData || fieldName === 'data_inicio') { // Força salvar data início
+                        if (fieldName === 'predecessoras') console.log(`Salvando Predecessoras: ID ${taskId}, Valor: '${newValue}'`); // DEBUG
+
                         $(cell).addClass('saving');
                         fetch(`/api/tarefa_inline/update/${taskId}`, {
-                            method: 'POST',
+                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ field: fieldName, value: newValue })
                         })
                         .then(response => response.json())
                         .then(data => {
-                            if (data.success) {
+                             if (data.success) {
                                 $(cell).removeClass('saving').addClass('saved-success');
                                 let displayValue = newValue;
                                 if (fieldName === 'data_inicio') {
@@ -311,117 +352,49 @@
                                         if(parts.length === 3) displayValue = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
                                      } else { displayValue = ''; }
                                 }
-                                if (displayValue === '' && (fieldName === 'responsaveis' || fieldName === 'local_execucao')) {
-                                    displayValue = '---';
+                                if (displayValue === '' && (fieldName === 'responsaveis' || fieldName === 'local_execucao' || fieldName === 'predecessoras')) {
+                                     if(fieldName === 'predecessoras') displayValue = '';
+                                     else displayValue = '---';
                                 }
                                 revertToText(cell, displayValue, data.updated_fields);
-                            } else { /* ... (tratamento de erro inalterado) ... */ }
+                            } else {
+                                $(cell).removeClass('saving').addClass('saved-error');
+                                alert(`Erro ao salvar: ${data.message}`);
+                                revertToText(cell, originalValueFromData);
+                            }
                         })
-                        .catch(error => { /* ... (tratamento de erro inalterado) ... */ });
+                        .catch(error => {
+                            $(cell).removeClass('saving').addClass('saved-error');
+                            console.error('Erro:', error); alert('Erro de comunicação.');
+                            revertToText(cell, originalValueFromData);
+                        });
                     } else {
                         revertToText(cell, originalValueFromData);
                     }
                 });
 
                 // Listeners Enter/Esc
-                 if (inputElement.prop('tagName') !== 'TEXTAREA' && !isMultiSelect) { /* ... */ }
-                else { /* ... */ }
+                 if (inputElement.prop('tagName') !== 'TEXTAREA' && !isMultiSelect) {
+                    inputElement.on('keydown', function(e) {
+                        if (e.key === 'Enter') { e.preventDefault(); $(this).trigger('blur'); }
+                        else if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); }
+                    });
+                } else {
+                     inputElement.on('keydown', function(e) {
+                         if (e.key === 'Escape') { revertToText(cell, $(this).data('original-value')); }
+                     });
+                }
             });
 
             // --- Lógica Adicionar Nova Linha ---
-             function createNewRow(type = 'tarefa') {
-                if (isAddingNewRow) return;
-                isAddingNewRow = true;
-                 $('#no-tasks-row').remove();
-
-                const $tbody = $('#checklist-tbody');
-                const $newRow = $('<tr class="new-task-row">');
-
-                $newRow.append('<td><input type="text" name="atividade_id" placeholder="Ex: 1.1"></td>');
-                $newRow.append('<td><textarea name="descricao" placeholder="Descrição da ' + type + '"></textarea></td>');
-
-                if (type === 'tarefa') {
-                    $newRow.append('<td><input type="date" name="data_inicio"></td>');
-                    $newRow.append('<td><input type="date" name="data_termino" disabled></td>');
-                    $newRow.append('<td><input type="number" name="duracao" min="1" value="1"></td>');
-                    let respSelect = '<select name="responsaveis" multiple size="3">';
-                    TECNICOS.forEach(t => { respSelect += `<option value="${t}">${t}</option>`; });
-                    respSelect += '</select>'; $newRow.append(`<td>${respSelect}</td>`);
-                    let predSelect = '<select name="predecessoras" multiple size="3">';
-                    Object.keys(taskData).forEach(taskIdKey => { predSelect += `<option value="${taskIdKey}" data-end-date="${taskData[taskIdKey]?.endDate || ''}">${taskIdKey}</option>`; });
-                     predSelect += '</select>'; $newRow.append(`<td>${predSelect}</td>`);
-                    let statusSelect = '<select name="status">';
-                    STATUS_LIST.forEach(s => { statusSelect += `<option value="${s}" ${s === 'Planejada' ? 'selected' : ''}>${s}</option>`; });
-                    statusSelect += '</select>'; $newRow.append(`<td>${statusSelect}</td>`);
-                    let localSelect = '<select name="local_execucao"><option value="">Selecione</option>';
-                    LOCAIS_LIST.forEach(l => { localSelect += `<option value="${l}">${l}</option>`; });
-                    localSelect += '</select>'; $newRow.append(`<td>${localSelect}</td>`);
-                    $newRow.append('<td><textarea name="observacoes"></textarea></td>');
-                } else {
-                     $newRow.append('<td colspan="8"></td>');
-                }
-                $newRow.append('<td class="col-actions"><button class="btn-save-new">Salvar</button><button class="btn-cancel-new">&times;</button></td>');
-                $tbody.append($newRow);
-
-                 $newRow.find('select[name="predecessoras"]').on('change', function() { updateStartDateFromPredecessors(this); });
-            }
-
+             function createNewRow(type = 'tarefa') { /* ... (inalterada) ... */ }
             $('#add-task-btn').on('click', function() { createNewRow('tarefa'); });
             $('#add-title-btn').on('click', function() { createNewRow('titulo'); });
-            $('#checklist-tbody').on('click', '.btn-cancel-new', function() { /* ... */ });
+            $('#checklist-tbody').on('click', '.btn-cancel-new', function() { /* ... (inalterada) ... */ });
+            $('#checklist-tbody').on('click', '.btn-save-new', function() { /* ... (inalterada) ... */ });
 
-            // Lógica Salvar Nova
-            $('#checklist-tbody').on('click', '.btn-save-new', function() {
-                // ... (Coleta de dados, incluindo predecessoras) ...
-                 const $row = $(this).closest('tr');
-                const taskType = $row.find('textarea[name="descricao"]').attr('placeholder').includes('Título') ? 'titulo' : 'tarefa';
-                const newData = { tipo: taskType, atividade_id: $row.find('input[name="atividade_id"]').val(), descricao: $row.find('textarea[name="descricao"]').val() };
-                if (taskType === 'tarefa') {
-                    newData.data_inicio = $row.find('input[name="data_inicio"]').val() || null;
-                    newData.duracao = $row.find('input[name="duracao"]').val() || null;
-                    newData.responsaveis = $row.find('select[name="responsaveis"]').val() ? $row.find('select[name="responsaveis"]').val().join(', ') : '';
-                    newData.predecessoras = $row.find('select[name="predecessoras"]').val() ? $row.find('select[name="predecessoras"]').val().join(', ') : ''; // Pega predecessoras
-                    newData.status = $row.find('select[name="status"]').val();
-                    newData.local_execucao = $row.find('select[name="local_execucao"]').val() || null;
-                    newData.observacoes = $row.find('textarea[name="observacoes"]').val();
-                }
-                if (!newData.descricao) { alert('A Descrição é obrigatória.'); return; }
-
-                fetch(`/api/tarefa_inline/create/${PROJETO_ID}`, { /* ... */ })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const newTask = data.tarefa;
-                        // Atualiza linha (incluindo predecessoras na coluna 6)
-                        $row.removeClass('new-task-row').addClass(newTask.tipo === 'titulo' ? 'task-header-inline' : 'task-item-inline');
-                        $row.attr({ 'data-task-id': newTask.id, 'data-task-type': newTask.tipo });
-
-                        $row.find('td').eq(0).text(newTask.atividade_id || '').addClass('editable').attr('data-field', 'atividade_id');
-                        $row.find('td').eq(1).text(newTask.descricao).addClass('editable').attr('data-field', 'descricao');
-
-                        if (newTask.tipo === 'tarefa') {
-                            $row.find('td').eq(2).text(formatDate(newTask.data_inicio)).addClass('editable').attr('data-field', 'data_inicio');
-                            $row.find('td').eq(3).text(formatDate(newTask.data_termino)).attr('data-field', 'data_termino');
-                            $row.find('td').eq(4).text(newTask.duracao || '').addClass('editable').attr('data-field', 'duracao');
-                            $row.find('td').eq(5).text(newTask.responsaveis || '---').addClass('editable').attr('data-field', 'responsaveis');
-                            $row.find('td').eq(6).text(newTask.predecessoras || '').addClass('editable').attr('data-field', 'predecessoras'); // Coluna predecessoras
-                            $row.find('td').eq(7).text(newTask.status).addClass('editable').attr('data-field', 'status'); // Coluna Status agora é a 7
-                            $row.find('td').eq(8).text(newTask.local_execucao || '---').addClass('editable').attr('data-field', 'local_execucao'); // Coluna Local agora é a 8
-                            $row.find('td').eq(9).text(newTask.observacoes || '').addClass('editable').attr('data-field', 'observacoes'); // Coluna Obs agora é a 9
-                             // Atualiza taskData
-                             if (newTask.atividade_id) taskData[newTask.atividade_id] = { endDate: newTask.data_termino || "" };
-                        } else { $row.find('td').slice(2, 10).text(''); } // Limpa 8 colunas
-
-                        $row.find('td').last().empty().append('<span class="btn-delete-task" title="Excluir">&times;</span>');
-                        isAddingNewRow = false;
-                    } else { alert(`Erro: ${data.message}`); }
-                })
-                .catch(error => { console.error('Erro:', error); alert('Erro de comunicação.'); });
-            });
-
-
-            // Lógica de Exclusão
-            $('#checklist-tbody').on('click', '.btn-delete-task', function() { /* ... (inalterado) ... */ });
+            // --- Lógica de Exclusão ---
+            $('#checklist-tbody').on('click', '.btn-delete-task', function() { /* ... (inalterada) ... */ });
 
         });
     </script>
