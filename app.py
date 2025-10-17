@@ -1220,42 +1220,50 @@ def update_tarefa_inline(tarefa_id):
 
 # --- API Endpoint for Creating Inline Tasks/Titles ---
 
+# --- API Endpoint for Creating Inline Tasks/Titles ---
 @app.route('/api/tarefa_inline/create/<int:projeto_id>', methods=['POST'])
 @login_required
 @role_required(module='projetos', action='can_create')
 def create_tarefa_inline(projeto_id):
-    conn = None
-    try:
+    print(f"--- Recebida requisição para criar tarefa no projeto ID: {projeto_id} ---") # DEBUG
+    conn = None # Inicializa conn
+    try: # Início do Bloco TRY
         conn = get_db_connection()
+        
         projeto = conn.execute('SELECT id FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
         if not projeto:
+            print(f"!!! ERRO: Projeto {projeto_id} não encontrado.") # DEBUG
+            # Não feche a conexão aqui ainda, o finally cuidará disso
             return jsonify({'success': False, 'message': 'Projeto não encontrado.'}), 404
 
         data = request.json
-        tipo = data.get('tipo', 'tarefa')
+        print(f"--- Dados recebidos para nova tarefa: {data} ---") # DEBUG
+
+        tipo = data.get('tipo', 'tarefa') 
         atividade_id = data.get('atividade_id', None)
         descricao = data.get('descricao', '')
-        data_inicio = data.get('data_inicio') or None
-        data_termino = data.get('data_termino') or None # Mantém se fornecido
-        responsaveis_str = data.get('responsaveis', '')
-        status = data.get('status', 'Planejada') if tipo == 'tarefa' else 'N/A'
+        data_inicio = data.get('data_inicio') or None 
+        data_termino = data.get('data_termino') or None 
+        responsaveis_str = data.get('responsaveis', '') 
+        status = data.get('status', 'Planejada') if tipo == 'tarefa' else 'N/A' 
         local_execucao = data.get('local_execucao') or None
         observacoes = data.get('observacoes', '')
-        predecessoras_str = data.get('predecessoras', '')
-        # Pega a duração
+        predecessoras_str = data.get('predecessoras', '') 
+        
         duracao = None
         try:
              duracao_val = data.get('duracao')
              if duracao_val:
                  duracao = int(duracao_val)
-                 if duracao < 1: duracao = 1 # Mínimo 1 dia
+                 if duracao < 1: duracao = 1 
         except (ValueError, TypeError):
-             duracao = None # Ignora se inválido
+             duracao = None 
 
         if not descricao:
+             print("!!! ERRO: Descrição é obrigatória.") # DEBUG
+             # Não feche a conexão aqui
              return jsonify({'success': False, 'message': 'Descrição é obrigatória.'}), 400
 
-        # Calcula a data de término SE duração e data de início forem válidas e data_termino não foi fornecida
         if data_inicio and duracao and not data_termino:
             data_termino = calculate_end_date(data_inicio, duracao)
             print(f"--- Data de término calculada para nova tarefa: {data_termino} ---") # DEBUG
@@ -1273,6 +1281,8 @@ def create_tarefa_inline(projeto_id):
         
         new_task = conn.execute('SELECT * FROM tarefas WHERE id = ?', (new_task_id,)).fetchone()
         
+        print(f"--- Tarefa {new_task_id} criada com sucesso ---") # DEBUG
+        
         return jsonify({
             'success': True, 
             'message': 'Tarefa criada com sucesso.',
@@ -1282,8 +1292,8 @@ def create_tarefa_inline(projeto_id):
                 'atividade_id': new_task['atividade_id'],
                 'descricao': new_task['descricao'],
                 'data_inicio': new_task['data_inicio'],
-                'data_termino': new_task['data_termino'], # Retorna a data calculada ou inserida
-                'duracao': new_task['duracao'], # Retorna a duração inserida
+                'data_termino': new_task['data_termino'], 
+                'duracao': new_task['duracao'], 
                 'responsaveis': new_task['responsaveis'],
                 'status': new_task['status'],
                 'local_execucao': new_task['local_execucao'],
@@ -1291,6 +1301,24 @@ def create_tarefa_inline(projeto_id):
                 'predecessoras': new_task['predecessoras']
             }
         })
+    # Fim do Bloco TRY
+
+    except Exception as e: # Início do Bloco EXCEPT (obrigatório após TRY)
+        print(f"!!! ERRO GERAL ao criar tarefa no projeto {projeto_id}: {e} !!!") # DEBUG
+        if conn:
+            conn.rollback()
+        # Não feche a conexão aqui
+        return jsonify({'success': False, 'message': f'Erro ao criar tarefa: {e}'}), 500
+    # Fim do Bloco EXCEPT
+
+    finally: # Início do Bloco FINALLY (obrigatório após TRY)
+        if conn:
+            conn.close()
+            print(f"--- Conexão com DB fechada para criação em {projeto_id} ---") # DEBUG
+    # Fim do Bloco FINALLY
+
+# A definição da próxima rota (@app.route('/api/tarefa_inline/delete/...'))
+# deve vir DEPOIS deste bloco finally completo.
 
 
 # --- API Endpoint for Deleting Inline Tasks/Titles ---
