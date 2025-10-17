@@ -1150,6 +1150,102 @@ def update_tarefa_inline(tarefa_id):
         print(f"Erro ao atualizar tarefa {tarefa_id}, campo {field_name}: {e}")
         return jsonify({'success': False, 'message': f'Erro ao salvar no banco de dados: {e}'}), 500
 
+# --- API Endpoint for Creating Inline Tasks/Titles ---
+@app.route('/api/tarefa_inline/create/<int:projeto_id>', methods=['POST'])
+@login_required
+@role_required(module='projetos', action='can_create') # Ensure only creators can add
+def create_tarefa_inline(projeto_id):
+    print(f"--- Recebida requisição para criar tarefa no projeto ID: {projeto_id} ---") # DEBUG
+    conn = None
+    try:
+        conn = get_db_connection()
+        
+        # Verifica se o projeto existe
+        projeto = conn.execute('SELECT id FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
+        if not projeto:
+            print(f"!!! ERRO: Projeto {projeto_id} não encontrado.") # DEBUG
+            return jsonify({'success': False, 'message': 'Projeto não encontrado.'}), 404
+
+        data = request.json
+        print(f"--- Dados recebidos para nova tarefa: {data} ---") # DEBUG
+
+        # Extrai os dados (com valores padrão se ausentes)
+        tipo = data.get('tipo', 'tarefa') # Default para 'tarefa'
+        atividade_id = data.get('atividade_id', None)
+        descricao = data.get('descricao', '')
+        data_inicio = data.get('data_inicio') or None # Converte '' para None
+        data_termino = data.get('data_termino') or None # Converte '' para None
+        responsaveis_str = data.get('responsaveis', '') # Já deve vir como string
+        status = data.get('status', 'Planejada') if tipo == 'tarefa' else 'N/A' # Default para tarefas, N/A para títulos
+        local_execucao = data.get('local_execucao') or None
+        observacoes = data.get('observacoes', '')
+        predecessoras_str = data.get('predecessoras', '') # Já deve vir como string
+
+        # Validação básica
+        if not descricao:
+             print("!!! ERRO: Descrição é obrigatória.") # DEBUG
+             return jsonify({'success': False, 'message': 'Descrição é obrigatória.'}), 400
+
+        cursor = conn.cursor()
+        cursor.execute(
+            '''INSERT INTO tarefas (projeto_id, tipo, atividade_id, descricao, data_inicio, data_termino, 
+                                 responsaveis, status, local_execucao, observacoes, predecessoras) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (projeto_id, tipo, atividade_id, descricao, data_inicio, data_termino, 
+             responsaveis_str, status, local_execucao, observacoes, predecessoras_str)
+        )
+        new_task_id = cursor.lastrowid # Pega o ID da tarefa recém-criada
+        conn.commit()
+        
+        # Busca a tarefa recém-criada para retornar os dados completos
+        new_task = conn.execute('SELECT * FROM tarefas WHERE id = ?', (new_task_id,)).fetchone()
+        
+        # Calcula a duração para retornar (opcional, mas bom para consistência)
+        duracao = "N/D"
+        if new_task['data_inicio'] and new_task['data_termino']:
+            try:
+                inicio = datetime.datetime.strptime(new_task['data_inicio'], '%Y-%m-%d')
+                termino = datetime.datetime.strptime(new_task['data_termino'], '%Y-%m-%d')
+                delta = (termino - inicio).days
+                if delta >= 0:
+                    dias_totais = delta + 1
+                    sufixo = 's' if dias_totais > 1 else ''
+                    duracao = f"{dias_totais} dia{sufixo}"
+            except (ValueError, TypeError):
+                pass # Ignora erro de data
+                
+        print(f"--- Tarefa {new_task_id} criada com sucesso ---") # DEBUG
+        
+        # Retorna os dados da nova tarefa (incluindo o ID e a duração calculada)
+        return jsonify({
+            'success': True, 
+            'message': 'Tarefa criada com sucesso.',
+            'tarefa': {
+                'id': new_task['id'],
+                'tipo': new_task['tipo'],
+                'atividade_id': new_task['atividade_id'],
+                'descricao': new_task['descricao'],
+                'data_inicio': new_task['data_inicio'],
+                'data_termino': new_task['data_termino'],
+                'duracao_calculada': duracao,
+                'responsaveis': new_task['responsaveis'],
+                'status': new_task['status'],
+                'local_execucao': new_task['local_execucao'],
+                'observacoes': new_task['observacoes'],
+                'predecessoras': new_task['predecessoras']
+            }
+        })
+
+    except Exception as e:
+        print(f"!!! ERRO GERAL ao criar tarefa no projeto {projeto_id}: {e} !!!") # DEBUG
+        if conn:
+            conn.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao criar tarefa: {e}'}), 500
+    finally:
+        if conn:
+            conn.close()
+            print(f"--- Conexão com DB fechada para criação em {projeto_id} ---") # DEBUG
+
 # --- MÓDULO DE PENDÊNCIAS (com validação e todas as melhorias) ---
 @app.route('/pendencias')
 @login_required
