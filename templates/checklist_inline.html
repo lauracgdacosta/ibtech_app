@@ -52,6 +52,33 @@
         .new-task-row td { background-color: #eef2f5; }
         .btn-save-new { background-color: #28a745; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; }
         .btn-cancel-new { background-color: #dc3545; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;}
+    
+        /* --- ESTILOS DE COR PARA O STATUS --- */
+        .status-text { 
+            font-weight: bold; 
+        }
+        .status-text.planejada { 
+            color: #f1c40f; /* Amarelo */
+        }
+        .status-text.em-andamento { 
+            color: #3498db; /* Azul */
+        }
+        .status-text.atrasada { 
+            color: #e74c3c; /* Vermelho */
+        }
+        .status-text.concluída { 
+            color: #2ecc71; /* Verde */
+        }
+        .status-text.remanejada { 
+            color: #e83e8c; /* Rosa */
+        }
+        .status-text.suspensa { 
+            color: #e67e22; /* Laranja */
+        }
+        .status-text.cancelada { 
+            color: #7f8c8d; /* Cinza */
+        }
+        /* --- FIM DOS ESTILOS DE STATUS --- */
     </style>
 </head>
 <body>
@@ -132,7 +159,26 @@
         {% endfor %}
         // console.log("Dados Iniciais:", taskData); // DEBUG
 
+        // Função para aplicar cor ao status
+        function applyStatusColor(cellElement) {
+            const $cell = $(cellElement);
+            // Normaliza o texto: "Em Andamento" -> "em-andamento"
+            const statusText = $cell.text().trim().toLowerCase().replace(/ /g, '-'); 
+            
+            // Remove classes de cor antigas
+            $cell.removeClass('status-text planejada em-andamento atrasada concluída remanejada suspensa cancelada');
+            
+            if (statusText) {
+                $cell.addClass('status-text ' + statusText);
+            }
+        }
+
         $(document).ready(function() {
+            // Aplicar cores aos status no carregamento da página
+            $('td[data-field="status"]').each(function() {
+                applyStatusColor(this);
+            });
+
             let activeInput = null;
             let isAddingNewRow = false;
 
@@ -151,6 +197,13 @@
                 const $row = $cell.closest('tr');
                 $cell.empty().text(displayValue).addClass('editable');
                 activeInput = null;
+
+                // --- ALTERAÇÃO APLICADA AQUI ---
+                // Atualiza cor se for a célula de status
+                if ($cell.data('field') === 'status') {
+                    applyStatusColor($cell);
+                }
+                // --- FIM DA ALTERAÇÃO ---
 
                 // Atualiza campos recalculados pela API
                 if (updatedFields) {
@@ -200,7 +253,7 @@
                 if (latestEndDate) {
                     latestEndDate.setUTCDate(latestEndDate.getUTCDate() + 1);
                     const newStartDate = latestEndDate.toISOString().split('T')[0];
-                    // conso.log("Nova Data Início Calculada:", newStartDate); // DEBUG
+                    // console.log("Nova Data Início Calculada:", newStartDate); // DEBUG
 
                     if ($startDateInput.length > 0) { // Se estiver editando Data Início
                         $startDateInput.val(newStartDate);
@@ -399,7 +452,10 @@
                             $r.append(`<td class="col-duracao editable" data-field="duracao">${nT.duracao || ''}</td>`);
                             $r.append(`<td class="col-responsavel editable" data-field="responsaveis">${nT.responsaveis || '---'}</td>`);
                             $r.append(`<td class="col-predecessoras editable" data-field="predecessoras">${nT.predecessoras || ''}</td>`);
-                            $r.append(`<td class="col-status editable" data-field="status">${nT.status}</td>`);
+                            
+                            const $statusCell = $(`<td class="col-status editable" data-field="status">${nT.status}</td>`);
+                            $r.append($statusCell);
+                            applyStatusColor($statusCell); // Aplica a cor na nova linha
                             $r.append(`<td class="col-local editable" data-field="local_execucao">${nT.local_execucao || '---'}</td>`);
                             $r.append(`<td class="col-obs editable" data-field="observacoes">${nT.observacoes || ''}</td>`);
                             $r.append(`<td class="col-actions"><span class="btn-delete-task" title="Excluir Tarefa">&times;</span></td>`);
