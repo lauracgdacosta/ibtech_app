@@ -336,45 +336,61 @@
              function createNewRow(type = 'tarefa') {
                 if (isAddingNewRow) return; isAddingNewRow = true; $('#no-tasks-row').remove();
                 const $tbody=$('#checklist-tbody'); const $newRow=$('<tr class="new-task-row">');
-                $newRow.append('<td><input type="text" name="atividade_id" placeholder="Ex: 1.1"></td><td><textarea name="descricao" placeholder="Descrição da '+type+'"></textarea></td>');
-                if(type==='tarefa'){$newRow.append('<td><input type="date" name="data_inicio"></td><td><input type="date" name="data_termino" disabled></td><td><input type="number" name="duracao" min="1" value="1"></td>');let rS='<select name="responsaveis" multiple size="3">';TECNICOS.forEach(t=>{rS+=`<option value="${t}">${t}</option>`});rS+='</select>';$newRow.append(`<td>${rS}</td>`);let pS='<select name="predecessoras" multiple size="3">';Object.keys(taskData).forEach(k=>{if(k)pS+=`<option value="${k}" data-end-date="${taskData[k]?.endDate||''}">${k}</option>`});pS+='</select>';$newRow.append(`<td>${pS}</td>`);let sS='<select name="status">';STATUS_LIST.forEach(s=>{sS+=`<option value="${s}" ${s==='Planejada'?'selected':''}>${s}</option>`});sS+='</select>';$newRow.append(`<td>${sS}</td>`);let lS='<select name="local_execucao"><option value="">Selecione</option>';LOCAIS_LIST.forEach(l=>{lS+=`<option value="${l}">${l}</option>`});lS+='</select>';$newRow.append(`<td>${lS}</td>`);$newRow.append('<td><textarea name="observacoes"></textarea></td>');}else{$newRow.append('<td colspan="8"></td>');} // Colspan 8 para título
+                
+                // --- ALTERAÇÃO APLICADA AQUI: Placeholder correto para Título ---
+                const placeholderText = (type === 'titulo' ? 'Descrição do Título' : 'Descrição da Tarefa');
+                $newRow.append('<td><input type="text" name="atividade_id" placeholder="Ex: 1.1"></td>');
+                $newRow.append('<td><textarea name="descricao" placeholder="' + placeholderText + '"></textarea></td>');
+                // --- FIM DA ALTERAÇÃO ---
+
+                if(type==='tarefa'){
+                    $newRow.append('<td><input type="date" name="data_inicio"></td><td><input type="date" name="data_termino" disabled></td><td><input type="number" name="duracao" min="1" value="1"></td>');
+                    let rS='<select name="responsaveis" multiple size="3">';TECNICOS.forEach(t=>{rS+=`<option value="${t}">${t}</option>`});rS+='</select>';$newRow.append(`<td>${rS}</td>`);
+                    let pS='<select name="predecessoras" multiple size="3">';Object.keys(taskData).forEach(k=>{if(k)pS+=`<option value="${k}" data-end-date="${taskData[k]?.endDate||''}">${k}</option>`});pS+='</select>';$newRow.append(`<td>${pS}</td>`);
+                    let sS='<select name="status">';STATUS_LIST.forEach(s=>{sS+=`<option value="${s}" ${s==='Planejada'?'selected':''}>${s}</option>`});sS+='</select>';$newRow.append(`<td>${sS}</td>`);
+                    let lS='<select name="local_execucao"><option value="">Selecione</option>';LOCAIS_LIST.forEach(l=>{lS+=`<option value="${l}">${l}</option>`});lS+='</select>';$newRow.append(`<td>${lS}</td>`);
+                    $newRow.append('<td><textarea name="observacoes"></textarea></td>');
+                } else {
+                    $newRow.append('<td colspan="8"></td>'); // Colspan 8 para título
+                }
                 $newRow.append('<td class="col-actions"><button class="btn-save-new">Salvar</button><button class="btn-cancel-new">&times;</button></td>');
                 $tbody.prepend($newRow); // Adiciona no início
                 $newRow.find('select[name="predecessoras"]').on('change',function(){updateStartDateFromPredecessors(this);});
             }
-            $('#add-task-btn').on('click', function(){createNewRow('tarefa');}); $('#add-title-btn').on('click',function(){createNewRow('titulo');});
+            $('#add-task-btn').on('click', function(){createNewRow('tarefa');}); 
+            $('#add-title-btn').on('click',function(){createNewRow('titulo');});
             $('#checklist-tbody').on('click','.btn-cancel-new',function(){$(this).closest('tr').remove();isAddingNewRow=false;if($('#checklist-tbody tr:not(#no-tasks-row)').length===0)$('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="11" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>');});
 
-            // Lógica Salvar Nova (Corrigida para Título)
+            // Lógica Salvar Nova
             $('#checklist-tbody').on('click','.btn-save-new',function(){
-                const $r = $(this).closest('tr');
-                const tT = $r.find('textarea[name="descricao"]').attr('placeholder').includes('Título') ? 'titulo' : 'tarefa';
-                const nD = {tipo:tT, atividade_id:$r.find('input[name="atividade_id"]').val(), descricao:$r.find('textarea[name="descricao"]').val()};
+                const $r=$(this).closest('tr');
+                // --- ALTERAÇÃO APLICADA AQUI: Verificação de placeholder corrigida ---
+                const tT=$r.find('textarea[name="descricao"]').attr('placeholder').includes('Título')?'titulo':'tarefa';
+                const nD={tipo:tT,atividade_id:$r.find('input[name="atividade_id"]').val(),descricao:$r.find('textarea[name="descricao"]').val()};
 
-                if(tT === 'tarefa'){
-                    nD.data_inicio = $r.find('input[name="data_inicio"]').val() || null;
-                    nD.duracao = $r.find('input[name="duracao"]').val() || null;
-                    nD.responsaveis = $r.find('select[name="responsaveis"]').val() ? $r.find('select[name="responsaveis"]').val().join(', ') : '';
-                    nD.predecessoras = $r.find('select[name="predecessoras"]').val() ? $r.find('select[name="predecessoras"]').val().join(', ') : '';
-                    nD.status = $r.find('select[name="status"]').val();
-                    nD.local_execucao = $r.find('select[name="local_execucao"]').val() || null;
-                    nD.observacoes = $r.find('textarea[name="observacoes"]').val();
+                if(tT==='tarefa'){
+                    nD.data_inicio=$r.find('input[name="data_inicio"]').val()||null;
+                    nD.duracao=$r.find('input[name="duracao"]').val()||null;
+                    nD.responsaveis=$r.find('select[name="responsaveis"]').val()?$r.find('select[name="responsaveis"]').val().join(', '):'';
+                    nD.predecessoras=$r.find('select[name="predecessoras"]').val()?$r.find('select[name="predecessoras"]').val().join(', '):'';
+                    nD.status=$r.find('select[name="status"]').val();
+                    nD.local_execucao=$r.find('select[name="local_execucao"]').val()||null;
+                    nD.observacoes=$r.find('textarea[name="observacoes"]').val();
                 }
 
                 if(!nD.descricao){alert('Descrição obrigatória.');return;}
-                $(this).prop('disabled', true).text('Salvando...'); // Desabilita botão ao salvar
+                $(this).prop('disabled', true).text('Salvando...');
 
                 fetch(`/api/tarefa_inline/create/${PROJETO_ID}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(nD)})
                 .then(res => res.json())
                 .then(d => {
                     if(d.success){
-                        const nT = d.tarefa;
+                        const nT=d.tarefa;
                         $r.removeClass('new-task-row')
                           .addClass(nT.tipo === 'titulo' ? 'task-header-inline' : 'task-item-inline')
                           .attr({'data-task-id': nT.id, 'data-task-type': nT.tipo});
-                        $r.empty(); // Limpa a linha
+                        $r.empty(); 
 
-                        // Recria a linha com base no tipo
                         if (nT.tipo === 'tarefa') {
                             $r.append(`<td class="col-item editable" data-field="atividade_id">${nT.atividade_id || ''}</td>`);
                             $r.append(`<td class="col-atividade editable" data-field="descricao">${nT.descricao}</td>`);
@@ -388,19 +404,18 @@
                             $r.append(`<td class="col-obs editable" data-field="observacoes">${nT.observacoes || ''}</td>`);
                             $r.append(`<td class="col-actions"><span class="btn-delete-task" title="Excluir Tarefa">&times;</span></td>`);
                             if(nT.atividade_id) taskData[nT.atividade_id]={endDate:nT.data_termino||""};
-                        } else { // tipo 'titulo'
+                        } else { // --- ALTERAÇÃO APLICADA AQUI: Formatação correta para Título salvo ---
                             $r.append(`<td class="col-item editable" data-field="atividade_id">${nT.atividade_id || ''}</td>`);
-                            // Adiciona a célula mesclada corretamente
-                            $r.append(`<td class="col-atividade editable" data-field="descricao" colspan="9">${nT.descricao}</td>`);
+                            $r.append(`<td class="col-atividade editable" data-field="descricao" colspan="9">${nT.descricao}</td>`); // Colspan 9
                             $r.append(`<td class="col-actions"><span class="btn-delete-task" title="Excluir Título">&times;</span></td>`);
                         }
                         isAddingNewRow = false;
                     } else {
                          alert(`Erro: ${d.message}`);
-                         $(this).prop('disabled', false).text('Salvar'); // Reabilita botão em caso de erro
+                         $(this).prop('disabled', false).text('Salvar');
                     }
                 })
-                .catch(e=>{console.error('Erro:',e);alert('Erro.');$(this).prop('disabled', false).text('Salvar');}); // Reabilita botão
+                .catch(e=>{console.error('Erro:',e);alert('Erro.');$(this).prop('disabled', false).text('Salvar');});
             });
 
 
