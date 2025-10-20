@@ -345,20 +345,20 @@
             $('#add-task-btn').on('click', function(){createNewRow('tarefa');}); $('#add-title-btn').on('click',function(){createNewRow('titulo');});
             $('#checklist-tbody').on('click','.btn-cancel-new',function(){$(this).closest('tr').remove();isAddingNewRow=false;if($('#checklist-tbody tr:not(#no-tasks-row)').length===0)$('#checklist-tbody').append('<tr id="no-tasks-row"><td colspan="11" style="text-align: center;">Nenhuma tarefa encontrada.</td></tr>');});
 
-            // Lógica Salvar Nova
+            // Lógica Salvar Nova (Corrigida para Título)
             $('#checklist-tbody').on('click','.btn-save-new',function(){
-                const $r=$(this).closest('tr');
-                const tT=$r.find('textarea[name="descricao"]').attr('placeholder').includes('Título')?'titulo':'tarefa';
-                const nD={tipo:tT,atividade_id:$r.find('input[name="atividade_id"]').val(),descricao:$r.find('textarea[name="descricao"]').val()};
+                const $r = $(this).closest('tr');
+                const tT = $r.find('textarea[name="descricao"]').attr('placeholder').includes('Título') ? 'titulo' : 'tarefa';
+                const nD = {tipo:tT, atividade_id:$r.find('input[name="atividade_id"]').val(), descricao:$r.find('textarea[name="descricao"]').val()};
 
-                if(tT==='tarefa'){
-                    nD.data_inicio=$r.find('input[name="data_inicio"]').val()||null;
-                    nD.duracao=$r.find('input[name="duracao"]').val()||null;
-                    nD.responsaveis=$r.find('select[name="responsaveis"]').val()?$r.find('select[name="responsaveis"]').val().join(', '):'';
-                    nD.predecessoras=$r.find('select[name="predecessoras"]').val()?$r.find('select[name="predecessoras"]').val().join(', '):'';
-                    nD.status=$r.find('select[name="status"]').val();
-                    nD.local_execucao=$r.find('select[name="local_execucao"]').val()||null;
-                    nD.observacoes=$r.find('textarea[name="observacoes"]').val();
+                if(tT === 'tarefa'){
+                    nD.data_inicio = $r.find('input[name="data_inicio"]').val() || null;
+                    nD.duracao = $r.find('input[name="duracao"]').val() || null;
+                    nD.responsaveis = $r.find('select[name="responsaveis"]').val() ? $r.find('select[name="responsaveis"]').val().join(', ') : '';
+                    nD.predecessoras = $r.find('select[name="predecessoras"]').val() ? $r.find('select[name="predecessoras"]').val().join(', ') : '';
+                    nD.status = $r.find('select[name="status"]').val();
+                    nD.local_execucao = $r.find('select[name="local_execucao"]').val() || null;
+                    nD.observacoes = $r.find('textarea[name="observacoes"]').val();
                 }
 
                 if(!nD.descricao){alert('Descrição obrigatória.');return;}
@@ -368,14 +368,11 @@
                 .then(res => res.json())
                 .then(d => {
                     if(d.success){
-                        const nT=d.tarefa;
-                        // Atualiza atributos da linha
+                        const nT = d.tarefa;
                         $r.removeClass('new-task-row')
                           .addClass(nT.tipo === 'titulo' ? 'task-header-inline' : 'task-item-inline')
                           .attr({'data-task-id': nT.id, 'data-task-type': nT.tipo});
-
-                        // Limpa todo o conteúdo interno da linha ANTES de reconstruir
-                        $r.empty();
+                        $r.empty(); // Limpa a linha
 
                         // Recria a linha com base no tipo
                         if (nT.tipo === 'tarefa') {
@@ -390,7 +387,6 @@
                             $r.append(`<td class="col-local editable" data-field="local_execucao">${nT.local_execucao || '---'}</td>`);
                             $r.append(`<td class="col-obs editable" data-field="observacoes">${nT.observacoes || ''}</td>`);
                             $r.append(`<td class="col-actions"><span class="btn-delete-task" title="Excluir Tarefa">&times;</span></td>`);
-                            // Atualiza taskData
                             if(nT.atividade_id) taskData[nT.atividade_id]={endDate:nT.data_termino||""};
                         } else { // tipo 'titulo'
                             $r.append(`<td class="col-item editable" data-field="atividade_id">${nT.atividade_id || ''}</td>`);
