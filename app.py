@@ -1105,7 +1105,7 @@ def checklist_inline(projeto_id):
     tarefas_from_db = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
     
     tecnicos_list = [row['nome'] for row in conn.execute('SELECT nome FROM tecnicos ORDER BY nome').fetchall()]
-    status_list = ['Planejada', 'Em Andamento', 'Atrasada', 'Suspensa', 'Concluída', 'Cancelada']
+    status_list = ['Planejada', 'Em Andamento', 'Atrasada', 'Suspensa', 'Concluída', 'Cancelada', 'Remanejada']
     locais_list = sorted(list(set([f"{c['municipio']} - {c['orgao']}" for c in conn.execute('SELECT municipio, orgao FROM clientes ORDER BY municipio').fetchall()] + ['Ibtech'])))
     
     conn.close()
