@@ -200,7 +200,7 @@
                 if (latestEndDate) {
                     latestEndDate.setUTCDate(latestEndDate.getUTCDate() + 1);
                     const newStartDate = latestEndDate.toISOString().split('T')[0];
-                    // console.log("Nova Data Início Calculada:", newStartDate); // DEBUG
+                    // conso.log("Nova Data Início Calculada:", newStartDate); // DEBUG
 
                     if ($startDateInput.length > 0) { // Se estiver editando Data Início
                         $startDateInput.val(newStartDate);
