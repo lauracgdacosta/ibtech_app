@@ -433,35 +433,29 @@ def _header_footer_pdf(canvas, doc, header_data):
     canvas.saveState()
     width, height = doc.pagesize  # Tamanho da página (agora em landscape)
     
-    # --- CAMINHOS DAS LOGOS ---
-    
-    logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png')
-    logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png')
+    # --- CAMINHOS DAS LOGOS (não usados neste teste) ---
+    # logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png')
+    # logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png')
     
     # --- LOGO IBTECH (Superior Esquerdo) ---
+    # --- TESTE: Forçando o desenho da tag de texto ---
     try:
-        if os.path.exists(logo_ibtech_path):
-            # --- ALTERAÇÃO AQUI: removido mask='auto' ---
-            canvas.drawImage(logo_ibtech_path, 40, height - 60, 
-                             width=100, preserveAspectRatio=True) #
-        else:
-            canvas.drawString(40, height - 50, "[Logo Ibtech]")
-    except Exception:
-        canvas.drawString(40, height - 50, "[Logo Ibtech]")
+        canvas.setFont('Helvetica', 10) # Define uma fonte
+        canvas.drawString(40, height - 50, "[TESTE Logo Ibtech]")
+    except Exception as e:
+        print(f"--- ERRO AO DESENHAR A TAG IBTECH: {e}")
 
     # --- LOGO GPI (Superior Direito) ---
+    # --- TESTE: Forçando o desenho da tag de texto ---
     try:
-        if os.path.exists(logo_gpi_path):
-            # --- ALTERAÇÃO AQUI: removido mask='auto' ---
-            canvas.drawImage(logo_gpi_path, width - 120, height - 55, 
-                             width=80, preserveAspectRatio=True) #
-        else:
-            canvas.drawString(width - 120, height - 50, "[Logo GPI]")
-    except Exception:
-        canvas.drawString(width - 120, height - 50, "[Logo GPI]")
+        canvas.setFont('Helvetica', 10) # Define a fonte
+        canvas.drawString(width - 120, height - 50, "[TESTE Logo GPI]")
+    except Exception as e:
+        print(f"--- ERRO AO DESENHAR A TAG GPI: {e}")
+
 
     # --- INFORMAÇÕES DO PROJETO (Centro/Direita) ---
-    canvas.setFont('Helvetica-Bold', 10)
+    canvas.setFont('Helvetica-Bold', 10) #
     text_x = 550  # Posição X para paisagem
     text_y = height - 30 
     
@@ -478,7 +472,7 @@ def _header_footer_pdf(canvas, doc, header_data):
     canvas.setFont('Helvetica', 9)
     canvas.drawCentredString(width / 2.0, 30, f"Página {doc.page} - Ibtech Gestão de Projetos")
     
-    canvas.restoreState()
+    canvas.restoreState() #
 
 def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
     """
