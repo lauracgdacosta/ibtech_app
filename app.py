@@ -434,49 +434,39 @@ def _header_footer_pdf(canvas, doc, header_data):
     width, height = doc.pagesize  # Tamanho da página (agora em landscape)
     
     # --- CAMINHOS DAS LOGOS ---
-    
-    logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png')
-    logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png')
+    # CAMINHOS DAS LOGOS ---
+    logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png') #
+    logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png') #
     
     # --- LOGO IBTECH (Superior Esquerdo) ---
-    try:
-        if os.path.exists(logo_ibtech_path):
-            canvas.drawImage(logo_ibtech_path, 40, height - 60, 
-                             width=100, preserveAspectRatio=True, mask='auto')
-        else:
-            canvas.drawString(40, height - 50, "[Logo Ibtech]")
-    except Exception:
-        canvas.drawString(40, height - 50, "[Logo Ibtech]")
+    # DEBUG: Removido try/except para forçar o erro a aparecer
+    canvas.drawImage(logo_ibtech_path, 40, height - 60, 
+                     width=100, preserveAspectRatio=True, mask='auto') #
 
     # --- LOGO GPI (Superior Direito) ---
-    try:
-        if os.path.exists(logo_gpi_path):
-            canvas.drawImage(logo_gpi_path, width - 120, height - 55, 
-                             width=80, preserveAspectRatio=True, mask='auto')
-        else:
-            canvas.drawString(width - 120, height - 50, "[Logo GPI]")
-    except Exception:
-        canvas.drawString(width - 120, height - 50, "[Logo GPI]")
+    # DEBUG: Removido try/except para forçar o erro a aparecer
+    canvas.drawImage(logo_gpi_path, width - 120, height - 55, 
+                     width=80, preserveAspectRatio=True, mask='auto') #
 
     # --- INFORMAÇÕES DO PROJETO (Centro/Direita) ---
-    canvas.setFont('Helvetica-Bold', 10)
+    canvas.setFont('Helvetica-Bold', 10) #
     text_x = 550  # Posição X para paisagem
     text_y = height - 30 
     
-    canvas.drawString(text_x, text_y,        f"Nome do Projeto: {header_data.get('nome_projeto', 'N/A')}")
-    canvas.drawString(text_x, text_y - 15,   f"Início Previsto: {_py_format_date(header_data.get('inicio_previsto', 'N/A'))}")
-    canvas.drawString(text_x, text_y - 30,   f"Término Previsto: {_py_format_date(header_data.get('termino_previsto', 'N/A'))}")
-    canvas.drawString(text_x, text_y - 45,   f"Status: {header_data.get('status', 'N/A')}")
+    canvas.drawString(text_x, text_y,        f"Nome do Projeto: {header_data.get('nome_projeto', 'N/A')}") #
+    canvas.drawString(text_x, text_y - 15,   f"Início Previsto: {_py_format_date(header_data.get('inicio_previsto', 'N/A'))}") #
+    canvas.drawString(text_x, text_y - 30,   f"Término Previsto: {_py_format_date(header_data.get('termino_previsto', 'N/A'))}") #
+    canvas.drawString(text_x, text_y - 45,   f"Status: {header_data.get('status', 'N/A')}") #
     
     # --- LINHA DIVISÓRIA ---
-    canvas.setStrokeColorRGB(0.8, 0.8, 0.8)
-    canvas.line(40, height - 75, width - 40, height - 75)
+    canvas.setStrokeColorRGB(0.8, 0.8, 0.8) #
+    canvas.line(40, height - 75, width - 40, height - 75) #
 
     # --- RODAPÉ ---
-    canvas.setFont('Helvetica', 9)
-    canvas.drawCentredString(width / 2.0, 30, f"Página {doc.page} - Ibtech Gestão de Projetos")
+    canvas.setFont('Helvetica', 9) #
+    canvas.drawCentredString(width / 2.0, 30, f"Página {doc.page} - Ibtech Gestão de Projetos") #
     
-    canvas.restoreState()
+    canvas.restoreState() #
 
 def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
     """
