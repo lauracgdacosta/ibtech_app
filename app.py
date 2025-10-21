@@ -431,26 +431,49 @@ def _header_footer_pdf(canvas, doc, header_data):
     Função para desenhar o cabeçalho e rodapé em cada página.
     """
     canvas.saveState()
-    width, height = doc.pagesize  # Tamanho da página (agora em landscape)
+    width, height = doc.pagesize  #
     
     # --- CAMINHOS DAS LOGOS ---
-    # CAMINHOS DAS LOGOS ---
     logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png') #
     logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png') #
-    
+
+    # --- DEBUG LOGGING ---
+    print(f"--- Gerando PDF: Verificando logo IBTECH em: {logo_ibtech_path}")
+    # --- FIM DEBUG LOGGING ---
+
     # --- LOGO IBTECH (Superior Esquerdo) ---
-    # DEBUG: Removido try/except para forçar o erro a aparecer
-    canvas.drawImage(logo_ibtech_path, 40, height - 60, 
-                     width=100, preserveAspectRatio=True, mask='auto') #
+    try:
+        if os.path.exists(logo_ibtech_path): #
+            canvas.drawImage(logo_ibtech_path, 40, height - 60, 
+                             width=100, preserveAspectRatio=True, mask='auto') #
+            print("--- LOG: logo_ibtech.png ENCONTRADA e desenhada.")
+        else:
+            print("--- LOG: logo_ibtech.png NÃO ENCONTRADA. Desenhando tag.")
+            canvas.drawString(40, height - 50, "[Logo Ibtech]") #
+    except Exception as e:
+        print(f"--- ERRO AO PROCESSAR logo_ibtech.png: {e}. Desenhando tag de erro.")
+        canvas.drawString(40, height - 50, "[Erro ao carregar Ibtech]") #
+
+    # --- DEBUG LOGGING ---
+    print(f"--- Gerando PDF: Verificando logo GPI em: {logo_gpi_path}")
+    # --- FIM DEBUG LOGGING ---
 
     # --- LOGO GPI (Superior Direito) ---
-    # DEBUG: Removido try/except para forçar o erro a aparecer
-    canvas.drawImage(logo_gpi_path, width - 120, height - 55, 
-                     width=80, preserveAspectRatio=True, mask='auto') #
+    try:
+        if os.path.exists(logo_gpi_path): #
+            canvas.drawImage(logo_gpi_path, width - 120, height - 55, 
+                             width=80, preserveAspectRatio=True, mask='auto') #
+            print("--- LOG: logo_gpi.png ENCONTRADA e desenhada.")
+        else:
+            print("--- LOG: logo_gpi.png NÃO ENCONTRADA. Desenhando tag.")
+            canvas.drawString(width - 120, height - 50, "[Logo GPI]") #
+    except Exception as e:
+        print(f"--- ERRO AO PROCESSAR logo_gpi.png: {e}. Desenhando tag de erro.")
+        canvas.drawString(width - 120, height - 50, "[Erro ao carregar GPI]") #
 
     # --- INFORMAÇÕES DO PROJETO (Centro/Direita) ---
     canvas.setFont('Helvetica-Bold', 10) #
-    text_x = 550  # Posição X para paisagem
+    text_x = 550
     text_y = height - 30 
     
     canvas.drawString(text_x, text_y,        f"Nome do Projeto: {header_data.get('nome_projeto', 'N/A')}") #
