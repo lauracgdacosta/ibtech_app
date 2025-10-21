@@ -5,6 +5,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from functools import wraps
 import datetime
 import re
+import pandas as pd
+
 
 # Em app.py - Adicione estas importações no topo
 import io
