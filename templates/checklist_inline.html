@@ -90,14 +90,20 @@
     </div>
 
     <div class="container">
-        <div class="header-actions">
-            <h1>Checklist Editável: {{ projeto.nome }}</h1>
-            <div class="actions-group">
-                <button id="add-task-btn" class="button new">Adicionar Tarefa</button>
-                 <button id="add-title-btn" class="button new" style="background-color: #5bc0de;">Adicionar Título</button>
-                <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista</a>
-            </div>
+    <div class="header-actions">
+        <h1>Checklist Editável: {{ projeto.nome }}</h1>
+        <div class="actions-group">
+            <button id="add-task-btn" class="button new">Adicionar Tarefa</button>
+            <button id="add-title-btn" class="button new" style="background-color: #5bc0de;">Adicionar Título</button>
+            
+            <a href="{{ url_for('export_pdf_checklist_inline', projeto_id=projeto.id) }}" 
+               class="button" 
+               style="background-color: #c0392b;" 
+               target="_blank">Exportar PDF</a>
+            <a href="{{ url_for('projetos') }}" class="button">Voltar à Lista</a>
         </div>
+    </div>
+
 
         <table class="checklist-table">
             <thead>

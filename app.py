@@ -3,10 +3,20 @@
 import sqlite3
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response
 from functools import wraps
 import datetime
 import re
+
+# Em app.py - Adicione estas importações no topo
+import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
 
 app = Flask(__name__)
 app.secret_key = '18T3ch'
@@ -410,6 +420,164 @@ def role_required(module, action):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
+# Em app.py - Adicione estas funções auxiliares
+
+def _py_format_date(value):
+    """Função Python para formatar data (igual ao filtro Jinja)"""
+    if value is None or value == "": return ""
+    try: return datetime.datetime.strptime(value, '%Y-%m-%d').strftime('%d/%m/%Y')
+    except ValueError:
+        try: return datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S').strftime('%d/%m/%Y %H:%M')
+        except ValueError: return value
+
+def _header_footer_pdf(canvas, doc, header_data):
+    """
+    Função para desenhar o cabeçalho e rodapé em cada página.
+    """
+    canvas.saveState()
+    width, height = doc.pagesize  # Tamanho da página (agora em landscape)
+    
+    # --- CAMINHOS DAS LOGOS ---
+    logo_ibtech_path = 'static/logo_ibtech.png'
+    logo_gpi_path = 'static/logo_gpi.png'
+    
+    # --- LOGO IBTECH (Superior Esquerdo) ---
+    try:
+        if os.path.exists(logo_ibtech_path):
+            canvas.drawImage(logo_ibtech_path, 40, height - 60, 
+                             width=100, preserveAspectRatio=True, mask='auto')
+        else:
+            canvas.drawString(40, height - 50, "[Logo Ibtech]")
+    except Exception:
+        canvas.drawString(40, height - 50, "[Logo Ibtech]")
+
+    # --- LOGO GPI (Superior Direito) ---
+    try:
+        if os.path.exists(logo_gpi_path):
+            canvas.drawImage(logo_gpi_path, width - 120, height - 55, 
+                             width=80, preserveAspectRatio=True, mask='auto')
+        else:
+            canvas.drawString(width - 120, height - 50, "[Logo GPI]")
+    except Exception:
+        canvas.drawString(width - 120, height - 50, "[Logo GPI]")
+
+    # --- INFORMAÇÕES DO PROJETO (Centro/Direita) ---
+    canvas.setFont('Helvetica-Bold', 10)
+    text_x = 550  # Posição X para paisagem
+    text_y = height - 30 
+    
+    canvas.drawString(text_x, text_y,        f"Nome do Projeto: {header_data.get('nome_projeto', 'N/A')}")
+    canvas.drawString(text_x, text_y - 15,   f"Início Previsto: {_py_format_date(header_data.get('inicio_previsto', 'N/A'))}")
+    canvas.drawString(text_x, text_y - 30,   f"Término Previsto: {_py_format_date(header_data.get('termino_previsto', 'N/A'))}")
+    canvas.drawString(text_x, text_y - 45,   f"Status: {header_data.get('status', 'N/A')}")
+    
+    # --- LINHA DIVISÓRIA ---
+    canvas.setStrokeColorRGB(0.8, 0.8, 0.8)
+    canvas.line(40, height - 75, width - 40, height - 75)
+
+    # --- RODAPÉ ---
+    canvas.setFont('Helvetica', 9)
+    canvas.drawCentredString(width / 2.0, 30, f"Página {doc.page} - Ibtech Gestão de Projetos")
+    
+    canvas.restoreState()
+
+
+def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
+    """
+    Cria o documento PDF completo com o checklist inline.
+    """
+    # Usa A4 em modo paisagem (landscape) para caber as colunas
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), 
+                            topMargin=85, # Margem superior maior para o cabeçalho
+                            bottomMargin=50,
+                            leftMargin=40,
+                            rightMargin=40)
+    story = []
+    styles = getSampleStyleSheet()
+    # Estilo para texto pequeno nas células (permite quebra de linha)
+    styles.add(ParagraphStyle(name='SmallText', fontSize=8, alignment=0)) # 0=LEFT
+    
+    # --- Dados para o Cabeçalho ---
+    header_data = {
+        'nome_projeto': projeto_data['nome'],
+        'inicio_previsto': projeto_data['data_inicio_previsto'],
+        'termino_previsto': projeto_data['data_termino_previsto'],
+        'status': projeto_data['status']
+    }
+    
+    # --- Título do Documento ---
+    story.append(Paragraph(f"Checklist do Projeto: {projeto_data['nome']}", styles['h1']))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # --- Conteúdo da Tabela ---
+    col_widths = [
+        1.5*cm,  # Item
+        6.5*cm,  # Atividade
+        2.2*cm,  # Data Início
+        2.2*cm,  # Data Término
+        1.5*cm,  # Duração
+        3.5*cm,  # Responsáveis
+        2.5*cm,  # Status
+        3.0*cm,  # Local
+        3.5*cm   # Observações
+    ]
+
+    # Cabeçalho da tabela
+    table_header = ['Item', 'Atividade', 'Início', 'Término', 'Duração (dias)', 'Responsáveis', 'Status', 'Local', 'Obs']
+    table_data = [table_header]
+    table_styles = [
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#002060')), # Azul Ibtech
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('BOX', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        # Alinhamentos específicos
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'), # Item
+        ('ALIGN', (2, 1), (4, -1), 'CENTER'), # Datas e Duração
+        ('ALIGN', (6, 1), (6, -1), 'CENTER'), # Status
+    ]
+
+    row_index = 1 # Começa na linha 1 (abaixo do cabeçalho)
+    for t in tarefas_data:
+        # Formata os dados para exibição amigável
+        item_id = t.get('atividade_id') or ''
+        atividade = Paragraph(t.get('descricao') or '', styles['SmallText'])
+        inicio = _py_format_date(t.get('data_inicio'))
+        termino = _py_format_date(t.get('data_termino'))
+        duracao = str(t.get('duracao') or '')
+        responsaveis = Paragraph(t.get('responsaveis') or '', styles['SmallText'])
+        status = t.get('status') or ''
+        local = t.get('local_execucao') or ''
+        obs = Paragraph(t.get('observacoes') or '', styles['SmallText'])
+
+        if t.get('tipo') == 'titulo':
+            # Linha de Título: mescla colunas e muda o estilo
+            row_data = [item_id, atividade, '', '', '', '', '', '', '']
+            table_styles.append(('SPAN', (1, row_index), (-1, row_index)))
+            table_styles.append(('BACKGROUND', (0, row_index), (-1, row_index), colors.HexColor('#eef2f5')))
+            table_styles.append(('FONTNAME', (0, row_index), (-1, row_index), 'Helvetica-Bold'))
+            table_styles.append(('TEXTCOLOR', (0, row_index), (-1, row_index), colors.HexColor('#2c3e50')))
+        else:
+            # Linha de Tarefa
+            row_data = [item_id, atividade, inicio, termino, duracao, responsaveis, status, local, obs]
+        
+        table_data.append(row_data)
+        row_index += 1
+
+    # Cria o objeto Tabela
+    pdf_table = Table(table_data, colWidths=col_widths)
+    pdf_table.setStyle(TableStyle(table_styles))
+    
+    story.append(pdf_table)
+    
+    # --- CONSTRUIR O PDF ---
+    doc.build(story, 
+              onFirstPage=lambda canvas, doc: _header_footer_pdf(canvas, doc, header_data),
+              onLaterPages=lambda canvas, doc: _header_footer_pdf(canvas, doc, header_data))
 
 # --- ROTAS ---
 @app.route('/')
@@ -840,6 +1008,7 @@ def delete_sistema(id):
     return redirect(url_for('sistemas'))
 
 # --- MÓDULO DE PROJETOS (com as novas alterações) ---
+
 @app.route('/projetos')
 @login_required
 @role_required(module='projetos', action='can_read')
@@ -1350,6 +1519,42 @@ def delete_tarefa_inline(tarefa_id):
         if conn:
             conn.close()
             print(f"--- Conexão com DB fechada para exclusão da tarefa {tarefa_id} ---") # DEBUG
+
+# Em app.py - Adicione esta nova rota
+
+@app.route('/projeto/<int:projeto_id>/export_pdf')
+@login_required
+@role_required(module='projetos', action='can_read')
+def export_pdf_checklist_inline(projeto_id):
+    conn = get_db_connection()
+    projeto = conn.execute('SELECT * FROM projetos WHERE id = ?', (projeto_id,)).fetchone()
+    if not projeto:
+        conn.close()
+        flash('Projeto não encontrado.', 'danger')
+        return redirect(url_for('projetos'))
+
+    # Busca todas as tarefas (títulos e itens) do projeto
+    tarefas = conn.execute('SELECT * FROM tarefas WHERE projeto_id = ? ORDER BY atividade_id', (projeto_id,)).fetchall()
+    conn.close()
+    
+    # Cria um buffer de bytes na memória para salvar o PDF
+    buffer = io.BytesIO()
+    
+    # Chama nossa função para criar o PDF
+    try:
+        criar_pdf_checklist_inline(buffer, projeto, tarefas)
+    except Exception as e:
+        print(f"Erro ao gerar PDF: {e}")
+        flash(f'Ocorreu um erro ao gerar o PDF: {e}', 'danger')
+        return redirect(url_for('checklist_inline', projeto_id=projeto_id))
+    
+    # Retorna o buffer ao início
+    buffer.seek(0)
+    
+    # Retorna o PDF como um download
+    return Response(buffer,
+                    mimetype='application/pdf',
+                    headers={'Content-Disposition': f'attachment;filename=Checklist_{projeto["nome"]}.pdf'})            
 
 # --- MÓDULO DE PENDÊNCIAS (com validação e todas as melhorias) ---
 @app.route('/pendencias')
