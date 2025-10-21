@@ -15,6 +15,9 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
+# Em app.py - Adicione esta linha no topo
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 
 app = Flask(__name__)
 app.secret_key = '18T3ch'
@@ -437,8 +440,9 @@ def _header_footer_pdf(canvas, doc, header_data):
     width, height = doc.pagesize  # Tamanho da página (agora em landscape)
     
     # --- CAMINHOS DAS LOGOS ---
-    logo_ibtech_path = 'static/logo_ibtech.png'
-    logo_gpi_path = 'static/logo_gpi.png'
+    
+    logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png')
+    logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png')
     
     # --- LOGO IBTECH (Superior Esquerdo) ---
     try:
