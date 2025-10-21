@@ -141,6 +141,8 @@ def init_db():
             responsavel2 TEXT,
             observacoes TEXT
         )''')
+    # ... (vem o CREATE TABLE da matriz_responsabilidades) ...
+
     cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
             role_name TEXT NOT NULL, 
@@ -151,12 +153,8 @@ def init_db():
             can_delete BOOLEAN DEFAULT 0, 
             UNIQUE(role_name, module_name)
         )''')
-    
-    cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (
-            # ... (código da tabela role_permissions)
-        )''')
-    
-    # --- INÍCIO DA ADIÇÃO ---
+
+    # --- CORREÇÃO: ADICIONE A TABELA PROCESSOS AQUI ---
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS processos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -171,10 +169,12 @@ def init_db():
             responsavel TEXT
         )
     ''')
-  
+    # --- FIM DA CORREÇÃO ---
+    
     conn.commit()
     conn.close()
-
+  
+    
 def migrate_agenda_table():
     conn = get_db_connection()
     cursor = conn.cursor()
