@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Módulo de Processos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-actions">
+        <h1>Módulo de Processos em Aberto</h1>
+        <div>
+            <a href="{{ url_for('upload_processos') }}" class="button" style="background-color: #2ecc71;">Importar Planilha</a>
+            <a href="{{ url_for('index') }}" class="button">Voltar</a>
+        </div>
+    </div>
+
+    <hr>
+    
+    {% if processos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Protocolo</th>
+                <th>Registro</th>
+                <th>Origem</th>
+                <th>Detalhamento</th>
+                <th>Participante</th>
+                <th>Cliente Nosso?</th>
+                <th>Sistema</th>
+                <th>Responsável</th>
+                <th>Obs</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for processo in processos %}
+            <tr>
+                <td>{{ processo['protocolo'] }}</td>
+                <td>{{ processo['registro'] }}</td>
+                <td>{{ processo['origem'] }}</td>
+                <td style="max-width: 300px;">{{ processo['detalhamento'] }}</td>
+                <td style="max-width: 200px;">{{ processo['participante'] }}</td>
+                <td>{{ processo['cliente_nosso'] }}</td>
+                <td>{{ processo['sistema'] }}</td>
+                <td>{{ processo['responsavel'] }}</td>
+                <td>{{ processo['obs'] }}</td>
+                <td class="actions">
+                    <form action="{{ url_for('delete_processo', id=processo['id']) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este registro?');">
+                        <button type="submit">Excluir</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <hr>
+    <form action="{{ url_for('limpar_processos') }}" method="POST" onsubmit="return confirm('Tem certeza que deseja limpar TODOS os processos? Esta ação é irreversível.');">
+        <button type="submit" style="background-color: #e74c3c;">Limpar Todos os Processos</button>
+    </form>
+    {% else %}
+    <p>Nenhum processo importado ainda.</p>
+    {% endif %}
+</div>
+{% endblock %}

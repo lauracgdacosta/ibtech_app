@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Importar Planilha de Processos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Importar Planilha de Processos</h1>
+    <p>Selecione o arquivo Excel (.xlsx ou .xls) para importar. O arquivo deve conter as colunas: <strong>Protocolo, Registro, Origem, Detalhamento, Participante</strong>.</p>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div>
+            <label for="arquivo_excel">Arquivo Excel:</label>
+            <input type="file" name="arquivo_excel" id="arquivo_excel" accept=".xlsx, .xls" required>
+        </div>
+        <br>
+        <button type="submit">Enviar</button>
+        <a href="{{ url_for('processos') }}" class="button">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

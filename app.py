@@ -30,7 +30,8 @@ AVAILABLE_MODULES = {
     'pendencias': 'Pendências',
     'prestacao_contas': 'Prestação de Contas',
     'ferias': 'Férias',
-    'matriz': 'Matriz de Responsabilidades'
+    'matriz': 'Matriz de Responsabilidades',
+    'processos': 'Módulo de Processos'
 }
 
 # --- MODELO DE TAREFAS PADRÃO PARA NOVOS PROJETOS ---
@@ -150,6 +151,27 @@ def init_db():
             can_delete BOOLEAN DEFAULT 0, 
             UNIQUE(role_name, module_name)
         )''')
+    
+    cursor.execute('''CREATE TABLE IF NOT EXISTS role_permissions (
+            # ... (código da tabela role_permissions)
+        )''')
+    
+    # --- INÍCIO DA ADIÇÃO ---
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS processos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            protocolo TEXT,
+            registro TEXT,
+            origem TEXT,
+            detalhamento TEXT,
+            participante TEXT,
+            cliente_nosso TEXT,
+            sistema TEXT,
+            obs TEXT,
+            responsavel TEXT
+        )
+    ''')
+  
     conn.commit()
     conn.close()
 
@@ -588,6 +610,137 @@ def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
     doc.build(story, 
               onFirstPage=lambda canvas, doc: _header_footer_pdf(canvas, doc, header_data),
               onLaterPages=lambda canvas, doc: _header_footer_pdf(canvas, doc, header_data))
+    
+
+# --- INÍCIO: REGRAS E PROCESSAMENTO DE PROCESSOS EM ABERTO ---
+
+def build_pattern(items):
+    """
+    Função auxiliar para construir o pattern de regex de forma segura.
+    - re.escape(item) cuida de caracteres especiais (como '.', '(', '/')
+    - re.IGNORECASE garante que a busca não diferencie maiúsculas/minúsculas
+    """
+    # Filtra itens vazios ou None que podem vir de listas mal formatadas
+    clean_items = [item for item in items if item] 
+    return re.compile("|".join(re.escape(item) for item in clean_items), re.IGNORECASE)
+
+# Regra 1: Cliente Nosso (baseado na Col C 'Participante')
+CLIENTE_ITEMS = [
+    "COSEMS", "CIS-URG MP", "Brumadinho", "Carmo da Cachoeira", "Capim Branco",
+    "Itaobim", "Rio Acima", "Tres Pontas", "Presidente Juscelino", "Jesuânia", "Areado", "Betim",
+    "BRUMADINHO", "Ibtech", "CISURG", "CONCAFE", "CIALAR", "Cialar", "CISSUL", "Zona da Mata",
+    "CISREUNO", "CIS-URG OESTE", "Extrema", "Taiobeiras", "São João do Paraíso", "Ninheira", "Cordisburgo",
+    "Jaboticatubas", "Três Corações", "Confins", "Salinas", "Viçosa", "ARISMIG", "ARIS", "CISAB",
+    "BRUMADINHO ATIVOS S/A", "Itaúna", "Chapada do Norte",
+    "Consórcio Publico Intermunicipal de Saúde para Gerenciamento da região Médio Piracicaba", "CONCAFÉ"
+]
+CLIENTE_PATTERN = build_pattern(CLIENTE_ITEMS)
+
+# Regras 2, 3, 4 (baseadas na Col E 'Detalhamento')
+
+# Regra 2: Sistema
+SISTEMA_RHF_ITEMS = ["Heitor Stein Klein", "RHF", "Wandres do Nascimento Coutinho", "Gerente do Software PTS", "Marcelo Aloisio Saith", "Renata", "Erik da Silva Pereira", "Fabio Helmer Kuhn", "Carla Assunçao Vieira Garcia", "Weslei", "Hercules de Oliveira Gonçalves", "Robert", "Letícia Gomes Saldanha Costa", "Heberth", "Ronan", "Glayson Brenno Dumaresq dos Santos"]
+SISTEMA_TRB_ITEMS = ["Daiana Graciele da Silva Soares", "Marcos Schwambach", "TRB", "Alexsandro Krause", "Pedro Henrique Machado Vieira", "Caio Callegario Souza", "Adryel Suela Bello", "Hiarley Arthur Reinholz", "Ana Paula da Silva Gonçalves", "Andre Luiz Monteiro dos Santos", "Destino: Pedro Henrique Fernandes de Assunção", "Rosane Pereira Vieira", "Humberto Cardoso Côco", "Rondonito", "ROSANY ALVES DO CARMO 09525962610", "Marlon Pereira dos Santos", "Diego Floriano Velten", "Vinicius Carneiro de Oliveira", "Joana Elisa Santana", "Eduardo Walger Zaniboni", "Ulisses Endlich Canal", "Eguimaria", "NFS", "Flavio", "Servulo", "Arrecadação", "Carine", "Grazielle", "Arthur Degen Fonseca"]
+SISTEMA_GMP_ITEMS = ["GMP", "Felipe Silva da Costa", "Izabel Pereira Lopes", "Michele Larissa Kunde", "Marcia", "Andre Luiz de Almeida Verdiano", "Charlan", "Marina", "Jhonatas", "Márcia", "Gabriela", "Jenifer"]
+SISTEMA_CPE_ITEMS = ["CPE", "Breno Baioco Vieira", "Caio Tesch Bullerjahn", "Pedro Henrique de Paiva Holz", "Juliana Telhada Ferreira", "Sicom", "Hugo Ewald Littig", "Sabrina Batista Soares de Araujo Kefler", "Breno Luiz Schaefel", "Bruno Lauér Kohler", "Marchi Nicolau", "Victor Gabriel Armeloni Stein", "Alice Costa Felis", "Daniela Duarte Rodrigues", "Henrique Lopes Mazzega", "Geissiely Ferreira Silva", "Emanuel Braga dos Santos Gandra", "João Marcos Veiga Carvalho", "Raquel Padilha dos Santos", "Roger", "Juliano Maier", "Rafael da Silva Correa", "Fabiano Luiz Novelli", "Guilherme Bermond Grecco Vieira", "Alfredo Dittrich Meyer", "Aloir Jose Cardoso Junior", "Gabriel Holz De Castro", "Letícia Alves Oliveira", "Carlos Henrique Hell Schwambach", "Rogerio", "Thamires Vitoria Santos Pereira", "Janderson", "Luis", "Jackson", "Mathaus", "Lucilene"]
+SISTEMA_EDU_ITEMS = ["EDU", "Sara da Rocha Bermudes", "Douglas Silva Galdino", "Miguel Effgen Rozemberg", "Yoshizane", "Tatiane"]
+SISTEMA_INFRA_ITEMS = ["INFRA", "Thiago Rocha"]
+SISTEMA_GSP_ITEMS = ["GSP", "Vanessa Cristina Reinholz", "Renan Felipe Prucoli Bento", "Johonatan Silva Galdino", "Alexandre Leppaus Entringer", "Destino: Gabriel Stein Velten", "Emanuel Filipe e Silva", "Anderson Merscher Ewald", "Laercio Moreira da Silva", "Tamiris de Cassia"]
+SISTEMA_COMER_ITEMS = ["COMER", "Destino: Resposta Técnica de Descritivo", "Assistente de Contas a Receber", "Patricia Dettmann Tonoli", "Solicitação Resolvida - Proposta", "Customer Success", "Execução de Serviços - Proposta", "Propostas", "COM", "Negociação Interna", "Comunicação Externa", "Resposta Técnica de Edital", "Contratos - Minas Gerais", "Licitações Indeferidas/Perdidas", "Licitações Publicadas"]
+SISTEMA_CTGI_ITEMS = ["CTGi", "Luiz Fellipe Alecrim Carvalho", "Thais Lampier Schwambach Ribet", "Samuel Leal Lima", "CTGI"]
+SISTEMA_NPD_ITEMS = ["NPD", "Suporte Técnico/Infra", "Núcleo de Pesquisa e Desenvolvimento", "NPD"] # NPD está duplicado na sua regra, mantive.
+
+SISTEMA_RHF_PATTERN = build_pattern(SISTEMA_RHF_ITEMS)
+SISTEMA_TRB_PATTERN = build_pattern(SISTEMA_TRB_ITEMS)
+SISTEMA_GMP_PATTERN = build_pattern(SISTEMA_GMP_ITEMS)
+SISTEMA_CPE_PATTERN = build_pattern(SISTEMA_CPE_ITEMS)
+SISTEMA_EDU_PATTERN = build_pattern(SISTEMA_EDU_ITEMS)
+SISTEMA_INFRA_PATTERN = build_pattern(SISTEMA_INFRA_ITEMS)
+SISTEMA_GSP_PATTERN = build_pattern(SISTEMA_GSP_ITEMS)
+SISTEMA_COMER_PATTERN = build_pattern(SISTEMA_COMER_ITEMS)
+SISTEMA_CTGI_PATTERN = build_pattern(SISTEMA_CTGI_ITEMS)
+SISTEMA_NPD_PATTERN = build_pattern(SISTEMA_NPD_ITEMS)
+
+# Regra 3: Obs
+OBS_PM_EXTREMA_ITEMS = [
+    "Destino: DANIEL AUGUSTO DE AGUIAR COSTA 27156089854", "Destino: Natalia Oliveira Eugenio 10035269693", "Destino: Verusca Rosa da Costa Rocha 19521955864", "Destino: Yacã Ferrer do Rosario 38898251840", "Destino: Joelma de Oliveira 07057484640", "Destino: Kelma Cristina Tavares de Oliveira 03694842667", "Destino: Ourides da Paixão Dias 04171410681", "Destino: BRUNA LETICIA GOMES FERREIRA 09655853608", "Destino: Marcos Cassiano Alves", "Destino: Fernanda Oliveira da Silva 15531523602", "Destino: Pedro Silva Monteiro 14299421698", "Destino: Bethania Monteiro Soares 12432143680", "Destino: JOSEFA MARIA DA SILVA 04127341416", "Destino: DIEGO HENRIQUE GERALDO LAGE 07319639629", "Destino: ROSANY ALVES DO CARMO 09525962610", "Destino: Amanda de Oliveira Araujo 11445568640", "Destino: JULIANA ANGELA MOREIRA 07665279643", "Destino: MARIA JANUARIA DORNAS 00718087607", "Destino: Leila Fernandes da Cunha 04085522639", "Destino: VIVIANE SALES DOS REIS 06080617609", "Destino: Vanessa Daniele de Amorim Prado 01354427610", "Destino: Washington Santos Figueredo 11217648607", "Destino: Bruna Rita de Paula e Silva 08160443684", "Destino: JUAREZ TEIXEIRA DA SILVA 03682034684", "Destino: Jean Moreira Macial 10351473602", "Destino: GEOVANNI HENRIQUE FERREIRA PINTO 14878903627Destino: Renato Guè de Albuquerque 10470378743", "Destino: Lueny de Oliveira Sousa", "Destino: Tailon Alexand de Camargo 76064956615", "Destino: MARCOS LUCIANO MARTINS 09284531624", "Destino: ERICA REGINA LEME 03430387655", "Destino: Hailton Paulo da Santos", "Destino: Luis Carlos de Oliveira 02695086601", "Prefeitura de Extrema/MG - Setor de Compras", "Destino: Gleiciane Alves Pereira", "Destino: Maiara Flor Zaias", "Paulo Roberto da Silva Junior 06342189803", "Destino: Luana Ribeiro Alves", "Agata Emanoelle de Almeida Silva", "Destino: Grace Maria Dos Santos Morais Xavier", "Destino: Layra Rayane Souza Carvalho 14387830603", "Destino: VITORIA LIMA BARBOSA DA SILVA 12680138627", "Destino: Denise Dornelas Mendonça 08252258689", "Destino: MONICA CESAR GONÇALVES 09223574633", "Destino: Gabriella Braga Xanthopulo dos Santos 37864574840", "Destino: Kely Regina Bertolotti 04808018608", "Destino: Eliége Aparecida Morbidelli 09518692645", "Destino: Mariana Ferreira de Carvalho 14284750607", "Destino: Juliana Vidal de Souza 13093221633", "Destino: ANGELICA CARDOSO DE LIMA 09358375663", "Destino: ALANA DA SILVA SANTOS 08867543644", "Destino: Fabricio Duarte da Silva 38171299806", "Destino: Everton Dias 40802714846", "Destino: Jessica Goncalves de Carvalho Alves 11749537648", "Destino: Prefeitura de Extrema/MG - Setor de Recursos Humanos e Folha de Pagamento", "Destino: Paulo Roberto da Silva Junior 06342189803Destino: Luana Ribeiro Alves", "Destino: Sanielly Layne Santos Galindo 09867704428", "Destino: JULLIANA MOURA CARVALHO 99305828191", "Destino: Rafael Araujo Santos 35058527839", "Destino: Lays Pereira Machado 11673279694", "Destino: Grace Maria Dos Santos Morais XavierDestino: Layra Rayane Souza Carvalho 14387830603", "Destino: MARCELO BARROS PEQUENO 08216875657", "Destino: MARCOS CASSIANO ALVES 04424346692", "Destino: ALEXSANDRO DO NASCIMENTO 88612910668", "Destino: Alexsandro do Nascimento", "Destino: Ana Flavia Alves Pereira 13812412632", "Destino: Ana Flávia Alves Pereira", "Destino: Ana Paula dos Santos", "Destino: Ana Paula Ferreira Silva", "Destino: André Aparecido Goulart 07420657661", "Destino: ANGELICA CRISTIANE SILVA DE MORAIS 11451278608", "Destino: Ataide Santana Junior", "Destino: Bruno Souza Martins 31067782885", "Destino: Carlos Alexandre Morbidelli 04705109600", "Destino: Cleiton de Souza Jorge 13490376641", "Destino: Cristiane Sitniewski Doblas 90339932600", "Destino: DAILSON FERREIRA MAGALHAES 72650923687", "Destino: DANIEL MAC VEIRA 15355023711", "Destino: Daniel Mac Veira", "Destino: Débora Pereira Anjos Costa 28645099896", "Destino: Diego Floriano Velten", "Destino: Diego Maico Silva Teles 07343474642", "Destino: Eduarda de Lima 10387586610", "Destino: Eliana Cristina da Silva", "Destino: Erick Othelo da Silva Lima 14914535670", "Destino: Evanilde Jeane de Melo 15038964800", "Destino: Fabiana de Assis Rodrigues 07569135601", "Destino: GLEICIANE ALVES PEREIRA 70410631191", "Destino: Grace Maria dos Santos Morais Xavier 06353663633", "Destino: HAILTON PAULO DOS SANTOS 78847990653", "Destino: João Vitor Alipio Gonçalves 15020298638", "Destino: Karina Helen Pereira", "Destino: Larissa Helena Rodrigues 14623341640", "Destino: Larissa Vieira Vasconcelos", "Destino: Lesley Juliana Pereira da Silva 06590477647", "Destino: Luiz Gustavo de Castro Arantes 08126116676", "Destino: LUANA RIBEIRO ALVES 06698260657", "Destino: LUENY DE OLIVEIRA SOUSA 13193434655", "Destino: Luciano José dos Santos 01912300575", "Destino: Mariana Kinzingaro Yamada 08984017639", "Destino: Marcos Cassiano Alves 04424346692", "Destino: Maria Ivani Cardoso dos Santos", "Destino: Matheus Silva Andrade 46006285860", "Destino: Prefeitura de Extrema/MG - Secretaria de Educação", "Destino: Prefeitura de Extrema/MG - Secretaria de Saúde", "Destino: Rafael Felicio Alves 09351514609", "Destino: Rogério Zanetti 27651409876", "Destino: Sisnandi Pereira dos Santos 28853285842", "Destino: Suellen Sobrinho Oliveira 10114413657", "Destino: Matheus Cardozo Costa da Silva 15817544695", "Destino: Tatiana Lemos Lima", "Destino: THIAGO LUAN DE SOUZA GONCALVES 11798761645", "Destino: Thainá Regina Harder 13204863638"
+]
+OBS_ARQUIVAR_ITEMS = [
+    "Envio: 11/08/2025 10:33", "Destino: Coordenador de Atendimento - GMP", "Envio: 23/07/2025 10:09", "Destino: Execução de Serviços - Proposta", "Destino: Possíveis Licitações", "Destino: Auxiliar de Faturamento", "Destino: Pesquisa de Satisfação", "Destino: Carla Caroline Souto Rodrigues 09933862618", "Destino: TIAGO PEREIRA SOARES 11941070604", "Destino: Fabio Luis Rabelo 03383357651", "Destino: GEOVANNI HENRIQUE FERREIRA PINTO 14878903627", "Destino: Renato Guè de Albuquerque 10470378743", "Envio: 11/08/2025 08:19", "Destino: Planejamento do Atendimento Virtual - GSP/SAS", "Origem: Julierme Uliana Machado", "Destino: Jorvana Aparecida Volkers Valcher", "Destino: Resposta Técnica de Edital", "Destino: Licitações Publicadas", "Destino: Negociação Interna - Belo Horizonte", "Destino: Assistente de Propostas - Belo Horizonte", "Destino: Assistente de Contas a Receber", "Destino: Resposta Técnica de Descritivo", "Destino: Marcia Ferreira da Fonseca 07556822621", "Destino: Departamento Pessoal"
+]
+
+OBS_PM_EXTREMA_PATTERN = build_pattern(OBS_PM_EXTREMA_ITEMS)
+OBS_ARQUIVAR_PATTERN = build_pattern(OBS_ARQUIVAR_ITEMS)
+
+# Regra 4: Responsável
+RESP_DEV_ITEMS = [
+    "Destino: Nicolas Pereira Pinto Stein", "Destino: Vitor Alves de Almeida", "Destino: Marcos Schwambach", "Destino: Maria Letícia Ferreira da Silva", "Destino: Laryssa Prado Costalonga", "Destino: Marcos Cesar Bussinger Cereja Junior", "Destino: Arthur Degen Fonseca", "Destino: Alexsandro Krause", "Destino: Pedro Henrique Machado Vieira", "Destino: Augusto Barros Stein", "Destino: Breno Baioco Vieira", "Destino: Douglas Silva Galdino", "Destino: Renan Felipe Prucoli Bento", "Destino: Luis Miguel Neitzel", "Destino: Daiana Graciele da Silva Soares", "Destino: Franthesco Marchesi Araujo", "Destino: Heitor Stein Klein", "Destino: Luiz Fellipe Alecrim Carvalho", "Destino: Caio Tesch Bullerjahn", "Destino: Thais Lampier Schwambach Ribet", "Destino: Felipe Silva da Costa", "Destino: Cristiano Endlich Leite", "Destino: Lucas de Oliveira Lima", "Destino: Johonatan Silva Galdino", "Destino: Caio Callegario Souza", "este e Validação GPI - CPE (entrada)", "Destino: RHF - DES. Novas Implementações e Manutenção", "Destino: Murilo Cristino Oliveira", "Destino: Letícia Gomes Saldanha Costa", "Destino: Glayson Brenno Dumaresq dos Santos", "Destino: Giszelly Maciel Guimaraes", "Destino: Hugo Ewald Littig", "Destino: Marllon Rosa Albano", "Destino: Ulisses Endlich Canal", "Destino: Adryel Suela Bello", "Destino: Guilherme Schwanz Bartels", "Destino: Eliza Majevski", "Destino: Sara da Rocha Bermudes", "Destino: Wandres do Nascimento Coutinho", "Sabrina Batista Soares de Araujo Kefler", "Ana Paula da Silva Gonçalves", "Destino: Johonatan Silva Galdino", "Destino: CPE - DES", "Destino: Publicação do Produção GPI", "Destino: Cleisson da Rosa Heggdorne", "Destino: Tiago Amorim Ferreira da Silva", "Destino: Juliana Telhada Ferreira", "Destino: Pedro Henrique Fernandes de Assunção", "Destino: Renan Felipe Prucoli Bento", "Destino: Gabrielly de Souza Gervásio", "Destino: Publicação Relatórios GPI", "Destino: Enrico da Laqua dos Reis", "Destino: Micaela Duarte Christ", "Destino: Sabrina Batista Soares de Araujo Kefler", "Destino: Ana Maria dos Santos Costa de Oliveira", "Destino: CPE - DES. Equipe 02", "Destino: Laura Lazaro Alvarenga", "Destino: Klaussio Brunow Carvalho", "Destino: Gislene Aparecida Effgem Wernersbach", "Destino: Geração da Release", "Destino: Geração Homologação", "Leonardo Trarbach Wolkers", "Destino: Planejamento de Cronograma", "Destino: Lukian Alintes Freitas Borges", "Destino: Filipe Lozada de Moura", "Destino: Gesimar de Souza Ribeiro", "Destino: Wuemerson Estephan Alvarenga", "Destino: GPI - Suporte Técnico/Infra", "Destino: Wandres do Nascimento Coutinho", "Destino: Teste e Homologação", "Destino: Publicação do Software", "Destino: Pedro Henrique de Paiva Holz", "Destino: GPI - CPE Teste da Release", "Destino: Rafael da Silva Correa", "Destino: Gerente do Software", "Destino: Release de Versão do Software ", "Destino: GMP - DES", "Destino: TRB - DES", "Destino: Marlon Pereira dos Santos", "Destino: Teste e Validação", "Destino: Analista do Software", "Destino: Vinicius Carneiro de Oliveira", "Destino: Joana Elisa Santana", "Destino: Eduardo Walger Zaniboni", "Destino: Humberto Cardoso Côco", "Destino: Rondonito", "Destino: Carlos Henrique Hell Schwambach", "Destino: Aloir Jose Cardoso Junior", "Destino: Gabriel Holz De Castro", "Destino: Guilherme Bermond Grecco Vieira", "Destino: Jackson", "Destino: Rogerio", "Destino: Thamires Vitoria Santos Pereira", "Destino: Janderson", "Destino: Alfredo Dittrich Meyer", "Destino: Juliano Maier", "Destino: Rafael da Silva Correa", "Destino: Fabiano Luiz Novelli", "Destino: Emanuel Braga dos Santos Gandra", "Destino: Izabel Pereira Lopes", "Destino: Michele Larissa Kunde", "Destino: Henrique Lopes Mazzega", "Destino: Breno Luiz Schaefel", "Destino: Victor Gabriel Armeloni Stein", "Destino: Alice Costa Felis", "Destino: Daniela Duarte Rodrigues", "Destino: Laercio Moreira da Silva", "Destino: Tamiris de Cassia", "Destino: Anderson Merscher Ewald", "Destino: Miguel Effgen Rozemberg", "Destino: Thiago Rocha", "Destino: Marcelo Aloisio Saith", "Destino: Fabio Helmer Kuhn", "Destino: Carla Assunçao Vieira Garcia", "Destino: Hercules de Oliveira Gonçalves", "Destino: Glayson Brenno Dumares dos Santos"
+]
+RESP_ATEND_ITEMS = [
+    "Destino: Suporte ao Cliente - TRB", "Destino: Suporte ao Cliente - GSP/SAS", "Destino: Vanessa Cristina Reinholz", "Destino: Equipe GPI - RHF", "Destino: Suporte ao Cliente - GMP", "Destino: Eric Campos Borela", "Destino: Alexandre Leppaus Entringer", "Destino: Hiarley Arthur Reinholz", "Destino: Gabriel Stein Velten", "Destino: Lothar Gomes Fiorin", "Destino: Eduardo Ribeiro da Silva", "Destino: Raiani Vieira Rodrigues", "Destino: Mateus Martins Do Carmo", "Destino: Marcos Alessandro Marquete Barbosa", "Destino: Thiago Henrique Marchi Nicolau Penido De Oliveira Sales", "Destino: Simone Schunck Ramos", "Destino: Dheivison Miranda Ferreira", "Destino: Equipe 01- GSP/SAS", "Destino: TRB - Equipe 06 Ibtech", "Destino: Gabriel Merscher Christo", "Destino: TRB - Equipe 01", "Destino: Feedback ao Cliente", "Destino: Marlielli Rosa Albano", "Destino: Letícia Gomes Saldanha Costa", "Destino: CPE - Equipe 06 Ibtech", "Destino: RHF - Equipe 06 Ibtech", "Destino: Eguimaria", "Destino: Ibtech", "Destino: Flavio", "Destino: Servulo", "Destino: Carine", "Destino: Grazielle", "Destino: João Marcos Veiga Carvalho", "Destino: Raquel Padilha dos Santos", "Destino: Roger", "Destino: Letícia Alves Oliveira", "Destino: Luis Gustavo", "Destino: Mathaus", "Destino: Lucilene", "Destino: Marcia", "Destino: Andre", "Destino: Charlan", "Destino: Marina", "Destino: Jhonatas", "Destino: Márcia", "Destino: Gabriela", "Destino: Jenifer", "Destino: Geissiely Ferreira Silva", "Destino: Emanuel Filipe e Silva", "Destino: Yoshizane", "Destino: Tatiane", "Destino: Renata", "Destino: Erik da Silva Pereira", "Destino: Weslei", "Destino: Robert", "Destino: Heberth", "Destino: Ronan", "Destino: Rosane Pereira Vieira", "Destino: Bruno Lauér Kohler", "Destino: Marchi Nicolau", "Destino: Equipe GPI - CPE", "Destino: Coordenador de Atendimento - GMP", "Destino: Equipe de Atendimento ao Software - GMP", "Destino: Coordenador de Atendimento - GSP/SAS", "Destino: Coordenador de Atendimento - RHF", "Destino: CTGI - Equipe 06 Ibtech", "Destino: Ariane Jahring Majevski"
+]
+
+RESP_DEV_PATTERN = build_pattern(RESP_DEV_ITEMS)
+RESP_ATEND_PATTERN = build_pattern(RESP_ATEND_ITEMS)
+
+
+def processar_regras(row):
+    """
+    Aplica as regras de negócio a uma linha (DataFrame row) e retorna
+    as 4 novas colunas.
+    """
+    
+    # Garantir que os dados de entrada sejam strings para o regex
+    participante = str(row.get('Participante') or '')
+    detalhamento = str(row.get('Detalhamento') or '')
+    
+    # Regra 1: Cliente nosso
+    cliente_nosso = "SIM" if CLIENTE_PATTERN.search(participante) else ""
+    
+    # Regra 2: Sistema
+    # A ordem dos SE() (if/elif) é crucial e segue a sua fórmula
+    if SISTEMA_RHF_PATTERN.search(detalhamento):
+        sistema = "RHF"
+    elif SISTEMA_TRB_PATTERN.search(detalhamento):
+        sistema = "TRB"
+    elif SISTEMA_GMP_PATTERN.search(detalhamento):
+        sistema = "GMP"
+    elif SISTEMA_CPE_PATTERN.search(detalhamento):
+        sistema = "CPE"
+    elif SISTEMA_EDU_PATTERN.search(detalhamento):
+        sistema = "EDU"
+    elif SISTEMA_INFRA_PATTERN.search(detalhamento):
+        sistema = "INFRA"
+    elif SISTEMA_GSP_PATTERN.search(detalhamento):
+        sistema = "GSP"
+    elif SISTEMA_COMER_PATTERN.search(detalhamento):
+        sistema = "COMER"
+    elif SISTEMA_CTGI_PATTERN.search(detalhamento):
+        sistema = "CTGI"
+    elif SISTEMA_NPD_PATTERN.search(detalhamento):
+        sistema = "NPD"
+    else:
+        sistema = ""
+
+    # Regra 3: Obs
+    if OBS_PM_EXTREMA_PATTERN.search(detalhamento):
+        obs = "PM Extrema"
+    elif OBS_ARQUIVAR_PATTERN.search(detalhamento):
+        obs = "Arquivar"
+    else:
+        obs = ""
+        
+    # Regra 4: Responsável
+    if RESP_DEV_PATTERN.search(detalhamento):
+        responsavel = "Desenvolvimento"
+    elif RESP_ATEND_PATTERN.search(detalhamento):
+        responsavel = "Atendimento"
+    else:
+        responsavel = ""
+        
+    return cliente_nosso, sistema, obs, responsavel
+
+# --- FIM: REGRAS E PROCESSAMENTO DE PROCESSOS EM ABERTO ---
 
 # --- ROTAS ---
 @app.route('/')
@@ -2424,6 +2577,112 @@ def force_db_fix():
         flash(f'Ocorreu um erro durante a correção da estrutura: {e}', 'danger')
         print(f"--- ERRO NA CORREÇÃO MANUAL DA ESTRUTURA: {e} ---")
     return redirect(url_for('index')) # Redireciona para o Index
+
+# --- INÍCIO: MÓDULO DE PROCESSOS ---
+
+@app.route('/processos')
+@login_required
+@role_required(module='processos', action='can_read')
+def processos():
+    conn = get_db_connection()
+    processos_data = conn.execute('SELECT * FROM processos ORDER BY id DESC').fetchall()
+    conn.close()
+    return render_template('processos.html', processos=processos_data)
+
+@app.route('/upload_processos', methods=['GET', 'POST'])
+@login_required
+@role_required(module='processos', action='can_create')
+def upload_processos():
+    if request.method == 'POST':
+        if 'arquivo_excel' not in request.files:
+            flash('Nenhum arquivo selecionado.', 'danger')
+            return redirect(request.url)
+        
+        file = request.files['arquivo_excel']
+        if file.filename == '':
+            flash('Nenhum arquivo selecionado.', 'danger')
+            return redirect(request.url)
+        
+        if not file.filename.endswith(('.xlsx', '.xls')):
+            flash('Arquivo inválido. Por favor, envie um arquivo Excel (.xlsx ou .xls).', 'danger')
+            return redirect(request.url)
+
+        try:
+            # Salvar temporariamente
+            filepath = os.path.join('/tmp', f"upload_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+            file.save(filepath)
+            
+            # Ler o arquivo
+            colunas_esperadas = ['Protocolo', 'Registro', 'Origem', 'Detalhamento', 'Participante']
+            df = pd.read_excel(filepath, engine='openpyxl')
+
+            # Verificar colunas
+            if not all(col in df.columns for col in colunas_esperadas):
+                flash(f'Erro: O arquivo não contém as colunas esperadas: {", ".join(colunas_esperadas)}', 'danger')
+                os.remove(filepath)
+                return redirect(url_for('processos'))
+
+            conn = get_db_connection()
+            count = 0
+            for index, row in df.iterrows():
+                # Pula linhas onde as colunas esperadas estão vazias
+                if pd.isna(row['Protocolo']) and pd.isna(row['Detalhamento']):
+                    continue
+                
+                # Aplica as regras de negócio
+                cliente_nosso, sistema, obs, responsavel = processar_regras(row)
+                
+                # Inserir no banco de dados
+                conn.execute('''
+                    INSERT INTO processos (
+                        protocolo, registro, origem, detalhamento, participante, 
+                        cliente_nosso, sistema, obs, responsavel
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    str(row.get('Protocolo') or ''), str(row.get('Registro') or ''), str(row.get('Origem') or ''),
+                    str(row.get('Detalhamento') or ''), str(row.get('Participante') or ''),
+                    cliente_nosso, sistema, obs, responsavel
+                ))
+                count += 1
+            
+            conn.commit()
+            conn.close()
+            os.remove(filepath) # Limpar o arquivo temporário
+            flash(f'{count} registros importados e processados com sucesso!', 'success')
+
+        except Exception as e:
+            flash(f'Erro ao processar o arquivo: {e}', 'danger')
+            print(f"ERRO upload_processos: {e}")
+            if 'filepath' in locals() and os.path.exists(filepath):
+                os.remove(filepath)
+            
+        return redirect(url_for('processos'))
+
+    return render_template('upload_processos.html')
+
+@app.route('/delete_processo/<int:id>', methods=['POST'])
+@login_required
+@role_required(module='processos', action='can_delete')
+def delete_processo(id):
+    conn = get_db_connection()
+    conn.execute('DELETE FROM processos WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    flash('Registro excluído com sucesso.', 'success')
+    return redirect(url_for('processos'))
+
+@app.route('/limpar_processos', methods=['POST'])
+@login_required
+@role_required(module='processos', action='can_delete')
+def limpar_processos():
+    conn = get_db_connection()
+    conn.execute('DELETE FROM processos')
+    conn.commit()
+    conn.close()
+    flash('Todos os registros de processos foram excluídos.', 'success')
+    return redirect(url_for('processos'))
+
+# --- FIM: MÓDULO DE PROCESSOS ---
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
