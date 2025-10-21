@@ -51,8 +51,7 @@
                     <td>{{ projeto['status'] }}</td>
                     
                     <td class="actions">
-                        <a href="{{ url_for('checklist_projeto', projeto_id=projeto['id']) }}" class="button checklist">Checklist</a>
-                        <a href="{{ url_for('checklist_inline', projeto_id=projeto['id']) }}" class="button" style="background-color: #ffc107; color: #212529;">Checklist Editável</a> 
+                       <a href="{{ url_for('checklist_inline', projeto_id=projeto['id']) }}" class="button" style="background-color: #ffc107; color: #212529;">Checklist Editável</a> 
     
                         {% if check_permission('projetos', 'can_edit') %}
                             <a href="{{ url_for('edit_projeto', projeto_id=projeto['id']) }}" class="button edit">Editar</a>
