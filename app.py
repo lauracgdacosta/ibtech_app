@@ -431,46 +431,53 @@ def _header_footer_pdf(canvas, doc, header_data):
     Função para desenhar o cabeçalho e rodapé em cada página.
     """
     canvas.saveState()
-    width, height = doc.pagesize  # Tamanho da página (agora em landscape)
+    width, height = doc.pagesize  #
     
-    # --- CAMINHOS DAS LOGOS (não usados neste teste) ---
-    # logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png')
-    # logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png')
+    # --- CAMINHOS DAS LOGOS ---
+    logo_ibtech_path = os.path.join(BASE_DIR, 'static', 'logo_ibtech.png') #
+    logo_gpi_path = os.path.join(BASE_DIR, 'static', 'logo_gpi.png') #
     
     # --- LOGO IBTECH (Superior Esquerdo) ---
-    # --- TESTE: Forçando o desenho da tag de texto ---
     try:
-        canvas.setFont('Helvetica', 10) # Define uma fonte
-        canvas.drawString(40, height - 50, "[TESTE Logo Ibtech]")
-    except Exception as e:
-        print(f"--- ERRO AO DESENHAR A TAG IBTECH: {e}")
+        if os.path.exists(logo_ibtech_path): #
+            # Desenha a imagem (sem mask='auto')
+            canvas.drawImage(logo_ibtech_path, 40, height - 60, 
+                             width=100, preserveAspectRatio=True) #
+        else:
+            canvas.drawString(40, height - 50, "[Logo Ibtech não encontrada]") #
+    except Exception:
+        # Se TUDO falhar, desenha a tag de erro
+        canvas.drawString(40, height - 50, "[Erro ao carregar Logo Ibtech]") #
 
     # --- LOGO GPI (Superior Direito) ---
-    # --- TESTE: Forçando o desenho da tag de texto ---
     try:
-        canvas.setFont('Helvetica', 10) # Define a fonte
-        canvas.drawString(width - 120, height - 50, "[TESTE Logo GPI]")
-    except Exception as e:
-        print(f"--- ERRO AO DESENHAR A TAG GPI: {e}")
-
+        if os.path.exists(logo_gpi_path): #
+            # Desenha a imagem (sem mask='auto')
+            canvas.drawImage(logo_gpi_path, width - 120, height - 55, 
+                             width=80, preserveAspectRatio=True) #
+        else:
+            canvas.drawString(width - 120, height - 50, "[Logo GPI não encontrada]") #
+    except Exception:
+        # Se TUDO falhar, desenha a tag de erro
+        canvas.drawString(width - 120, height - 50, "[Erro ao carregar Logo GPI]") #
 
     # --- INFORMAÇÕES DO PROJETO (Centro/Direita) ---
     canvas.setFont('Helvetica-Bold', 10) #
-    text_x = 550  # Posição X para paisagem
+    text_x = 550
     text_y = height - 30 
     
-    canvas.drawString(text_x, text_y,        f"Nome do Projeto: {header_data.get('nome_projeto', 'N/A')}")
-    canvas.drawString(text_x, text_y - 15,   f"Início Previsto: {_py_format_date(header_data.get('inicio_previsto', 'N/A'))}")
-    canvas.drawString(text_x, text_y - 30,   f"Término Previsto: {_py_format_date(header_data.get('termino_previsto', 'N/A'))}")
-    canvas.drawString(text_x, text_y - 45,   f"Status: {header_data.get('status', 'N/A')}")
+    canvas.drawString(text_x, text_y,        f"Nome do Projeto: {header_data.get('nome_projeto', 'N/A')}") #
+    canvas.drawString(text_x, text_y - 15,   f"Início Previsto: {_py_format_date(header_data.get('inicio_previsto', 'N/A'))}") #
+    canvas.drawString(text_x, text_y - 30,   f"Término Previsto: {_py_format_date(header_data.get('termino_previsto', 'N/A'))}") #
+    canvas.drawString(text_x, text_y - 45,   f"Status: {header_data.get('status', 'N/A')}") #
     
     # --- LINHA DIVISÓRIA ---
-    canvas.setStrokeColorRGB(0.8, 0.8, 0.8)
-    canvas.line(40, height - 75, width - 40, height - 75)
+    canvas.setStrokeColorRGB(0.8, 0.8, 0.8) #
+    canvas.line(40, height - 75, width - 40, height - 75) #
 
     # --- RODAPÉ ---
-    canvas.setFont('Helvetica', 9)
-    canvas.drawCentredString(width / 2.0, 30, f"Página {doc.page} - Ibtech Gestão de Projetos")
+    canvas.setFont('Helvetica', 9) #
+    canvas.drawCentredString(width / 2.0, 30, f"Página {doc.page} - Ibtech Gestão de Projetos") #
     
     canvas.restoreState() #
 
