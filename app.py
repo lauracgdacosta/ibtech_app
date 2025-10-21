@@ -481,6 +481,8 @@ def _header_footer_pdf(canvas, doc, header_data):
     canvas.restoreState()
 
 
+# Em app.py - SUBSTITUA a função antiga por esta
+
 def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
     """
     Cria o documento PDF completo com o checklist inline.
@@ -497,6 +499,7 @@ def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
     styles.add(ParagraphStyle(name='SmallText', fontSize=8, alignment=0)) # 0=LEFT
     
     # --- Dados para o Cabeçalho ---
+    # CORREÇÃO: Acessa projeto_data (um sqlite3.Row) com colchetes []
     header_data = {
         'nome_projeto': projeto_data['nome'],
         'inicio_previsto': projeto_data['data_inicio_previsto'],
@@ -541,18 +544,21 @@ def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
 
     row_index = 1 # Começa na linha 1 (abaixo do cabeçalho)
     for t in tarefas_data:
-        # Formata os dados para exibição amigável
-        item_id = t.get('atividade_id') or ''
-        atividade = Paragraph(t.get('descricao') or '', styles['SmallText'])
-        inicio = _py_format_date(t.get('data_inicio'))
-        termino = _py_format_date(t.get('data_termino'))
-        duracao = str(t.get('duracao') or '')
-        responsaveis = Paragraph(t.get('responsaveis') or '', styles['SmallText'])
-        status = t.get('status') or ''
-        local = t.get('local_execucao') or ''
-        obs = Paragraph(t.get('observacoes') or '', styles['SmallText'])
+        
+        # --- CORREÇÃO APLICADA AQUI ---
+        # Substitui todos os .get('chave') por ['chave']
+        
+        item_id = t['atividade_id'] or ''
+        atividade = Paragraph(t['descricao'] or '', styles['SmallText'])
+        inicio = _py_format_date(t['data_inicio'])
+        termino = _py_format_date(t['data_termino'])
+        duracao = str(t['duracao'] or '')
+        responsaveis = Paragraph(t['responsaveis'] or '', styles['SmallText'])
+        status = t['status'] or ''
+        local = t['local_execucao'] or ''
+        obs = Paragraph(t['observacoes'] or '', styles['SmallText'])
 
-        if t.get('tipo') == 'titulo':
+        if t['tipo'] == 'titulo':
             # Linha de Título: mescla colunas e muda o estilo
             row_data = [item_id, atividade, '', '', '', '', '', '', '']
             table_styles.append(('SPAN', (1, row_index), (-1, row_index)))
@@ -562,6 +568,8 @@ def criar_pdf_checklist_inline(buffer, projeto_data, tarefas_data):
         else:
             # Linha de Tarefa
             row_data = [item_id, atividade, inicio, termino, duracao, responsaveis, status, local, obs]
+        
+        # --- FIM DA CORREÇÃO ---
         
         table_data.append(row_data)
         row_index += 1
