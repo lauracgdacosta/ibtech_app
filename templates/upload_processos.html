@@ -1,19 +1,51 @@
-{% extends 'base.html' %}
-{% block title %}Importar Planilha de Processos{% endblock %}
-
-{% block content %}
-<div class="container">
-    <h1>Importar Planilha de Processos</h1>
-    <p>Selecione o arquivo Excel (.xlsx ou .xls) para importar. O arquivo deve conter as colunas: <strong>Protocolo, Registro, Origem, Detalhamento, Participante</strong>.</p>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Importar Planilha de Processos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     
-    <form method="POST" enctype="multipart/form-data">
-        <div>
-            <label for="arquivo_excel">Arquivo Excel:</label>
-            <input type="file" name="arquivo_excel" id="arquivo_excel" accept=".xlsx, .xls" required>
-        </div>
-        <br>
-        <button type="submit">Enviar</button>
-        <a href="{{ url_for('processos') }}" class="button">Cancelar</a>
-    </form>
-</div>
-{% endblock %}
+    <style>
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Importar Planilha de Processos</h1>
+        <p>Selecione o arquivo Excel (.xlsx ou .xls) para importar. O arquivo deve conter as colunas: <strong>Protocolo, Registro, Origem, Detalhamento, Participante</strong>.</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data">
+            <div>
+                <label for="arquivo_excel">Arquivo Excel:</label>
+                <input type="file" name="arquivo_excel" id="arquivo_excel" accept=".xlsx, .xls" required>
+            </div>
+            <br>
+            <button type="submit">Enviar</button>
+            <a href="{{ url_for('processos') }}" class="button">Cancelar</a>
+        </form>
+    </div>
+</body>
+</html>
